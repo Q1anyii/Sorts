@@ -1,0 +1,299 @@
+
+/* ========== CSS Reset & Variables ========== */
+:root {
+  --primary: #4A6CF7;
+  --primary-light: #EEF1FE;
+  --primary-dark: #3B54D4;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --info: #6366F1;
+  --bg: #F5F6FA;
+  --bg-card: #FFFFFF;
+  --bg-sidebar: #1E1F2B;
+  --text: #1E293B;
+  --text-secondary: #64748B;
+  --text-light: #94A3B8;
+  --border: #E2E8F0;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+  --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,.1), 0 4px 6px rgba(0,0,0,.05);
+  --transition: all .2s ease;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
+a { color:var(--primary); text-decoration:none; }
+input,textarea,select,button { font-family:inherit; font-size:inherit; }
+
+/* ========== Scrollbar ========== */
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-thumb { background:#CBD5E1; border-radius:3px; }
+::-webkit-scrollbar-track { background:transparent; }
+
+/* ========== Login Page ========== */
+.login-page {
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding:20px;
+}
+.login-card {
+  background:var(--bg-card); border-radius:20px; padding:48px 40px;
+  width:100%; max-width:440px; box-shadow:var(--shadow-lg);
+}
+.login-logo { text-align:center; margin-bottom:32px; }
+.login-logo .icon { width:64px; height:64px; background:linear-gradient(135deg, var(--primary), #8B5CF6); border-radius:16px; display:inline-flex; align-items:center; justify-content:center; font-size:32px; color:#fff; }
+.login-logo h1 { font-size:24px; margin-top:12px; color:var(--text); }
+.login-logo p { color:var(--text-secondary); font-size:14px; margin-top:4px; }
+.form-group { margin-bottom:20px; }
+.form-group label { display:block; font-size:14px; font-weight:500; margin-bottom:6px; color:var(--text); }
+.form-group input { width:100%; padding:10px 14px; border:2px solid var(--border); border-radius:var(--radius-sm); outline:none; transition:var(--transition); font-size:15px; }
+.form-group input:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(74,108,247,.15); }
+.form-modes { display:flex; gap:0; margin-bottom:24px; background:var(--bg); border-radius:var(--radius-sm); padding:4px; }
+.form-mode { flex:1; text-align:center; padding:8px; border-radius:6px; cursor:pointer; font-size:14px; font-weight:500; transition:var(--transition); color:var(--text-secondary); }
+.form-mode.active { background:#fff; color:var(--primary); box-shadow:var(--shadow); }
+
+/* ========== Buttons ========== */
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:10px 20px; border:none; border-radius:var(--radius-sm); font-weight:500; cursor:pointer; transition:var(--transition); font-size:14px; white-space:nowrap; }
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-primary:hover { background:var(--primary-dark); transform:translateY(-1px); }
+.btn-success { background:var(--success); color:#fff; }
+.btn-success:hover { filter:brightness(.9); }
+.btn-warning { background:var(--warning); color:#fff; }
+.btn-danger { background:var(--danger); color:#fff; }
+.btn-outline { background:transparent; border:2px solid var(--border); color:var(--text); }
+.btn-outline:hover { border-color:var(--primary); color:var(--primary); }
+.btn-sm { padding:6px 12px; font-size:12px; }
+.btn-lg { padding:14px 28px; font-size:16px; }
+.btn-block { width:100%; }
+.btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+
+/* ========== App Layout ========== */
+.app-layout { display:flex; min-height:100vh; }
+.sidebar {
+  width:240px; background:var(--bg-sidebar); color:#fff; display:flex;
+  flex-direction:column; position:fixed; top:0; left:0; bottom:0; z-index:100;
+  transition:var(--transition);
+}
+.sidebar-brand { padding:24px 20px; display:flex; align-items:center; gap:12px; border-bottom:1px solid rgba(255,255,255,.1); }
+.sidebar-brand .brand-icon { width:40px; height:40px; background:linear-gradient(135deg, var(--primary), #8B5CF6); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; }
+.sidebar-brand h2 { font-size:18px; font-weight:600; }
+.sidebar-nav { flex:1; padding:16px 12px; overflow-y:auto; }
+.nav-section { margin-bottom:8px; }
+.nav-section-title { font-size:11px; text-transform:uppercase; color:rgba(255,255,255,.35); padding:8px 12px 4px; letter-spacing:1px; }
+.nav-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); cursor:pointer; transition:var(--transition); color:rgba(255,255,255,.65); margin-bottom:2px; font-size:14px; }
+.nav-item:hover { background:rgba(255,255,255,.08); color:#fff; }
+.nav-item.active { background:rgba(255,255,255,.12); color:#fff; font-weight:500; }
+.nav-item .nav-icon { width:20px; text-align:center; font-size:16px; }
+.nav-item .badge { margin-left:auto; background:var(--danger); color:#fff; font-size:11px; padding:2px 6px; border-radius:10px; min-width:20px; text-align:center; }
+
+.sidebar-footer { padding:16px; border-top:1px solid rgba(255,255,255,.1); }
+.user-mini { display:flex; align-items:center; gap:10px; cursor:pointer; padding:8px; border-radius:var(--radius-sm); transition:var(--transition); }
+.user-mini:hover { background:rgba(255,255,255,.08); }
+.user-avatar { width:36px; height:36px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; font-size:16px; color:#fff; font-weight:600; flex-shrink:0; }
+.user-mini-info { flex:1; min-width:0; }
+.user-mini-info .name { font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.user-mini-info .points { font-size:11px; color:rgba(255,255,255,.5); }
+
+.main-content { flex:1; margin-left:240px; padding:28px; min-height:100vh; }
+
+/* ========== Page Header ========== */
+.page-header { margin-bottom:24px; }
+.page-header h2 { font-size:24px; font-weight:700; }
+.page-header p { color:var(--text-secondary); font-size:14px; margin-top:4px; }
+
+/* ========== Cards ========== */
+.card { background:var(--bg-card); border-radius:var(--radius); padding:24px; box-shadow:var(--shadow); border:1px solid var(--border); }
+.card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.card-title { font-size:16px; font-weight:600; }
+
+/* ========== Stats Grid ========== */
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:24px; }
+.stat-card { background:var(--bg-card); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); border:1px solid var(--border); display:flex; align-items:center; gap:16px; }
+.stat-icon { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+.stat-icon.blue { background:#EEF2FF; color:var(--primary); }
+.stat-icon.green { background:#ECFDF5; color:var(--success); }
+.stat-icon.orange { background:#FFF7ED; color:var(--warning); }
+.stat-icon.purple { background:#F5F3FF; color:#8B5CF6; }
+.stat-value { font-size:24px; font-weight:700; }
+.stat-label { font-size:13px; color:var(--text-secondary); }
+
+/* ========== Calendar ========== */
+.calendar { width:100%; }
+.calendar-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.calendar-nav { display:flex; align-items:center; gap:12px; }
+.calendar-nav button { width:32px; height:32px; border:none; background:var(--bg); border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:var(--transition); }
+.calendar-nav button:hover { background:var(--primary-light); color:var(--primary); }
+.calendar-nav .month-label { font-size:16px; font-weight:600; min-width:140px; text-align:center; }
+.calendar-grid { display:grid; grid-template-columns:repeat(7, 1fr); gap:2px; }
+.calendar-day-header { text-align:center; font-size:12px; font-weight:600; color:var(--text-secondary); padding:8px; }
+.calendar-day { aspect-ratio:1; padding:6px; border-radius:var(--radius-sm); cursor:pointer; transition:var(--transition); border:2px solid transparent; position:relative; min-height:80px; }
+.calendar-day:hover { background:var(--primary-light); }
+.calendar-day.today { border-color:var(--primary); background:var(--primary-light); }
+.calendar-day.other-month { opacity:.35; }
+.calendar-day .day-num { font-size:13px; font-weight:500; margin-bottom:2px; }
+.calendar-day.today .day-num { color:var(--primary); font-weight:700; }
+.calendar-day .day-dots { display:flex; flex-wrap:wrap; gap:2px; }
+.calendar-day .day-dot { width:6px; height:6px; border-radius:50%; }
+.calendar-day .day-more { font-size:10px; color:var(--text-light); }
+
+/* ========== Schedule List ========== */
+.schedule-item { display:flex; align-items:center; gap:14px; padding:16px; border-radius:var(--radius-sm); background:var(--bg); margin-bottom:8px; transition:var(--transition); border-left:3px solid transparent; cursor:pointer; }
+.schedule-item:hover { box-shadow:var(--shadow-md); }
+.schedule-item .time-block { text-align:center; min-width:64px; }
+.schedule-item .time-block .time { font-size:15px; font-weight:600; }
+.schedule-item .time-block .duration { font-size:11px; color:var(--text-secondary); }
+.schedule-item .schedule-info { flex:1; min-width:0; }
+.schedule-item .schedule-info .title { font-weight:500; font-size:15px; }
+.schedule-item .schedule-info .desc { font-size:13px; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.schedule-item .schedule-tags { display:flex; gap:4px; flex-wrap:wrap; }
+.schedule-item .tag { font-size:11px; padding:2px 8px; border-radius:12px; background:var(--primary-light); color:var(--primary); }
+.schedule-item .schedule-actions { display:flex; gap:6px; }
+.status-badge { font-size:11px; padding:3px 10px; border-radius:12px; font-weight:500; }
+.status-PENDING { background:#F1F5F9; color:#64748B; }
+.status-IN_PROGRESS { background:#FEF3C7; color:#D97706; }
+.status-PAUSED { background:#FEE2E2; color:#DC2626; }
+.status-COMPLETED { background:#D1FAE5; color:#059669; }
+.status-CANCELLED { background:#F1F5F9; color:#94A3B8; }
+.status-TIMEOUT { background:#FEE2E2; color:#EF4444; }
+
+/* ========== Timer Overlay ========== */
+.active-timer { background:linear-gradient(135deg, var(--primary), #8B5CF6); border-radius:var(--radius); padding:20px; color:#fff; margin-bottom:16px; display:flex; align-items:center; gap:20px; }
+.timer-display { font-size:36px; font-weight:700; font-variant-numeric:tabular-nums; }
+.timer-info { flex:1; }
+.timer-info .timer-title { font-size:16px; font-weight:500; }
+.timer-info .timer-meta { font-size:13px; opacity:.8; }
+.timer-actions { display:flex; gap:10px; }
+.timer-actions .btn { background:rgba(255,255,255,.2); color:#fff; border:1px solid rgba(255,255,255,.3); }
+.timer-actions .btn:hover { background:rgba(255,255,255,.3); }
+.timer-actions .btn-end { background:#fff; color:var(--primary); border:none; font-weight:600; }
+
+/* ========== AI Panel ========== */
+.ai-chat { border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.ai-chat-messages { height:360px; overflow-y:auto; padding:16px; background:var(--bg); }
+.ai-message { margin-bottom:14px; display:flex; gap:10px; }
+.ai-message.user { flex-direction:row-reverse; }
+.ai-avatar { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+.ai-avatar.bot { background:linear-gradient(135deg, #8B5CF6, #6366F1); color:#fff; }
+.ai-avatar.user { background:var(--primary); color:#fff; }
+.ai-bubble { max-width:75%; padding:10px 14px; border-radius:14px; font-size:14px; line-height:1.5; }
+.ai-message:not(.user) .ai-bubble { background:#fff; border:1px solid var(--border); border-top-left-radius:4px; }
+.ai-message.user .ai-bubble { background:var(--primary); color:#fff; border-top-right-radius:4px; }
+.ai-suggestions { padding:12px 16px; border-top:1px solid var(--border); display:flex; gap:8px; flex-wrap:wrap; }
+.ai-suggestion { font-size:12px; padding:6px 12px; border-radius:16px; background:var(--primary-light); color:var(--primary); cursor:pointer; transition:var(--transition); border:none; }
+.ai-suggestion:hover { background:var(--primary); color:#fff; }
+.ai-input-row { display:flex; gap:8px; padding:12px 16px; border-top:1px solid var(--border); }
+.ai-input-row input { flex:1; padding:10px 14px; border:1px solid var(--border); border-radius:20px; outline:none; font-size:14px; }
+.ai-input-row input:focus { border-color:var(--primary); }
+
+/* ========== Mall Grid ========== */
+.mall-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:16px; }
+.mall-item { background:var(--bg-card); border-radius:var(--radius); overflow:hidden; border:1px solid var(--border); transition:var(--transition); }
+.mall-item:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); }
+.mall-item-preview { height:140px; display:flex; align-items:center; justify-content:center; font-size:48px; }
+.mall-item-preview.skin-blue { background:linear-gradient(135deg, #667eea, #4A6CF7); }
+.mall-item-preview.skin-green { background:linear-gradient(135deg, #34D399, #10B981); }
+.mall-item-preview.skin-purple { background:linear-gradient(135deg, #A78BFA, #8B5CF6); }
+.mall-item-preview.skin-orange { background:linear-gradient(135deg, #FBBF24, #F59E0B); }
+.mall-item-preview.skin-pink { background:linear-gradient(135deg, #F472B6, #EC4899); }
+.mall-item-preview.skin-dark { background:linear-gradient(135deg, #1E293B, #334155); }
+.mall-item-body { padding:14px; }
+.mall-item-body .item-name { font-weight:600; font-size:14px; }
+.mall-item-body .item-desc { font-size:12px; color:var(--text-secondary); margin:4px 0; }
+.mall-item-body .item-footer { display:flex; align-items:center; justify-content:space-between; margin-top:8px; }
+.mall-item-body .item-price { font-weight:700; color:var(--warning); font-size:15px; }
+
+/* ========== Notification List ========== */
+.notif-item { display:flex; gap:12px; padding:14px; border-radius:var(--radius-sm); transition:var(--transition); border-bottom:1px solid var(--border); cursor:pointer; }
+.notif-item:hover { background:var(--bg); }
+.notif-item.unread { background:var(--primary-light); border-left:3px solid var(--primary); }
+.notif-dot { width:8px; height:8px; border-radius:50%; background:var(--primary); margin-top:6px; flex-shrink:0; }
+.notif-item.unread .notif-dot { display:block; }
+.notif-item.read .notif-dot { visibility:hidden; }
+.notif-content { flex:1; }
+.notif-content .notif-title { font-weight:500; font-size:14px; }
+.notif-content .notif-body { font-size:13px; color:var(--text-secondary); }
+.notif-content .notif-time { font-size:11px; color:var(--text-light); margin-top:2px; }
+
+/* ========== Modal ========== */
+.modal-mask { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:1000; }
+.modal-box { background:#fff; border-radius:var(--radius); width:90%; max-width:520px; max-height:85vh; overflow-y:auto; box-shadow:var(--shadow-lg); }
+.modal-header { padding:18px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.modal-header h3 { font-size:17px; }
+.modal-body { padding:24px; }
+.modal-footer { padding:16px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px; }
+
+/* ========== Forms ========== */
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.form-input { width:100%; padding:10px 14px; border:2px solid var(--border); border-radius:var(--radius-sm); outline:none; transition:var(--transition); }
+.form-input:focus { border-color:var(--primary); }
+.form-textarea { width:100%; padding:10px 14px; border:2px solid var(--border); border-radius:var(--radius-sm); outline:none; resize:vertical; min-height:80px; }
+.form-textarea:focus { border-color:var(--primary); }
+.form-select { width:100%; padding:10px 14px; border:2px solid var(--border); border-radius:var(--radius-sm); outline:none; background:#fff; }
+
+/* ========== Tabs ========== */
+.tabs { display:flex; gap:0; border-bottom:2px solid var(--border); margin-bottom:20px; }
+.tab-item { padding:10px 20px; cursor:pointer; font-size:14px; font-weight:500; color:var(--text-secondary); border-bottom:2px solid transparent; margin-bottom:-2px; transition:var(--transition); }
+.tab-item.active { color:var(--primary); border-bottom-color:var(--primary); }
+
+/* ========== Empty State ========== *//* ========== 空状态 ========== */
+.empty-state { text-align:center; padding:48px 20px; color:var(--text-secondary); }
+.empty-state .empty-icon { font-size:48px; margin-bottom:12px; }
+.empty-state p { font-size:14px; }
+
+/* ========== Utilities ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== *//* ========== 工具函数 ========== */
+.flex { display:flex; }
+.flex-col { flex-direction:column; }
+.items-center { align-items:center; }.items-center { align-items:center; }}.items-center { align-items:center; }}.items-center { align-items:center; }}.items-center { align-items:center; }}
+.justify-between { justify-content:space-between; }
+.gap-2 { gap:8px; }   .gap-2 { gap:8px; }}   .gap-2 { gap:8px; }}   .gap-2 { gap:8px; }}   .gap-2 { gap:8px; }}
+.gap-3 { gap:12px; }   .gap-3 { gap:12px; }}   .gap-3 { gap:12px; }}   .gap-3 { gap:12px; }}   .gap-3 { gap:12px; }}
+.gap-4 { gap:16px; }   .gap-4 { gap:16px; }}   .gap-4 { gap:16px; }}   .gap-4 { gap:16px; }}   .gap-4 { gap:16px; }}
+.mt-2 { margin-top:8px; }
+.mt-3 { margin-top:12px; }
+.mt-4 { margin-top:16px; }
+.mb-2 { margin-bottom:8px; }
+.mb-3 { margin-bottom:12px; }
+.mb-4 { margin-bottom:16px; }.mb-4 { margin-bottom:16px; }}.mb-4 { margin-bottom:16px; }}.mb-4 { margin-bottom:16px; }}.mb-4 { margin-bottom:16px; }}
+.text-sm { font-size:13px; }.text-sm { font-size:13px; }}.text-sm { font-size:13px; }}.text-sm { font-size:13px; }}.text-sm { font-size:13px; }}
+.text-secondary { color:var(--text-secondary); }
+.text-center { text-align:center; }
+.font-bold { font-weight:700; }.font-bold { font-weight:700; }}.font-bold { font-weight:700; }}.font-bold { font-weight:700; }}.font-bold { font-weight:700; }}.font-bold { font-weight:700; }}.font-bold { font-weight:700; }}.font-bold { font-weight:700; }}.font-bold { font-weight:700; }}.font-bold { font-weight:700; }}.font-bold { font-weight:700; }}
+.truncate { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }.truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}.truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}.truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}.truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}.truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}.truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}.truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}.truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}.truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}.truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}.truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}.truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}.truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}.truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}.truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
+.w-full { width:100%; }   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}   .w-full { width:100%; }}
+
+/* ========== Tag Colors ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 =======/* ========== 标签颜色 ========== */=== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== *//* ========== 标签颜色 ========== */
+.tag-study { background:#EEF2FF;.标签研究 { background:#EEF2FF； color:#4A6CF7；} color:#4A6CF7; }.标签研究 { background:#EEF2FF; color:#4A6CF7;}.标签研究 { background:#EEF2FF; color:#4A6CF7;}.标签研究 { background:#EEF2FF; color:#4A6CF7;}.标签研究 { background:#EEF2FF; color:#4A6CF7;}.标签研究 { background:#EEF2FF； color:#4A6CF7；}.标签研究 { background:#EEF2FF； color:#4A6CF7；}.标签研究 { background:#EEF2FF； color:#4A6CF7；}.标签研究 { background:#EEF2FF； color:#4A6CF7；}.标签研究 { background:#EEF2FF； color:#4A6CF7；}.标签研究 { background:#EEF2FF； color:#4A6CF7；}.标签研究 { background:#EEF2FF； color:#4A6CF7；}.tag-study { background:#EEF2FF; color:#4A6CF7; }. Tag Research { background: #EEF2FF; color:#4A6CF7; }. Tag Research { background: #EEF2FF; color:#4A6CF7; }.标签研究 { background:#EEF2FF； color:#4A6CF7；}.tag-study { background:#EEF2FF; color:#4A6CF7; }. Tag Research { background: #EEF2FF; color:#4A6CF7; }. Tag Research { background: #EEF2FF; color:#4A6CF7; }.标签研究 { background:#EEF2FF； color:#4A6CF7；}.标签研究 { background:#EEF2FF； color:#4A6CF7；}.标签研究 { background:#EEF2FF； color:#4A6CF7；}.标签研究 { background:#EEF2FF； color:#4A6CF7；}.标签研究 { background:#EEF2FF； color:#4A6CF7；}.标签研究 { background:#EEF2FF； color:#4A6CF7；}.标签研究 { background:#EEF2FF； color:#4A6CF7；}
+.tag-work { background:#FEF3C7; color:#D97706; }
+.tag-life { background:#ECFDF5; color:#059669; }
+.tag-sport { background:#FEE2E2; color:#EF4444; }.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}}.tag-sport { background:#FEE2E2; color:#EF4444; }}}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}}.tag-sport { background:#FEE2E2; color:#EF4444; }}}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}}.tag-sport { background:#FEE2E2; color:#EF4444; }}}.tag-sport { background:#FEE2E2; color:#EF4444; }}}.tag-sport { background:#FEE2E2; color:#EF4444; }}}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}}.tag-sport { background:#FEE2E2; color:#EF4444; }}}.tag-sport { background:#FEE2E2; color:#EF4444; }}}.tag-sport { background:#FEE2E2; color:#EF4444; }}}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}}.tag-sport { background:#FEE2E2; color:#EF4444; }}}.tag-sport { background:#FEE2E2; color:#EF4444; }}}.tag-sport { background:#FEE2E2; color:#EF4444; }}}.tag-sport { background:#FEE2E2; color:#EF4444; }}}.tag-sport { background:#FEE2E2; color:#EF4444; }}}.tag-sport { background:#FEE2E2; color:#EF4444; }}}.tag-sport { background:#FEE2E2; color:#EF4444; }}}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}.tag-sport { background:#FEE2E2; color:#EF4444; }}
+.tag-other { background:#F1F5F9; color:#64748B; }
+
+/* ========== Priority Indicators ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* /* ========== 优先级指标 ========== */========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== *//* ========== 优先级指标 ========== */
+.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }}}
+.priority-URGENT { background:var(--danger); }.优先-紧急 { background：var(--danger)； }}.优先-紧急 { background：var(--danger)； }}.优先-紧急 { background：var(--danger)； }}.优先-紧急 { background：var(--danger)； }}.优先-紧急 { background：var(--danger)； }}.优先-紧急 { background：var(--danger)； }}.优先-紧急 { background：var(--danger)； }}.优先-紧急 { background：var(--danger)； }}.优先-紧急 { background：var(--danger)； }}.优先-紧急 { background：var(--danger)； }}.优先-紧急 { background：var(--danger)； }}.优先-紧急 { background：var(--danger)； }}.优先-紧急 { background：var(--danger)； }}.优先-紧急 { background：var(--danger)； }}.优先-紧急 { background:var(--danger); }}.优先-紧急 { background:var(--danger); }}.优先-紧急 { background:var(--danger); }}.优先-紧急 { background:var(--danger); }}.优先-紧急 { background:var(--danger); }}.优先-紧急 { background：var(--danger)； }}.优先-紧急 { background：var(--danger)； }}}.优先-紧急 { background：var(--danger)； }}}.优先-紧急 { background：var(--danger)； }}.优先-紧急 { background:var(--danger); }}}.优先-紧急 { background:var(--danger); }}}
+.priority-HIGH { background:var(--warning); }.优先级-高 { background：var(--warning)； }}.优先级-高 { background：var(--warning)； }}.优先级-高 { background：var(--warning)； }}.优先级-高 { background：var(--warning)； }}.优先级-高 { background：var(--warning)； }}.优先级-高 { background：var(--warning)； }}.优先级-高 { background：var(--warning)； }}.优先级-高 { background：var(--warning)； }}.优先级-高 { background：var(--warning)； }}.优先级-高 { background：var(--warning)； }}.优先级-高 { background：var(--warning)； }}.优先级-高 { background：var(--warning)； }}.优先级-高 { background：var(--warning)； }}.优先级-高 { background：var(--warning)； }}.优先级-高 { background:var(--warning); }}.优先级-高 { background:var(--warning); }}.优先级-高 { background:var(--warning); }}.优先级-高 { background:var(--warning); }}.优先级-高 { background:var(--warning); }}.priority-HIGH { background:var(--warning); }. Priority - High { Background: var(--warning); } . Priority - High { Background: var(--warning); } }}.priority-HIGH { background:var(--warning); }. Priority - High { Background: var(--warning); } . Priority - High { Background: var(--warning); } }}
+.priority-MEDIUM { background:var(--primary); }.优先级-中等 { background：var(--primary)；}.优先级-中等 { background：var(--primary)；}.优先级-中等 { background：var(--primary)；}.优先级-中等 { background：var(--primary)；}.优先级-中等 { background：var(--primary)；}.优先级-中等 { background：var(--primary)；}.优先级-中等 { background：var(--primary)；}.优先级-中等 { background：var(--primary)；}.优先级-中等 { background：var(--primary)；}.优先级-中等 { background：var(--primary)；}.优先级-中等 { background：var(--primary)；}.优先级-中等 { background：var(--primary)；}.优先级-中等 { background：var(--primary)；}.优先级-中等 { background：var(--primary)；}.优先级-中等 { background:var(--primary);}.优先级-中等 { background:var(--primary);}.优先级-中等 { background:var(--primary);}.优先级-中等 { background:var(--primary);}.优先级-中等 { background:var(--primary);}.priority-MEDIUM { background:var(--primary); }. Priority - Medium { background: var(--primary); }. Priority - Medium { background: var(--primary); }
+.priority-LOW { background:var(--text-light); }.优先级-低 { background：var(--text-light)； }}.优先级-低 { background：var(--text-light)； }}.优先级-低 { background：var(--text-light)； }}.优先级-低 { background：var(--text-light)； }}.优先级-低 { background：var(--text-light)； }}.优先级-低 { background：var(--text-light)； }}.优先级-低 { background：var(--text-light)； }}.优先级-低 { background：var(--text-light)； }}.优先级-低 { background：var(--text-light)； }}.优先级-低 { background：var(--text-light)； }}.优先级-低 { background：var(--text-light)； }}.优先级-低 { background：var(--text-light)； }}.优先级-低 { background：var(--text-light)； }}.优先级-低 { background：var(--text-light)； }}.优先级-低 { background:var(--text-light); }}.优先级-低 { background:var(--text-light); }}.优先级-低 { background:var(--text-light); }}.优先级-低 { background:var(--text-light); }}.优先级-低 { background:var(--text-light); }}.priority-LOW { background:var(--text-light); }. Priority - Low { Background: var(--text-light); } . Priority - Low { Background: var(--text-light); } }}
+
+/* ========== Report Card ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ======/* ========== 成绩报告 ========== */==== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== *//* ========== 成绩报告 ========== */
+.report-card { padding:16px; border-radius:var(--radius-sm); background:var(--bg); margin-bottom:12px; cursor:pointer; transition:var(--transition); }.报告卡 { padding：16px； border-radius：var(--radius-sm)； background：var(--bg)； margin-bottom：12px； cursor:pointer； transition：var(--transition)； }}.报告卡 { padding：16px； border-radius：var(--radius-sm)； background：var(--bg)； margin-bottom：12px； cursor:pointer； transition：var(--transition)； }}.报告卡 { padding：16px； border-radius：var(--radius-sm)； background：var(--bg)； margin-bottom：12px； cursor:pointer； transition：var(--transition)； }}.报告卡 { padding：16px； border-radius：var(--radius-sm)； background：var(--bg)； margin-bottom：12px； cursor:pointer； transition：var(--transition)； }}.报告卡 { padding：16px； border-radius：var(--radius-sm)； background：var(--bg)； margin-bottom：12px； cursor:pointer； transition：var(--transition)； }}.报告卡 { padding：16px； border-radius：var(--radius-sm)； background：var(--bg)； margin-bottom：12px； cursor:pointer； transition：var(--transition)； }}.报告卡 { padding：16px； border-radius：var(--radius-sm)； background：var(--bg)； margin-bottom：12px； cursor:pointer； transition：var(--transition)； }}.报告卡 { padding：16px； border-radius：var(--radius-sm)； background：var(--bg)； margin-bottom：12px； cursor:pointer； transition：var(--transition)； }}.报告卡 { padding：16px； border-radius：var(--radius-sm)； background：var(--bg)； margin-bottom：12px； cursor:pointer； transition：var(--transition)； }}.报告卡 { padding：16px； border-radius：var(--radius-sm)； background：var(--bg)； margin-bottom：12px； cursor:pointer； transition：var(--transition)； }}.报告卡 { padding：16px； border-radius：var(--radius-sm)； background：var(--bg)； margin-bottom：12px； cursor:pointer； transition：var(--transition)； }}.报告卡 { padding：16px； border-radius：var(--radius-sm)； background：var(--bg)； margin-bottom：12px； cursor:pointer； transition：var(--transition)； }}.报告卡 { padding：16px； border-radius：var(--radius-sm)； background：var(--bg)； margin-bottom：12px； cursor:pointer； transition：var(--transition)； }}.报告卡 { padding：16px； border-radius：var(--radius-sm)； background：var(--bg)； margin-bottom：12px； cursor:pointer； transition：var(--transition)； }}.报告卡 { padding:16px; border-radius:var(--radius-sm); background:var(--bg); margin-bottom:12px; cursor:pointer; transition:var(--transition); }}.报告卡 { padding:16px; border-radius:var(--radius-sm); background:var(--bg); margin-bottom:12px; cursor:pointer; transition:var(--transition); }}.报告卡 { padding:16px; border-radius:var(--radius-sm); background:var(--bg); margin-bottom:12px; cursor:pointer; transition:var(--transition); }}.报告卡 { padding:16px; border-radius:var(--radius-sm); background:var(--bg); margin-bottom:12px; cursor:pointer; transition:var(--transition); }}.报告卡 { padding:16px; border-radius:var(--radius-sm); background:var(--bg); margin-bottom:12px; cursor:pointer; transition:var(--transition); }}.报告卡 { padding:16px; border-radius:var(--radius-sm); background:var(--bg); margin-bottom:12px; cursor:pointer; transition:var(--transition); }}
+.report-card:hover { box-shadow:var(--shadow); }
+.report-card .report-type { font-size:11px; padding:2px 8px; border-radius:10px; font-weight:500; display:inline-block; margin-bottom:6px; }.成绩单 .report-type { font-size：11px； padding：2px 8px； border-radius：10px； font-weight：500； display:inline-block； margin-bottom：6px； }}.成绩单 .report-type { font-size：11px； padding：2px 8px； border-radius：10px； font-weight：500； display:inline-block； margin-bottom：6px； }}.成绩单 .report-type { font-size：11px； padding：2px 8px； border-radius：10px； font-weight：500； display:inline-block； margin-bottom：6px； }}.成绩单 .report-type { font-size：11px； padding：2px 8px； border-radius：10px； font-weight：500； display:inline-block； margin-bottom：6px； }}.成绩单 .report-type { font-size：11px； padding：2px 8px； border-radius：10px； font-weight：500； display:inline-block； margin-bottom：6px； }}.成绩单 .report-type { font-size：11px； padding：2px 8px； border-radius：10px； font-weight：500； display:inline-block； margin-bottom：6px； }}.成绩单 .report-type { font-size：11px； padding：2px 8px； border-radius：10px； font-weight：500； display:inline-block； margin-bottom：6px； }}.成绩单 .report-type { font-size：11px； padding：2px 8px； border-radius：10px； font-weight：500； display:inline-block； margin-bottom：6px； }}.成绩单 .report-type { font-size：11px； padding：2px 8px； border-radius：10px； font-weight：500； display:inline-block； margin-bottom：6px； }}.成绩单 .report-type { font-size：11px； padding：2px 8px； border-radius：10px； font-weight：500； display:inline-block； margin-bottom：6px； }}.成绩单 .report-type { font-size：11px； padding：2px 8px； border-radius：10px； font-weight：500； display:inline-block； margin-bottom：6px； }}.成绩单 .report-type { font-size：11px； padding：2px 8px； border-radius：10px； font-weight：500； display:inline-block； margin-bottom：6px； }}.成绩单 .report-type { font-size：11px； padding：2px 8px； border-radius：10px； font-weight：500； display:inline-block； margin-bottom：6px； }}.成绩单 .report-type { font-size:11px; padding:2px 8px; border-radius:10px; font-weight:500; display:inline-block; margin-bottom:6px; }}.成绩单 .report-type { font-size:11px; padding:2px 8px; border-radius:10px; font-weight:500; display:inline-block; margin-bottom:6px; }}.成绩单 .report-type { font-size:11px; padding:2px 8px; border-radius:10px; font-weight:500; display:inline-block; margin-bottom:6px; }}.成绩单 .report-type { font-size:11px; padding:2px 8px; border-radius:10px; font-weight:500; display:inline-block; margin-bottom:6px; }}.成绩单 .report-type { font-size:11px; padding:2px 8px; border-radius:10px; font-weight:500; display:inline-block; margin-bottom:6px; }}.成绩单 .report-type { font-size:11px; padding:2px 8px; border-radius:10px; font-weight:500; display:inline-block; margin-bottom:6px; }}
+.report-type-DAILY { background:#EEF2FF;.报告类型-每日 { background:#EEF2FF； color：var(--primary)；} color:var(--primary); }.报告类型-每日 { background:#EEF2FF; color:var(--primary);}.报告类型-每日 { background:#EEF2FF; color:var(--primary);}.报告类型-每日 { background:#EEF2FF; color:var(--primary);}.报告类型-每日 { background:#EEF2FF; color:var(--primary);}.报告类型-每日 { background:#EEF2FF; color:var(--primary);}.报告类型-每日 { background:#EEF2FF; color:var(--primary);}.报告类型-每日 { background:#EEF2FF； color：var(--primary)；}.报告类型-每日 { background:#EEF2FF； color：var(--primary)；}.报告类型-每日 { background:#EEF2FF； color：var(--primary)；}.报告类型-每日 { background:#EEF2FF； color：var(--primary)；}.报告类型-每日 { background:#EEF2FF； color：var(--primary)；}.报告类型-每日 { background:#EEF2FF； color：var(--primary)；}.report-type-DAILY { background:#EEF2FF; color:var(--primary); }. Report Type - Daily { background: #EEF2FF; color:var(--primary); }. Report Type - Daily { background: #EEF2FF; color:var(--primary); }.报告类型-每日 { background:#EEF2FF； color：var(--primary)；}.报告类型-每日 { background:#EEF2FF； color：var(--primary)；}.报告类型-每日 { background:#EEF2FF； color：var(--primary)；}.报告类型-每日 { background:#EEF2FF； color：var(--primary)；}.报告类型-每日 { background:#EEF2FF； color：var(--primary)；}.报告类型-每日 { background:#EEF2FF； color：var(--primary)；}.报告类型-每日 { background:#EEF2FF； color：var(--primary)；}
+.report-type-MONTHLY { background:#F5F3FF;.报告类型-月度 { background:#F5F3FF； color:#8B5CF6；} color:#8B5CF6; }.报告类型-月度 { background:#F5F3FF; color:#8B5CF6;}.报告类型-月度 { background:#F5F3FF; color:#8B5CF6;}.报告类型-月度 { background:#F5F3FF; color:#8B5CF6;}.报告类型-月度 { background:#F5F3FF; color:#8B5CF6;}.报告类型-月度 { background:#F5F3FF; color:#8B5CF6;}.报告类型-月度 { background:#F5F3FF； color:#8B5CF6；}.报告类型-月度 { background:#F5F3FF； color:#8B5CF6；}.报告类型-月度 { background:#F5F3FF； color:#8B5CF6；}.报告类型-月度 { background:#F5F3FF； color:#8B5CF6；}.报告类型-月度 { background:#F5F3FF； color:#8B5CF6；}.报告类型-月度 { background:#F5F3FF； color:#8B5CF6；}.报告类型-月度 { background:#F5F3FF； color:#8B5CF6；}.报告类型-月度 { background:#F5F3FF； color:#8B5CF6；}.报告类型-月度 { background:#F5F3FF； color:#8B5CF6；}.报告类型-月度 { background:#F5F3FF； color:#8B5CF6；}.报告类型-月度 { background:#F5F3FF； color:#8B5CF6；}.报告类型-月度 { background:#F5F3FF； color:#8B5CF6；}.报告类型-月度 { background:#F5F3FF； color:#8B5CF6；}.报告类型-月度 { background:#F5F3FF； color:#8B5CF6；}
+.report-type-YEARLY { background:#FFF7ED; color:var(--warning); }.报告类型-年度 { background:#FFF7ED; color:var(--warning); }}.报告类型-年度 { background:#FFF7ED; color:var(--warning); }}.报告类型-年度 { background:#FFF7ED; color:var(--warning); }}.报告类型-年度 { background:#FFF7ED; color:var(--warning); }}.报告类型-年度 { background:#FFF7ED; color:var(--warning); }}.报告类型-年度 { background:#FFF7ED; color:var(--warning); }}.报告类型-年度 { background:#FFF7ED； color：var(--warning)； }}.报告类型-年度 { background:#FFF7ED； color：var(--warning)； }}.报告类型-年度 { background:#FFF7ED； color：var(--warning)； }}.报告类型-年度 { background:#FFF7ED； color：var(--warning)； }}.报告类型-年度 { background:#FFF7ED； color：var(--warning)； }}.报告类型-年度 { background:#FFF7ED； color：var(--warning)； }}.报告类型-年度 { background:#FFF7ED； color：var(--warning)； }}.报告类型-年度 { background:#FFF7ED； color：var(--warning)； }}.报告类型-年度 { background:#FFF7ED； color：var(--warning)； }}.报告类型-年度 { background:#FFF7ED； color：var(--warning)； }}.报告类型-年度 { background:#FFF7ED； color：var(--warning)； }}.报告类型-年度 { background:#FFF7ED； color：var(--warning)； }}.报告类型-年度 { background:#FFF7ED； color：var(--warning)； }}.报告类型-年度 { background:#FFF7ED； color：var(--warning)； }}
+.report-card .report-title { font-weight:600; font-size:15px; }.成绩单 .report-title { font-weight：600； font-size：15px； }}.成绩单 .report-title { font-weight：600； font-size：15px； }}.成绩单 .report-title { font-weight：600； font-size：15px； }}.成绩单 .report-title { font-weight：600； font-size：15px； }}.成绩单 .report-title { font-weight：600； font-size：15px； }}.成绩单 .report-title { font-weight：600； font-size：15px； }}.成绩单 .report-title { font-weight：600； font-size：15px； }}.成绩单 .report-title { font-weight：600； font-size：15px； }}.成绩单 .report-title { font-weight：600； font-size：15px； }}.成绩单 .report-title { font-weight：600； font-size：15px； }}.成绩单 .report-title { font-weight：600； font-size：15px； }}.成绩单 .report-title { font-weight：600； font-size：15px； }}.成绩单 .report-title { font-weight:600; font-size:15px; }}.成绩单 .report-title { font-weight:600; font-size:15px; }}.成绩单 .report-title { font-weight:600; font-size:15px; }}.成绩单 .report-title { font-weight:600; font-size:15px; }}.成绩单 .report-title { font-weight:600; font-size:15px; }}.成绩单 .report-title { font-weight:600; font-size:15px; }}.成绩单 .report-title { font-weight:600; font-size:15px; }}
+.report-card .report-date { font-size:12px; color:var(--text-secondary); }.成绩单 .report-date { font-size：12px； color：var(--text-secondary)； }}.成绩单 .report-date { font-size：12px； color：var(--text-secondary)； }}.成绩单 .report-date { font-size：12px； color：var(--text-secondary)； }}.成绩单 .report-date { font-size：12px； color：var(--text-secondary)； }}.成绩单 .report-date { font-size：12px； color：var(--text-secondary)； }}.成绩单 .report-date { font-size：12px； color：var(--text-secondary)； }}.成绩单 .report-date { font-size：12px； color：var(--text-secondary)； }}.成绩单 .report-date { font-size：12px； color：var(--text-secondary)； }}.成绩单 .report-date { font-size：12px； color：var(--text-secondary)； }}.成绩单 .report-date { font-size：12px； color：var(--text-secondary)； }}.成绩单 .report-date { font-size：12px； color：var(--text-secondary)； }}.成绩单 .report-date { font-size：12px； color：var(--text-secondary)； }}.成绩单 .report-date { font-size:12px; color:var(--text-secondary); }}.成绩单 .report-date { font-size:12px; color:var(--text-secondary); }}.成绩单 .report-date { font-size:12px; color:var(--text-secondary); }}.成绩单 .report-date { font-size:12px; color:var(--text-secondary); }}.成绩单 .report-date { font-size:12px; color:var(--text-secondary); }}.成绩单 .report-date { font-size:12px; color:var(--text-secondary); }}
+
+/* ========== Responsive ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* =========/* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== */= 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== *//* ========== 响应式设计 ========== */
+@media (max-width:768px) {
+  .sidebar { width:200px; }   .侧边栏 { width：200px；}   .侧边栏 { width：200px；}   .侧边栏 { width：200px；}   .侧边栏 { width：200px；}   .侧边栏 { width：200px；}   .侧边栏 { width：200px；}   .侧边栏 { width：200px；}   .侧边栏 { width：200px；}   .侧边栏 { width：200px；}   .侧边栏 { width：200px；}   .侧边栏 { width：200px；}   .侧边栏 { width：200px；}   .侧边栏 { width：200px；}   .侧边栏 { width:200px;}   .侧边栏 { width:200px;}   .侧边栏 { width:200px;}   .侧边栏 { width:200px;}   .侧边栏 { width:200px;}   .侧边栏 { width:200px;}
+  .main-content { margin-left:200px; padding:16px; }
+  .stats-grid { grid-template-columns:repeat(2, 1fr); }.stats-grid { grid-template-columns: repeat(2, 1fr); }}.stats-grid { grid-template-columns: repeat(2, 1fr); }}.stats-grid { grid-template-columns: repeat(2, 1fr); }}.stats-grid { grid-template-columns: repeat(2, 1fr); }}.stats-grid { grid-template-columns: repeat(2, 1fr); }}.stats-grid { grid-template-columns: repeat(2, 1fr); }}.stats-grid { grid-template-columns: repeat(2, 1fr); }}.stats-grid { grid-template-columns: repeat(2, 1fr); }}.stats-grid { grid-template-columns: repeat(2, 1fr); }}.stats-grid { grid-template-columns: repeat(2, 1fr); }}.stats-grid { grid-template-columns: repeat(2, 1fr); }}.stats-grid { grid-template-columns: repeat(2, 1fr); }}.stats-grid { grid-template-columns: repeat(2, 1fr); }}.stats-grid { grid-template-columns: repeat(2, 1fr); }}.stats-grid { grid-template-columns: repeat(2, 1fr); }}.stats-grid { grid-template-columns: repeat(2, 1fr); }}
+  .form-row { grid-template-columns:1fr; }.form-row { grid-template-columns:1fr; }}.form-row { grid-template-columns:1fr; }}.form-row { grid-template-columns:1fr; }}.form-row { grid-template-columns:1fr; }}.form-row { grid-template-columns:1fr; }}.form-row { grid-template-columns:1fr; }}.form-row { grid-template-columns:1fr; }}.form-row { grid-template-columns:1fr; }}.form-row { grid-template-columns:1fr; }}.form-row { grid-template-columns:1fr; }}.form-row { grid-template-columns:1fr; }}.form-row { grid-template-columns:1fr; }}.form-row { grid-template-columns:1fr; }}.form-row { grid-template-columns:1fr; }}.form-row { grid-template-columns:1fr; }}.form-row { grid-template-columns:1fr; }}
+  .calendar-day { min-height:50px; font-size:12px; }
+  .active-timer { flex-direction:column; text-align:center; }
+  .mall-grid { grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); }.mall-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }}.mall-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }}.mall-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }}.mall-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }}.mall-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }}.mall-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }}.mall-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }}.mall-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }}.mall-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }}.mall-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }}.mall-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }}.mall-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }}.mall-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }}.mall-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }}.mall-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }}.mall-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }}.mall-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }}
+}
