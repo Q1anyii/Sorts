@@ -1,0 +1,1737 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>梭子 - 智能日程管理</title>
+<script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
+<script src="https://unpkg.com/vue-router@4.3.0/dist/vue-router.global.prod.js"></script>
+<style>
+/* ========== CSS Reset & Variables ========== */
+:root {
+  --primary: #4A6CF7;
+  --primary-light: #EEF1FE;
+  --primary-dark: #3B54D4;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --info: #6366F1;
+  --bg: #F5F6FA;
+  --bg-card: #FFFFFF;
+  --bg-sidebar: #1E1F2B;
+  --text: #1E293B;
+  --text-secondary: #64748B;
+  --text-light: #94A3B8;
+  --border: #E2E8F0;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+  --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,.1), 0 4px 6px rgba(0,0,0,.05);
+  --transition: all .2s ease;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
+a { color:var(--primary); text-decoration:none; }
+input,textarea,select,button { font-family:inherit; font-size:inherit; }
+
+/* ========== Scrollbar ========== */
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-thumb { background:#CBD5E1; border-radius:3px; }
+::-webkit-scrollbar-track { background:transparent; }
+
+/* ========== Login Page ========== */
+.login-page {
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding:20px;
+}
+.login-card {
+  background:var(--bg-card); border-radius:20px; padding:48px 40px;
+  width:100%; max-width:440px; box-shadow:var(--shadow-lg);
+}
+.login-logo { text-align:center; margin-bottom:32px; }
+.login-logo .icon { width:64px; height:64px; background:linear-gradient(135deg, var(--primary), #8B5CF6); border-radius:16px; display:inline-flex; align-items:center; justify-content:center; font-size:32px; color:#fff; }
+.login-logo h1 { font-size:24px; margin-top:12px; color:var(--text); }
+.login-logo p { color:var(--text-secondary); font-size:14px; margin-top:4px; }
+.form-group { margin-bottom:20px; }
+.form-group label { display:block; font-size:14px; font-weight:500; margin-bottom:6px; color:var(--text); }
+.form-group input { width:100%; padding:10px 14px; border:2px solid var(--border); border-radius:var(--radius-sm); outline:none; transition:var(--transition); font-size:15px; }
+.form-group input:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(74,108,247,.15); }
+.form-modes { display:flex; gap:0; margin-bottom:24px; background:var(--bg); border-radius:var(--radius-sm); padding:4px; }
+.form-mode { flex:1; text-align:center; padding:8px; border-radius:6px; cursor:pointer; font-size:14px; font-weight:500; transition:var(--transition); color:var(--text-secondary); }
+.form-mode.active { background:#fff; color:var(--primary); box-shadow:var(--shadow); }
+
+/* ========== Buttons ========== */
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:10px 20px; border:none; border-radius:var(--radius-sm); font-weight:500; cursor:pointer; transition:var(--transition); font-size:14px; white-space:nowrap; }
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-primary:hover { background:var(--primary-dark); transform:translateY(-1px); }
+.btn-success { background:var(--success); color:#fff; }
+.btn-success:hover { filter:brightness(.9); }
+.btn-warning { background:var(--warning); color:#fff; }
+.btn-danger { background:var(--danger); color:#fff; }
+.btn-outline { background:transparent; border:2px solid var(--border); color:var(--text); }
+.btn-outline:hover { border-color:var(--primary); color:var(--primary); }
+.btn-sm { padding:6px 12px; font-size:12px; }
+.btn-lg { padding:14px 28px; font-size:16px; }
+.btn-block { width:100%; }
+.btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+
+/* ========== App Layout ========== */
+.app-layout { display:flex; min-height:100vh; }
+.sidebar {
+  width:240px; background:var(--bg-sidebar); color:#fff; display:flex;
+  flex-direction:column; position:fixed; top:0; left:0; bottom:0; z-index:100;
+  transition:var(--transition);
+}
+.sidebar-brand { padding:24px 20px; display:flex; align-items:center; gap:12px; border-bottom:1px solid rgba(255,255,255,.1); }
+.sidebar-brand .brand-icon { width:40px; height:40px; background:linear-gradient(135deg, var(--primary), #8B5CF6); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; }
+.sidebar-brand h2 { font-size:18px; font-weight:600; }
+.sidebar-nav { flex:1; padding:16px 12px; overflow-y:auto; }
+.nav-section { margin-bottom:8px; }
+.nav-section-title { font-size:11px; text-transform:uppercase; color:rgba(255,255,255,.35); padding:8px 12px 4px; letter-spacing:1px; }
+.nav-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); cursor:pointer; transition:var(--transition); color:rgba(255,255,255,.65); margin-bottom:2px; font-size:14px; }
+.nav-item:hover { background:rgba(255,255,255,.08); color:#fff; }
+.nav-item.active { background:rgba(255,255,255,.12); color:#fff; font-weight:500; }
+.nav-item .nav-icon { width:20px; text-align:center; font-size:16px; }
+.nav-item .badge { margin-left:auto; background:var(--danger); color:#fff; font-size:11px; padding:2px 6px; border-radius:10px; min-width:20px; text-align:center; }
+
+.sidebar-footer { padding:16px; border-top:1px solid rgba(255,255,255,.1); }
+.user-mini { display:flex; align-items:center; gap:10px; cursor:pointer; padding:8px; border-radius:var(--radius-sm); transition:var(--transition); }
+.user-mini:hover { background:rgba(255,255,255,.08); }
+.user-avatar { width:36px; height:36px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; font-size:16px; color:#fff; font-weight:600; flex-shrink:0; }
+.user-mini-info { flex:1; min-width:0; }
+.user-mini-info .name { font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.user-mini-info .points { font-size:11px; color:rgba(255,255,255,.5); }
+
+.main-content { flex:1; margin-left:240px; padding:28px; min-height:100vh; }
+
+/* ========== Page Header ========== */
+.page-header { margin-bottom:24px; }
+.page-header h2 { font-size:24px; font-weight:700; }
+.page-header p { color:var(--text-secondary); font-size:14px; margin-top:4px; }
+
+/* ========== Cards ========== */
+.card { background:var(--bg-card); border-radius:var(--radius); padding:24px; box-shadow:var(--shadow); border:1px solid var(--border); }
+.card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.card-title { font-size:16px; font-weight:600; }
+
+/* ========== Stats Grid ========== */
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:24px; }
+.stat-card { background:var(--bg-card); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); border:1px solid var(--border); display:flex; align-items:center; gap:16px; }
+.stat-icon { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+.stat-icon.blue { background:#EEF2FF; color:var(--primary); }
+.stat-icon.green { background:#ECFDF5; color:var(--success); }
+.stat-icon.orange { background:#FFF7ED; color:var(--warning); }
+.stat-icon.purple { background:#F5F3FF; color:#8B5CF6; }
+.stat-value { font-size:24px; font-weight:700; }
+.stat-label { font-size:13px; color:var(--text-secondary); }
+
+/* ========== Calendar ========== */
+.calendar { width:100%; }
+.calendar-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.calendar-nav { display:flex; align-items:center; gap:12px; }
+.calendar-nav button { width:32px; height:32px; border:none; background:var(--bg); border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:var(--transition); }
+.calendar-nav button:hover { background:var(--primary-light); color:var(--primary); }
+.calendar-nav .month-label { font-size:16px; font-weight:600; min-width:140px; text-align:center; }
+.calendar-grid { display:grid; grid-template-columns:repeat(7, 1fr); gap:2px; }
+.calendar-day-header { text-align:center; font-size:12px; font-weight:600; color:var(--text-secondary); padding:8px; }
+.calendar-day { aspect-ratio:1; padding:6px; border-radius:var(--radius-sm); cursor:pointer; transition:var(--transition); border:2px solid transparent; position:relative; min-height:80px; }
+.calendar-day:hover { background:var(--primary-light); }
+.calendar-day.today { border-color:var(--primary); background:var(--primary-light); }
+.calendar-day.other-month { opacity:.35; }
+.calendar-day .day-num { font-size:13px; font-weight:500; margin-bottom:2px; }
+.calendar-day.today .day-num { color:var(--primary); font-weight:700; }
+.calendar-day .day-dots { display:flex; flex-wrap:wrap; gap:2px; }
+.calendar-day .day-dot { width:6px; height:6px; border-radius:50%; }
+.calendar-day .day-more { font-size:10px; color:var(--text-light); }
+
+/* ========== Schedule List ========== */
+.schedule-item { display:flex; align-items:center; gap:14px; padding:16px; border-radius:var(--radius-sm); background:var(--bg); margin-bottom:8px; transition:var(--transition); border-left:3px solid transparent; cursor:pointer; }
+.schedule-item:hover { box-shadow:var(--shadow-md); }
+.schedule-item .time-block { text-align:center; min-width:64px; }
+.schedule-item .time-block .time { font-size:15px; font-weight:600; }
+.schedule-item .time-block .duration { font-size:11px; color:var(--text-secondary); }
+.schedule-item .schedule-info { flex:1; min-width:0; }
+.schedule-item .schedule-info .title { font-weight:500; font-size:15px; }
+.schedule-item .schedule-info .desc { font-size:13px; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.schedule-item .schedule-tags { display:flex; gap:4px; flex-wrap:wrap; }
+.schedule-item .tag { font-size:11px; padding:2px 8px; border-radius:12px; background:var(--primary-light); color:var(--primary); }
+.schedule-item .schedule-actions { display:flex; gap:6px; }
+.status-badge { font-size:11px; padding:3px 10px; border-radius:12px; font-weight:500; }
+.status-PENDING { background:#F1F5F9; color:#64748B; }
+.status-IN_PROGRESS { background:#FEF3C7; color:#D97706; }
+.status-PAUSED { background:#FEE2E2; color:#DC2626; }
+.status-COMPLETED { background:#D1FAE5; color:#059669; }
+.status-CANCELLED { background:#F1F5F9; color:#94A3B8; }
+.status-TIMEOUT { background:#FEE2E2; color:#EF4444; }
+
+/* ========== Timer Overlay ========== */
+.active-timer { background:linear-gradient(135deg, var(--primary), #8B5CF6); border-radius:var(--radius); padding:20px; color:#fff; margin-bottom:16px; display:flex; align-items:center; gap:20px; }
+.timer-display { font-size:36px; font-weight:700; font-variant-numeric:tabular-nums; }
+.timer-info { flex:1; }
+.timer-info .timer-title { font-size:16px; font-weight:500; }
+.timer-info .timer-meta { font-size:13px; opacity:.8; }
+.timer-actions { display:flex; gap:10px; }
+.timer-actions .btn { background:rgba(255,255,255,.2); color:#fff; border:1px solid rgba(255,255,255,.3); }
+.timer-actions .btn:hover { background:rgba(255,255,255,.3); }
+.timer-actions .btn-end { background:#fff; color:var(--primary); border:none; font-weight:600; }
+
+/* ========== AI Panel ========== */
+.ai-chat { border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.ai-chat-messages { height:360px; overflow-y:auto; padding:16px; background:var(--bg); }
+.ai-message { margin-bottom:14px; display:flex; gap:10px; }
+.ai-message.user { flex-direction:row-reverse; }
+.ai-avatar { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+.ai-avatar.bot { background:linear-gradient(135deg, #8B5CF6, #6366F1); color:#fff; }
+.ai-avatar.user { background:var(--primary); color:#fff; }
+.ai-bubble { max-width:75%; padding:10px 14px; border-radius:14px; font-size:14px; line-height:1.5; }
+.ai-message:not(.user) .ai-bubble { background:#fff; border:1px solid var(--border); border-top-left-radius:4px; }
+.ai-message.user .ai-bubble { background:var(--primary); color:#fff; border-top-right-radius:4px; }
+.ai-suggestions { padding:12px 16px; border-top:1px solid var(--border); display:flex; gap:8px; flex-wrap:wrap; }
+.ai-suggestion { font-size:12px; padding:6px 12px; border-radius:16px; background:var(--primary-light); color:var(--primary); cursor:pointer; transition:var(--transition); border:none; }
+.ai-suggestion:hover { background:var(--primary); color:#fff; }
+.ai-input-row { display:flex; gap:8px; padding:12px 16px; border-top:1px solid var(--border); }
+.ai-input-row input { flex:1; padding:10px 14px; border:1px solid var(--border); border-radius:20px; outline:none; font-size:14px; }
+.ai-input-row input:focus { border-color:var(--primary); }
+
+/* ========== Mall Grid ========== */
+.mall-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:16px; }
+.mall-item { background:var(--bg-card); border-radius:var(--radius); overflow:hidden; border:1px solid var(--border); transition:var(--transition); }
+.mall-item:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); }
+.mall-item-preview { height:140px; display:flex; align-items:center; justify-content:center; font-size:48px; }
+.mall-item-preview.skin-blue { background:linear-gradient(135deg, #667eea, #4A6CF7); }
+.mall-item-preview.skin-green { background:linear-gradient(135deg, #34D399, #10B981); }
+.mall-item-preview.skin-purple { background:linear-gradient(135deg, #A78BFA, #8B5CF6); }
+.mall-item-preview.skin-orange { background:linear-gradient(135deg, #FBBF24, #F59E0B); }
+.mall-item-preview.skin-pink { background:linear-gradient(135deg, #F472B6, #EC4899); }
+.mall-item-preview.skin-dark { background:linear-gradient(135deg, #1E293B, #334155); }
+.mall-item-body { padding:14px; }
+.mall-item-body .item-name { font-weight:600; font-size:14px; }
+.mall-item-body .item-desc { font-size:12px; color:var(--text-secondary); margin:4px 0; }
+.mall-item-body .item-footer { display:flex; align-items:center; justify-content:space-between; margin-top:8px; }
+.mall-item-body .item-price { font-weight:700; color:var(--warning); font-size:15px; }
+
+/* ========== Notification List ========== */
+.notif-item { display:flex; gap:12px; padding:14px; border-radius:var(--radius-sm); transition:var(--transition); border-bottom:1px solid var(--border); cursor:pointer; }
+.notif-item:hover { background:var(--bg); }
+.notif-item.unread { background:var(--primary-light); border-left:3px solid var(--primary); }
+.notif-dot { width:8px; height:8px; border-radius:50%; background:var(--primary); margin-top:6px; flex-shrink:0; }
+.notif-item.unread .notif-dot { display:block; }
+.notif-item.read .notif-dot { visibility:hidden; }
+.notif-content { flex:1; }
+.notif-content .notif-title { font-weight:500; font-size:14px; }
+.notif-content .notif-body { font-size:13px; color:var(--text-secondary); }
+.notif-content .notif-time { font-size:11px; color:var(--text-light); margin-top:2px; }
+
+/* ========== Modal ========== */
+.modal-mask { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:1000; }
+.modal-box { background:#fff; border-radius:var(--radius); width:90%; max-width:520px; max-height:85vh; overflow-y:auto; box-shadow:var(--shadow-lg); }
+.modal-header { padding:18px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.modal-header h3 { font-size:17px; }
+.modal-body { padding:24px; }
+.modal-footer { padding:16px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px; }
+
+/* ========== Forms ========== */
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.form-input { width:100%; padding:10px 14px; border:2px solid var(--border); border-radius:var(--radius-sm); outline:none; transition:var(--transition); }
+.form-input:focus { border-color:var(--primary); }
+.form-textarea { width:100%; padding:10px 14px; border:2px solid var(--border); border-radius:var(--radius-sm); outline:none; resize:vertical; min-height:80px; }
+.form-textarea:focus { border-color:var(--primary); }
+.form-select { width:100%; padding:10px 14px; border:2px solid var(--border); border-radius:var(--radius-sm); outline:none; background:#fff; }
+
+/* ========== Tabs ========== */
+.tabs { display:flex; gap:0; border-bottom:2px solid var(--border); margin-bottom:20px; }
+.tab-item { padding:10px 20px; cursor:pointer; font-size:14px; font-weight:500; color:var(--text-secondary); border-bottom:2px solid transparent; margin-bottom:-2px; transition:var(--transition); }
+.tab-item.active { color:var(--primary); border-bottom-color:var(--primary); }
+
+/* ========== Empty State ========== */
+.empty-state { text-align:center; padding:48px 20px; color:var(--text-secondary); }
+.empty-state .empty-icon { font-size:48px; margin-bottom:12px; }
+.empty-state p { font-size:14px; }
+
+/* ========== Utilities ========== */
+.flex { display:flex; }
+.flex-col { flex-direction:column; }
+.items-center { align-items:center; }
+.justify-between { justify-content:space-between; }
+.gap-2 { gap:8px; }
+.gap-3 { gap:12px; }
+.gap-4 { gap:16px; }
+.mt-2 { margin-top:8px; }
+.mt-3 { margin-top:12px; }
+.mt-4 { margin-top:16px; }
+.mb-2 { margin-bottom:8px; }
+.mb-3 { margin-bottom:12px; }
+.mb-4 { margin-bottom:16px; }
+.text-sm { font-size:13px; }
+.text-secondary { color:var(--text-secondary); }
+.text-center { text-align:center; }
+.font-bold { font-weight:700; }
+.truncate { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.w-full { width:100%; }
+
+/* ========== Tag Colors ========== */
+.tag-study { background:#EEF2FF; color:#4A6CF7; }
+.tag-work { background:#FEF3C7; color:#D97706; }
+.tag-life { background:#ECFDF5; color:#059669; }
+.tag-sport { background:#FEE2E2; color:#EF4444; }
+.tag-other { background:#F1F5F9; color:#64748B; }
+
+/* ========== Priority Indicators ========== */
+.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+.priority-URGENT { background:var(--danger); }
+.priority-HIGH { background:var(--warning); }
+.priority-MEDIUM { background:var(--primary); }
+.priority-LOW { background:var(--text-light); }
+
+/* ========== Report Card ========== */
+.report-card { padding:16px; border-radius:var(--radius-sm); background:var(--bg); margin-bottom:12px; cursor:pointer; transition:var(--transition); }
+.report-card:hover { box-shadow:var(--shadow); }
+.report-card .report-type { font-size:11px; padding:2px 8px; border-radius:10px; font-weight:500; display:inline-block; margin-bottom:6px; }
+.report-type-DAILY { background:#EEF2FF; color:var(--primary); }
+.report-type-MONTHLY { background:#F5F3FF; color:#8B5CF6; }
+.report-type-YEARLY { background:#FFF7ED; color:var(--warning); }
+.report-card .report-title { font-weight:600; font-size:15px; }
+.report-card .report-date { font-size:12px; color:var(--text-secondary); }
+
+/* ========== Responsive ========== */
+@media (max-width:768px) {
+  .sidebar { width:200px; }
+  .main-content { margin-left:200px; padding:16px; }
+  .stats-grid { grid-template-columns:repeat(2, 1fr); }
+  .form-row { grid-template-columns:1fr; }
+  .calendar-day { min-height:50px; font-size:12px; }
+  .active-timer { flex-direction:column; text-align:center; }
+  .mall-grid { grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Login View -->
+  <div v-if="!isLoggedIn" class="login-page">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="icon">🚀</div>
+        <h1>梭子</h1>
+        <p>智能日程管理 · AI 驱动高效生活</p>
+      </div>
+      <div class="form-modes">
+        <div class="form-mode" :class="{active: authMode==='login'}" @click="authMode='login'">登录</div>
+        <div class="form-mode" :class="{active: authMode==='register'}" @click="authMode='register'">注册</div>
+      </div>
+      <form @submit.prevent="handleAuth">
+        <div class="form-group">
+          <label>用户名</label>
+          <input type="text" v-model="authForm.username" required placeholder="请输入用户名">
+        </div>
+        <div class="form-group" v-if="authMode==='register'">
+          <label>邮箱</label>
+          <input type="email" v-model="authForm.email" required placeholder="请输入邮箱">
+        </div>
+        <div class="form-group">
+          <label>密码</label>
+          <input type="password" v-model="authForm.password" required placeholder="请输入密码">
+        </div>
+        <div class="form-group" v-if="authMode==='register'">
+          <label>昵称（可选）</label>
+          <input type="text" v-model="authForm.nickname" placeholder="给自己起个名字吧">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" :disabled="authLoading">
+          {{ authLoading ? '请稍候...' : (authMode==='login' ? '登 录' : '注 册') }}
+        </button>
+        <p style="text-align:center;margin-top:12px;font-size:12px;color:var(--text-secondary);">
+          演示环境，输入任意用户名密码即可进入
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div v-else class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">🚀</div>
+        <h2>梭子</h2>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">主菜单</div>
+          <div class="nav-item" :class="{active: currentPage==='dashboard'}" @click="currentPage='dashboard'">
+            <span class="nav-icon">📊</span> 工作台
+          </div>
+          <div class="nav-item" :class="{active: currentPage==='calendar'}" @click="currentPage='calendar'">
+            <span class="nav-icon">📅</span> 日历
+          </div>
+          <div class="nav-item" :class="{active: currentPage==='schedules'}" @click="currentPage='schedules'">
+            <span class="nav-icon">📋</span> 日程列表
+          </div>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">智能助手</div>
+          <div class="nav-item" :class="{active: currentPage==='ai'}" @click="currentPage='ai'">
+            <span class="nav-icon">🤖</span> AI 助手
+          </div>
+          <div class="nav-item" :class="{active: currentPage==='reports'}" @click="currentPage='reports'">
+            <span class="nav-icon">📝</span> 总结报告
+          </div>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">更多</div>
+          <div class="nav-item" :class="{active: currentPage==='stats'}" @click="currentPage='stats'">
+            <span class="nav-icon">📈</span> 统计分析
+          </div>
+          <div class="nav-item" :class="{active: currentPage==='mall'}" @click="currentPage='mall'">
+            <span class="nav-icon">🛒</span> 积分商城
+          </div>
+          <div class="nav-item" :class="{active: currentPage==='notifications'}" @click="currentPage='notifications'">
+            <span class="nav-icon">🔔</span> 消息通知
+            <span class="badge" v-if="unreadNotifCount">{{ unreadNotifCount }}</span>
+          </div>
+          <div class="nav-item" :class="{active: currentPage==='profile'}" @click="currentPage='profile'">
+            <span class="nav-icon">⚙️</span> 个人设置
+          </div>
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-mini" @click="currentPage='profile'">
+          <div class="user-avatar">{{ userInfo.nickname ? userInfo.nickname[0] : 'U' }}</div>
+          <div class="user-mini-info">
+            <div class="name">{{ userInfo.nickname || userInfo.username }}</div>
+            <div class="points">⭐ {{ userInfo.points }} 积分</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+
+      <!-- ============ DASHBOARD ============ -->
+      <div v-if="currentPage==='dashboard'">
+        <div class="page-header">
+          <h2>👋 你好，{{ userInfo.nickname || userInfo.username }}</h2>
+          <p>{{ todayStr }} · 今天也要高效哦！</p>
+        </div>
+
+        <!-- Active Timer -->
+        <div class="active-timer" v-if="activeSchedule" style="margin-bottom:16px;">
+          <div class="timer-display">{{ formatTimer(elapsedSeconds) }}</div>
+          <div class="timer-info">
+            <div class="timer-title">🔴 进行中：{{ activeSchedule.title }}</div>
+            <div class="timer-meta">计划开始 {{ formatTime(activeSchedule.plannedStartTime) }} · 预计 {{ activeSchedule.plannedDuration }}分钟</div>
+          </div>
+          <div class="timer-actions">
+            <button v-if="activeSchedule.status==='IN_PROGRESS'" class="btn btn-sm" @click="pauseSchedule(activeSchedule)">
+              ⏸ 暂停
+            </button>
+            <button v-if="activeSchedule.status==='PAUSED'" class="btn btn-sm" @click="resumeSchedule(activeSchedule)">
+              ▶ 继续
+            </button>
+            <button class="btn btn-sm btn-end" @click="endSchedule(activeSchedule)">
+              ⏹ 结束
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon blue">📋</div>
+            <div>
+              <div class="stat-value">{{ todayStats.total }}</div>
+              <div class="stat-label">今日日程</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green">✅</div>
+            <div>
+              <div class="stat-value">{{ todayStats.completed }}</div>
+              <div class="stat-label">已完成</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon orange">⏱</div>
+            <div>
+              <div class="stat-value">{{ formatMinutes(todayStats.focusMinutes) }}</div>
+              <div class="stat-label">专注时长</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon purple">⭐</div>
+            <div>
+              <div class="stat-value">{{ userInfo.points }}</div>
+              <div class="stat-label">我的积分</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today Schedule & Upcoming -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📌 今日日程</div>
+              <button class="btn btn-primary btn-sm" @click="showScheduleModal=true; editingSchedule=null">+ 新建</button>
+            </div>
+            <div v-if="todaySchedules.length===0" class="empty-state">
+              <div class="empty-icon">🎉</div>
+              <p>今天还没有日程，去创建一个吧！</p>
+            </div>
+            <div v-for="s in todaySchedules" :key="s.id" class="schedule-item" @click="openScheduleDetail(s)">
+              <div class="time-block">
+                <div class="time">{{ formatTime(s.plannedStartTime) }}</div>
+                <div class="duration">{{ s.plannedDuration }}分钟</div>
+              </div>
+              <div class="schedule-info">
+                <div class="title">{{ s.title }}</div>
+                <div class="desc" v-if="s.description">{{ s.description }}</div>
+              </div>
+              <div class="schedule-tags">
+                <span class="tag" v-for="t in s.tags" :key="t">{{ t }}</span>
+              </div>
+              <span class="status-badge" :class="'status-'+s.status">{{ statusLabel(s.status) }}</span>
+              <div class="schedule-actions" @click.stop>
+                <button v-if="s.status==='PENDING'" class="btn btn-success btn-sm" @click="startSchedule(s)">▶ 开始</button>
+                <button v-if="s.status==='PENDING'" class="btn btn-outline btn-sm" @click="editSchedule(s)">✎</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">🔮 即将到来</div>
+            </div>
+            <div v-if="upcomingSchedules.length===0" class="empty-state">
+              <div class="empty-icon">📭</div>
+              <p>未来几天暂无日程安排</p>
+            </div>
+            <div v-for="s in upcomingSchedules" :key="s.id" class="schedule-item">
+              <div class="time-block">
+                <div class="time">{{ formatDate(s.plannedStartTime) }}</div>
+                <div class="duration">{{ formatTime(s.plannedStartTime) }}</div>
+              </div>
+              <div class="schedule-info">
+                <div class="title">{{ s.title }}</div>
+              </div>
+              <span class="status-badge" :class="'status-'+s.status">{{ statusLabel(s.status) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ CALENDAR ============ -->
+      <div v-if="currentPage==='calendar'">
+        <div class="page-header">
+          <h2>📅 日历视图</h2>
+          <p>查看和管理你的日程安排</p>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="calendar">
+            <div class="calendar-header">
+              <div class="calendar-nav">
+                <button @click="prevMonth">◀</button>
+                <span class="month-label">{{ calYear }}年 {{ calMonth }}月</span>
+                <button @click="nextMonth">▶</button>
+              </div>
+              <button class="btn btn-outline btn-sm" @click="goToToday">回到今天</button>
+            </div>
+            <div class="calendar-grid">
+              <div class="calendar-day-header" v-for="d in dayHeaders" :key="d">{{ d }}</div>
+              <div
+                v-for="day in calendarDays" :key="day.key"
+                class="calendar-day"
+                :class="{
+                  'today': day.isToday,
+                  'other-month': !day.isCurrentMonth
+                }"
+                @click="selectCalendarDay(day)"
+              >
+                <div class="day-num">{{ day.dayOfMonth }}</div>
+                <div class="day-dots">
+                  <span
+                    v-for="(c, i) in day.colors.slice(0,4)" :key="i"
+                    class="day-dot" :style="{background:c}"
+                  ></span>
+                </div>
+                <div class="day-more" v-if="day.totalCount > 4">+{{ day.totalCount - 4 }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Selected Day Schedules -->
+        <div class="card" v-if="selectedDaySchedules !== null">
+          <div class="card-header">
+            <div class="card-title">📋 {{ selectedDayLabel }} 的日程</div>
+            <button class="btn btn-primary btn-sm" @click="showScheduleModal=true; editingSchedule=null; scheduleForm.plannedStartTime=selectedDayDate">+ 新建</button>
+          </div>
+          <div v-if="selectedDaySchedules.length===0" class="empty-state">
+            <p>当天无日程</p>
+          </div>
+          <div v-for="s in selectedDaySchedules" :key="s.id" class="schedule-item" @click="openScheduleDetail(s)">
+            <div class="time-block">
+              <div class="time">{{ formatTime(s.plannedStartTime) }}</div>
+              <div class="duration">{{ s.plannedDuration }}分钟</div>
+            </div>
+            <div class="schedule-info">
+              <div class="title">{{ s.title }}</div>
+              <div class="desc" v-if="s.description">{{ s.description }}</div>
+            </div>
+            <div class="schedule-tags">
+              <span class="tag" v-for="t in s.tags" :key="t">{{ t }}</span>
+            </div>
+            <span class="status-badge" :class="'status-'+s.status">{{ statusLabel(s.status) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ SCHEDULE LIST ============ -->
+      <div v-if="currentPage==='schedules'">
+        <div class="page-header">
+          <h2>📋 日程列表</h2>
+          <p>管理你的所有日程</p>
+        </div>
+        <!-- Filters -->
+        <div class="card mb-4" style="margin-bottom:16px;">
+          <div class="flex items-center gap-3" style="flex-wrap:wrap;">
+            <select class="form-select" v-model="scheduleFilter.status" style="width:140px;">
+              <option value="">全部状态</option>
+              <option value="PENDING">待开始</option>
+              <option value="IN_PROGRESS">进行中</option>
+              <option value="PAUSED">已暂停</option>
+              <option value="COMPLETED">已完成</option>
+              <option value="CANCELLED">已取消</option>
+            </select>
+            <select class="form-select" v-model="scheduleFilter.priority" style="width:120px;">
+              <option value="">全部优先级</option>
+              <option value="URGENT">紧急</option>
+              <option value="HIGH">高</option>
+              <option value="MEDIUM">中</option>
+              <option value="LOW">低</option>
+            </select>
+            <input class="form-input" v-model="scheduleFilter.keyword" placeholder="🔍 搜索日程..." style="width:200px;">
+            <button class="btn btn-primary btn-sm" @click="showScheduleModal=true; editingSchedule=null">+ 新建日程</button>
+          </div>
+        </div>
+        <!-- List -->
+        <div class="card">
+          <div v-for="s in filteredSchedules" :key="s.id" class="schedule-item" @click="openScheduleDetail(s)" style="cursor:pointer;">
+            <div class="time-block">
+              <div class="time">{{ formatDate(s.plannedStartTime) }}</div>
+              <div class="duration">{{ formatTime(s.plannedStartTime) }}</div>
+            </div>
+            <div class="schedule-info">
+              <div class="title">
+                <span class="priority-dot" :class="'priority-'+s.priority" style="margin-right:6px;"></span>
+                {{ s.title }}
+              </div>
+              <div class="desc" v-if="s.description">{{ s.description }}</div>
+            </div>
+            <div class="schedule-tags">
+              <span class="tag" v-for="t in s.tags" :key="t">{{ t }}</span>
+            </div>
+            <span class="status-badge" :class="'status-'+s.status">{{ statusLabel(s.status) }}</span>
+            <div class="schedule-actions" @click.stop>
+              <button v-if="s.status==='PENDING'" class="btn btn-success btn-sm" @click="startSchedule(s)">▶</button>
+              <button class="btn btn-outline btn-sm" @click="editSchedule(s)">✎</button>
+              <button class="btn btn-danger btn-sm" @click="deleteSchedule(s)">✕</button>
+            </div>
+          </div>
+          <div v-if="filteredSchedules.length===0" class="empty-state">
+            <div class="empty-icon">📭</div>
+            <p>没有找到匹配的日程</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ AI ASSISTANT ============ -->
+      <div v-if="currentPage==='ai'">
+        <div class="page-header">
+          <h2>🤖 AI 智能助手</h2>
+          <p>用自然语言描述你的需求，AI 帮你规划日程</p>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <!-- Chat -->
+          <div class="card" style="padding:0; overflow:hidden;">
+            <div class="ai-chat">
+              <div class="ai-chat-messages" ref="aiChatMessages">
+                <div class="ai-message" v-for="(msg, i) in aiMessages" :key="i" :class="msg.role">
+                  <div class="ai-avatar" :class="msg.role">{{ msg.role === 'user' ? '👤' : '🤖' }}</div>
+                  <div class="ai-bubble">{{ msg.content }}</div>
+                </div>
+                <div v-if="aiLoading" class="ai-message">
+                  <div class="ai-avatar bot">🤖</div>
+                  <div class="ai-bubble">思考中...</div>
+                </div>
+              </div>
+              <div class="ai-suggestions">
+                <button class="ai-suggestion" @click="aiQuickPrompt('帮我规划明天的日程')">📅 规划明天</button>
+                <button class="ai-suggestion" @click="aiQuickPrompt('分析我这周的效率')">📊 周效率分析</button>
+                <button class="ai-suggestion" @click="aiQuickPrompt('生成今日总结')">📝 今日总结</button>
+                <button class="ai-suggestion" @click="aiQuickPrompt('给我一些时间管理建议')">💡 管理建议</button>
+              </div>
+              <div class="ai-input-row">
+                <input v-model="aiInput" @keyup.enter="sendAiMessage" placeholder="输入你的需求，例如：明天上午学习2小时Java...">
+                <button class="btn btn-primary btn-sm" @click="sendAiMessage" :disabled="aiLoading">发送</button>
+              </div>
+            </div>
+          </div>
+          <!-- Plan Display -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📋 生成的规划建议</div>
+              <button v-if="aiSuggestions.length>0" class="btn btn-success btn-sm" @click="adoptAllSuggestions">一键全部采纳</button>
+            </div>
+            <div v-if="aiSuggestions.length===0" class="empty-state">
+              <div class="empty-icon">🤖</div>
+              <p>在左侧输入你的需求，AI 会生成规划建议</p>
+            </div>
+            <div v-for="(sg, i) in aiSuggestions" :key="i" style="padding:12px; border-radius:8px; background:var(--bg); margin-bottom:8px; display:flex; align-items:center; gap:12px;">
+              <div style="width:4px; height:40px; border-radius:2px; background:var(--primary); flex-shrink:0;"></div>
+              <div style="flex:1;">
+                <div style="font-weight:500; font-size:14px;">{{ sg.title }}</div>
+                <div style="font-size:12px; color:var(--text-secondary);">
+                  🕐 {{ sg.suggestedStart }} · ⏱ {{ sg.duration }}分钟
+                  <span v-if="sg.priority" style="margin-left:8px;">· 优先级: {{ sg.priority }}</span>
+                </div>
+                <div style="font-size:12px; color:var(--text-light);" v-if="sg.reason">💡 {{ sg.reason }}</div>
+              </div>
+              <button class="btn btn-success btn-sm" @click="adoptSuggestion(i)">采纳</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ AI REPORTS ============ -->
+      <div v-if="currentPage==='reports'">
+        <div class="page-header">
+          <h2>📝 总结报告</h2>
+          <p>AI 生成的智能总结与效率分析</p>
+        </div>
+        <div class="flex gap-3 mb-4">
+          <button class="btn btn-primary btn-sm" @click="generateReport('DAILY')">📋 生成每日总结</button>
+          <button class="btn btn-outline btn-sm" @click="generateReport('MONTHLY')">📊 生成月度总结</button>
+          <button class="btn btn-outline btn-sm" @click="generateReport('YEARLY')">📈 生成年度总结</button>
+        </div>
+        <div v-if="generatingReport" class="card mb-4" style="text-align:center; padding:32px;">
+          <div style="font-size:36px;">⏳</div>
+          <p style="margin-top:8px;">AI 正在生成报告，请稍候...</p>
+        </div>
+        <div class="card">
+          <div v-if="aiReports.length===0" class="empty-state">
+            <div class="empty-icon">📝</div>
+            <p>还没有生成的报告</p>
+          </div>
+          <div v-for="r in aiReports" :key="r.id" class="report-card" @click="viewReportDetail(r)">
+            <span class="report-type" :class="'report-type-'+r.type">{{ {DAILY:'每日', WEEKLY:'每周', MONTHLY:'月度', YEARLY:'年度'}[r.type] }}</span>
+            <div class="report-title">{{ r.title }}</div>
+            <div class="report-date">{{ r.generatedAt }}</div>
+          </div>
+        </div>
+        <!-- Report Detail Modal -->
+        <div class="modal-mask" v-if="viewingReport" @click.self="viewingReport=null">
+          <div class="modal-box" style="max-width:680px;">
+            <div class="modal-header">
+              <h3>{{ viewingReport.title }}</h3>
+              <button class="btn btn-outline btn-sm" @click="viewingReport=null">✕</button>
+            </div>
+            <div class="modal-body" style="white-space:pre-wrap; line-height:1.8;">{{ viewingReport.content }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ STATISTICS ============ -->
+      <div v-if="currentPage==='stats'">
+        <div class="page-header">
+          <h2>📈 统计分析</h2>
+          <p>深入了解你的时间使用情况</p>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon blue">📋</div>
+            <div>
+              <div class="stat-value">{{ stats.totalSchedules }}</div>
+              <div class="stat-label">本周总日程</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green">✅</div>
+            <div>
+              <div class="stat-value">{{ Math.round(stats.completionRate * 100) }}%</div>
+              <div class="stat-label">完成率</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon orange">⏱</div>
+            <div>
+              <div class="stat-value">{{ formatMinutes(Math.floor(stats.totalFocusTime / 60)) }}</div>
+              <div class="stat-label">总专注时长</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon purple">🔥</div>
+            <div>
+              <div class="stat-value">{{ stats.streakDays }}</div>
+              <div class="stat-label">连续打卡天数</div>
+            </div>
+          </div>
+        </div>
+        <!-- Trend Chart (simplified) -->
+        <div class="card mb-4">
+          <div class="card-title mb-3">📊 7日完成趋势</div>
+          <div style="display:flex; align-items:flex-end; gap:12px; height:160px; padding-top:20px;">
+            <div v-for="(d, i) in trendData" :key="i" style="flex:1; text-align:center;">
+              <div style="background:linear-gradient(180deg, var(--primary), #8B5CF6); border-radius:6px 6px 0 0; transition:height .5s;"
+                   :style="{height: (d.completionRate * 120 + 8)+'px'}"></div>
+              <div style="font-size:11px; margin-top:6px;">{{ d.day }}</div>
+              <div style="font-size:10px; color:var(--text-secondary);">{{ Math.round(d.completionRate * 100) }}%</div>
+            </div>
+          </div>
+        </div>
+        <!-- Tag Distribution -->
+        <div class="card">
+          <div class="card-title mb-3">🏷 标签时间分布</div>
+          <div v-if="tagStats.length===0" class="empty-state"><p>暂无数据</p></div>
+          <div v-for="t in tagStats" :key="t.tag" style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+            <span style="width:60px; font-size:13px;">{{ t.tag }}</span>
+            <div style="flex:1; height:20px; background:var(--bg); border-radius:10px; overflow:hidden;">
+              <div :style="{width: t.percentage*100+'%', height:'100%', background:'var(--primary)', borderRadius:'10px', transition:'width .5s'}"></div>
+            </div>
+            <span style="width:80px; font-size:12px; color:var(--text-secondary); text-align:right;">{{ formatMinutes(Math.floor(t.totalDuration/60)) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ MALL ============ -->
+      <div v-if="currentPage==='mall'">
+        <div class="page-header">
+          <h2>🛒 积分商城</h2>
+          <p>用积分兑换个性化装扮 · 当前积分：<strong>⭐ {{ userInfo.points }}</strong></p>
+        </div>
+        <div class="tabs">
+          <div class="tab-item" :class="{active: mallTab==='all'}" @click="mallTab='all'">全部</div>
+          <div class="tab-item" :class="{active: mallTab==='SKIN'}" @click="mallTab='SKIN'">🎨 主题皮肤</div>
+          <div class="tab-item" :class="{active: mallTab==='AVATAR'}" @click="mallTab='AVATAR'">🖼 头像挂件</div>
+          <div class="tab-item" :class="{active: mallTab==='BADGE'}" @click="mallTab='BADGE'">🏅 徽章</div>
+        </div>
+        <div class="mall-grid">
+          <div v-for="item in filteredMallItems" :key="item.id" class="mall-item">
+            <div class="mall-item-preview" :class="'skin-'+item.color">{{ item.type==='SKIN'?'🎨': item.type==='AVATAR'?'🖼':'🏅' }}</div>
+            <div class="mall-item-body">
+              <div class="item-name">{{ item.name }}</div>
+              <div class="item-desc">{{ item.description }}</div>
+              <div class="item-footer">
+                <span class="item-price">⭐ {{ item.price }}</span>
+                <button
+                  v-if="!item.owned"
+                  class="btn btn-warning btn-sm"
+                  :disabled="userInfo.points < item.price"
+                  @click="purchaseItem(item)"
+                >{{ userInfo.points < item.price ? '积分不足' : '购买' }}</button>
+                <button v-else class="btn btn-success btn-sm" @click="useItem(item)">{{ item.isActive ? '使用中' : '使用' }}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Purchase Modal -->
+        <div class="modal-mask" v-if="purchaseConfirm" @click.self="purchaseConfirm=null">
+          <div class="modal-box" style="max-width:360px;">
+            <div class="modal-header"><h3>确认购买</h3></div>
+            <div class="modal-body" style="text-align:center;">
+              <div style="font-size:48px; margin-bottom:12px;">🛍</div>
+              <p>确认花费 <strong>⭐ {{ purchaseConfirm.price }}</strong> 积分购买</p>
+              <p style="font-size:18px; font-weight:600;">"{{ purchaseConfirm.name }}" ？</p>
+              <p style="font-size:12px; color:var(--text-secondary);">购买后剩余 {{ userInfo.points - purchaseConfirm.price }} 积分</p>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-outline" @click="purchaseConfirm=null">取消</button>
+              <button class="btn btn-warning" @click="confirmPurchase">确认购买</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ NOTIFICATIONS ============ -->
+      <div v-if="currentPage==='notifications'">
+        <div class="page-header">
+          <h2>🔔 消息通知</h2>
+          <button class="btn btn-outline btn-sm" @click="markAllRead" v-if="unreadNotifCount > 0">全部标记已读</button>
+        </div>
+        <div class="card">
+          <div v-if="notifications.length===0" class="empty-state">
+            <div class="empty-icon">🔕</div>
+            <p>暂无消息</p>
+          </div>
+          <div
+            v-for="n in notifications" :key="n.id"
+            class="notif-item" :class="{unread: !n.isRead, read: n.isRead}"
+            @click="readNotif(n)"
+          >
+            <div class="notif-dot"></div>
+            <div class="notif-content">
+              <div class="notif-title">{{ {REMINDER:'⏰', SUMMARY:'📝', SYSTEM:'🔧', PROMOTION:'🎉'}[n.type] }} {{ n.title }}</div>
+              <div class="notif-body">{{ n.content }}</div>
+              <div class="notif-time">{{ n.createdAt }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ PROFILE ============ -->
+      <div v-if="currentPage==='profile'">
+        <div class="page-header"><h2>⚙️ 个人设置</h2></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <div class="card">
+            <div class="card-title mb-3">👤 基本信息</div>
+            <div class="form-group">
+              <label>用户名</label>
+              <input class="form-input" :value="userInfo.username" disabled>
+            </div>
+            <div class="form-group">
+              <label>昵称</label>
+              <input class="form-input" v-model="userInfo.nickname">
+            </div>
+            <div class="form-group">
+              <label>邮箱</label>
+              <input class="form-input" v-model="userInfo.email">
+            </div>
+            <button class="btn btn-primary" @click="saveProfile">保存修改</button>
+            <p v-if="profileSaved" style="color:var(--success); font-size:13px; margin-top:8px;">✅ 已保存</p>
+          </div>
+          <div class="card">
+            <div class="card-title mb-3">🎨 我的装扮</div>
+            <div v-if="wardrobe.length===0" class="empty-state">
+              <p>还没有装扮物品，去商城看看吧！</p>
+              <button class="btn btn-primary btn-sm mt-3" @click="currentPage='mall'">去商城</button>
+            </div>
+            <div v-for="w in wardrobe" :key="w.id" style="display:flex; align-items:center; gap:12px; padding:10px; border-radius:8px; background:var(--bg); margin-bottom:8px;">
+              <span style="font-size:24px;">{{ w.item.type==='SKIN'?'🎨':'🏅' }}</span>
+              <div style="flex:1;">
+                <div style="font-weight:500; font-size:14px;">{{ w.item.name }}</div>
+                <div style="font-size:12px; color:var(--text-secondary);">{{ w.item.type==='SKIN'?'主题皮肤':'徽章' }}</div>
+              </div>
+              <button v-if="!w.isActive" class="btn btn-outline btn-sm" @click="useItem(w.item)">使用</button>
+              <span v-else style="font-size:12px; color:var(--success);">✅ 使用中</span>
+            </div>
+          </div>
+        </div>
+        <div class="card mt-4">
+          <div class="card-title mb-3">🔔 提醒设置</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>默认提前提醒（分钟）</label>
+              <select class="form-select" v-model="reminderSettings.defaultAdvanceMinutes">
+                <option :value="5">5 分钟</option>
+                <option :value="10">10 分钟</option>
+                <option :value="15">15 分钟</option>
+                <option :value="30">30 分钟</option>
+                <option :value="60">60 分钟</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>免打扰时段</label>
+              <select class="form-select" v-model="reminderSettings.quietHoursEnabled">
+                <option :value="false">关闭</option>
+                <option :value="true">开启 (22:00 - 08:00)</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" @click="saveReminderSettings">保存提醒设置</button>
+        </div>
+        <button class="btn btn-danger mt-4" @click="logout">退出登录</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============ Schedule Detail Modal ============ -->
+  <div class="modal-mask" v-if="scheduleDetail" @click.self="scheduleDetail=null">
+    <div class="modal-box" style="max-width:560px;">
+      <div class="modal-header">
+        <h3>📋 日程详情</h3>
+        <button class="btn btn-outline btn-sm" @click="scheduleDetail=null">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom:16px;">
+          <div style="font-size:20px; font-weight:700;">{{ scheduleDetail.title }}</div>
+          <span class="status-badge mt-2" :class="'status-'+scheduleDetail.status" style="display:inline-block;">{{ statusLabel(scheduleDetail.status) }}</span>
+          <span style="margin-left:8px;" class="priority-dot" :class="'priority-'+scheduleDetail.priority"></span>
+          <span style="font-size:13px; color:var(--text-secondary); margin-left:4px;">{{ scheduleDetail.priority }}</span>
+        </div>
+        <div v-if="scheduleDetail.description" class="mb-3">
+          <div style="font-weight:500; font-size:13px; color:var(--text-secondary);">描述</div>
+          <p style="margin-top:4px;">{{ scheduleDetail.description }}</p>
+        </div>
+        <div class="form-row mb-3">
+          <div><div style="font-weight:500; font-size:13px; color:var(--text-secondary);">计划时间</div><div>{{ formatDateTime(scheduleDetail.plannedStartTime) }}</div></div>
+          <div><div style="font-weight:500; font-size:13px; color:var(--text-secondary);">预计时长</div><div>{{ scheduleDetail.plannedDuration }} 分钟</div></div>
+        </div>
+        <div class="form-row mb-3" v-if="scheduleDetail.actualStartTime">
+          <div><div style="font-weight:500; font-size:13px; color:var(--text-secondary);">实际开始</div><div>{{ formatDateTime(scheduleDetail.actualStartTime) }}</div></div>
+          <div><div style="font-weight:500; font-size:13px; color:var(--text-secondary);">实际耗时</div><div>{{ scheduleDetail.actualDuration ? formatSeconds(scheduleDetail.actualDuration) : '--' }}</div></div>
+        </div>
+        <div v-if="scheduleDetail.tags && scheduleDetail.tags.length">
+          <div style="font-weight:500; font-size:13px; color:var(--text-secondary); margin-bottom:4px;">标签</div>
+          <span class="tag" v-for="t in scheduleDetail.tags" :key="t" style="margin-right:4px;">{{ t }}</span>
+        </div>
+        <!-- Time Records -->
+        <div v-if="scheduleDetail.timeRecords && scheduleDetail.timeRecords.length" class="mt-4">
+          <div style="font-weight:500; font-size:13px; color:var(--text-secondary); margin-bottom:6px;">⏱ 计时记录</div>
+          <div v-for="(tr, i) in scheduleDetail.timeRecords" :key="i" style="font-size:12px; color:var(--text-secondary); padding:4px 0;">
+            第{{ i+1 }}段: {{ formatTime(tr.startTime) }} → {{ tr.endTime ? formatTime(tr.endTime) : '进行中' }} ({{ tr.duration ? formatSeconds(tr.duration) : '--' }})
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button v-if="scheduleDetail.status==='PENDING'" class="btn btn-success" @click="startSchedule(scheduleDetail); scheduleDetail=null">▶ 开始</button>
+        <button v-if="scheduleDetail.status==='IN_PROGRESS'" class="btn btn-warning" @click="pauseSchedule(scheduleDetail); loadScheduleDetail(scheduleDetail.id)">⏸ 暂停</button>
+        <button v-if="scheduleDetail.status==='PAUSED'" class="btn btn-success" @click="resumeSchedule(scheduleDetail); loadScheduleDetail(scheduleDetail.id)">▶ 继续</button>
+        <button v-if="scheduleDetail.status==='IN_PROGRESS' || scheduleDetail.status==='PAUSED'" class="btn btn-primary" @click="endSchedule(scheduleDetail); scheduleDetail=null">⏹ 结束</button>
+        <button v-if="scheduleDetail.status==='PENDING'" class="btn btn-danger" @click="cancelSchedule(scheduleDetail); scheduleDetail=null">取消日程</button>
+        <button class="btn btn-outline" @click="editSchedule(scheduleDetail); scheduleDetail=null">✎ 编辑</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Create/Edit Schedule Modal ============ -->
+  <div class="modal-mask" v-if="showScheduleModal" @click.self="showScheduleModal=false">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>{{ editingSchedule ? '✎ 编辑日程' : '➕ 新建日程' }}</h3>
+        <button class="btn btn-outline btn-sm" @click="showScheduleModal=false">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>标题 *</label>
+          <input class="form-input" v-model="scheduleForm.title" required placeholder="日程标题">
+        </div>
+        <div class="form-group">
+          <label>描述</label>
+          <textarea class="form-textarea" v-model="scheduleForm.description" placeholder="详细描述（可选）"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>计划开始时间 *</label>
+            <input class="form-input" type="datetime-local" v-model="scheduleForm.plannedStartTime">
+          </div>
+          <div class="form-group">
+            <label>预计时长（分钟）</label>
+            <input class="form-input" type="number" v-model.number="scheduleForm.plannedDuration" min="1">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>优先级</label>
+            <select class="form-select" v-model="scheduleForm.priority">
+              <option value="LOW">低</option>
+              <option value="MEDIUM">中</option>
+              <option value="HIGH">高</option>
+              <option value="URGENT">紧急</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>标签（逗号分隔）</label>
+            <input class="form-input" v-model="scheduleForm.tagsStr" placeholder="学习, Java">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>颜色标记</label>
+          <div class="flex gap-2">
+            <div v-for="c in tagColors" :key="c" @click="scheduleForm.color=c"
+                 :style="{width:'28px', height:'28px', borderRadius:'50%', background:c, cursor:'pointer', border: scheduleForm.color===c ? '3px solid var(--text)' : '3px solid transparent'}"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" @click="showScheduleModal=false">取消</button>
+        <button class="btn btn-primary" @click="saveSchedule">{{ editingSchedule ? '保存修改' : '创建日程' }}</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const { createApp, ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } = Vue;
+
+const app = createApp({
+  setup() {
+    // ============ Auth State ============
+    const authMode = ref('login');
+    const authForm = reactive({ username: '', password: '', email: '', nickname: '' });
+    const authLoading = ref(false);
+    const isLoggedIn = ref(false);
+    const userInfo = reactive({
+      id: 1, username: '', nickname: '', email: '', phone: '',
+      avatarUrl: '', points: 1500, createdAt: ''
+    });
+
+    // ============ Navigation ============
+    const currentPage = ref('dashboard');
+
+    // ============ Timer State ============
+    const activeSchedule = ref(null);
+    const elapsedSeconds = ref(0);
+    let timerInterval = null;
+
+    // ============ Data Stores ============
+    const schedules = ref([]);
+    const notifications = ref([]);
+    const mallItems = ref([]);
+    const wardrobe = ref([]);
+    const aiReports = ref([]);
+
+    // ============ Calendar State ============
+    const calYear = ref(2026);
+    const calMonth = ref(6);
+    const selectedDaySchedules = ref(null);
+    const selectedDayLabel = ref('');
+    const selectedDayDate = ref('');
+
+    // ============ AI State ============
+    const aiInput = ref('');
+    const aiMessages = ref([
+      { role: 'bot', content: '你好！我是梭子 AI 助手 🤖 我可以帮你：\n\n📅 **规划日程**：告诉我你的需求，我会生成结构化的日程安排\n📊 **效率分析**：分析你的时间使用情况\n📝 **生成总结**：每日/月度/年度智能总结\n\n试试对我说："明天上午学习Java 2小时，下午运动1小时"' }
+    ]);
+    const aiLoading = ref(false);
+    const aiSuggestions = ref([]);
+
+    // ============ Stats ============
+    const stats = reactive({
+      totalSchedules: 47, completionRate: 0.83, totalFocusTime: 126000, streakDays: 12
+    });
+
+    // ============ Filter State ============
+    const scheduleFilter = reactive({ status: '', priority: '', keyword: '' });
+    const mallTab = ref('all');
+
+    // ============ Modal State ============
+    const showScheduleModal = ref(false);
+    const editingSchedule = ref(null);
+    const scheduleDetail = ref(null);
+    const purchaseConfirm = ref(null);
+    const viewingReport = ref(null);
+    const generatingReport = ref(false);
+    const profileSaved = ref(false);
+
+    const scheduleForm = reactive({
+      title: '', description: '', plannedStartTime: '', plannedDuration: 60,
+      priority: 'MEDIUM', tagsStr: '', color: '#4A6CF7'
+    });
+
+    const reminderSettings = reactive({
+      defaultAdvanceMinutes: 15, quietHoursEnabled: false
+    });
+
+    // ============ Computed ============
+    const todayStr = computed(() => new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric', weekday:'long' }));
+
+    const todaySchedules = computed(() => {
+      const today = new Date().toISOString().slice(0, 10);
+      return schedules.value.filter(s => s.plannedStartTime && s.plannedStartTime.startsWith(today));
+    });
+
+    const todayStats = computed(() => {
+      const list = todaySchedules.value;
+      return {
+        total: list.length,
+        completed: list.filter(s => s.status === 'COMPLETED').length,
+        focusMinutes: Math.floor(list.reduce((sum, s) => sum + (s.actualDuration || 0), 0) / 60)
+      };
+    });
+
+    const upcomingSchedules = computed(() => {
+      const today = new Date().toISOString().slice(0, 10);
+      return schedules.value.filter(s => s.plannedStartTime > today + 'T23:59' && s.status === 'PENDING').slice(0, 5);
+    });
+
+    const filteredSchedules = computed(() => {
+      let list = schedules.value;
+      if (scheduleFilter.status) list = list.filter(s => s.status === scheduleFilter.status);
+      if (scheduleFilter.priority) list = list.filter(s => s.priority === scheduleFilter.priority);
+      if (scheduleFilter.keyword) {
+        const kw = scheduleFilter.keyword.toLowerCase();
+        list = list.filter(s => s.title.toLowerCase().includes(kw) || (s.description||'').toLowerCase().includes(kw));
+      }
+      return list.sort((a,b) => (a.plannedStartTime||'').localeCompare(b.plannedStartTime||''));
+    });
+
+    const unreadNotifCount = computed(() => notifications.value.filter(n => !n.isRead).length);
+
+    const filteredMallItems = computed(() => {
+      if (mallTab.value === 'all') return mallItems.value;
+      return mallItems.value.filter(i => i.type === mallTab.value);
+    });
+
+    const calendarDays = computed(() => {
+      const year = calYear.value, month = calMonth.value;
+      const firstDay = new Date(year, month - 1, 1);
+      const lastDay = new Date(year, month, 0);
+      const startDayOfWeek = firstDay.getDay();
+      const daysInMonth = lastDay.getDate();
+      const today = new Date();
+      const todayStr = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+
+      const scheduleMap = {};
+      schedules.value.forEach(s => {
+        if (s.plannedStartTime) {
+          const d = s.plannedStartTime.slice(0, 10);
+          if (!scheduleMap[d]) scheduleMap[d] = [];
+          scheduleMap[d].push(s);
+        }
+      });
+
+      const days = [];
+      // Previous month
+      const prevLastDay = new Date(year, month - 1, 0).getDate();
+      for (let i = startDayOfWeek - 1; i >= 0; i--) {
+        const d = prevLastDay - i;
+        const dm = month - 1; const dy = dm === 0 ? year - 1 : year; const m = dm === 0 ? 12 : dm;
+        const ds = `${dy}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const sc = scheduleMap[ds] || [];
+        days.push({ key:'p'+d, dayOfMonth:d, isToday:false, isCurrentMonth:false, dateStr:ds, totalCount:sc.length, colors:sc.map(s=>s.color || '#4A6CF7') });
+      }
+      // Current month
+      for (let d = 1; d <= daysInMonth; d++) {
+        const ds = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const sc = scheduleMap[ds] || [];
+        days.push({ key:'c'+d, dayOfMonth:d, isToday:ds===todayStr, isCurrentMonth:true, dateStr:ds, totalCount:sc.length, colors:sc.map(s=>s.color || '#4A6CF7') });
+      }
+      // Next month
+      const remaining = 42 - days.length;
+      for (let d = 1; d <= remaining; d++) {
+        const dm = month + 1; const dy = dm === 13 ? year + 1 : year; const m = dm === 13 ? 1 : dm;
+        const ds = `${dy}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const sc = scheduleMap[ds] || [];
+        days.push({ key:'n'+d, dayOfMonth:d, isToday:false, isCurrentMonth:false, dateStr:ds, totalCount:sc.length, colors:sc.map(s=>s.color || '#4A6CF7') });
+      }
+      return days;
+    });
+
+    const trendData = computed(() => {
+      const data = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        data.push({
+          day: ['日','一','二','三','四','五','六'][d.getDay()],
+          completionRate: 0.5 + Math.random() * 0.5
+        });
+      }
+      return data;
+    });
+
+    const tagStats = computed(() => {
+      const map = {};
+      schedules.value.forEach(s => {
+        (s.tags || []).forEach(t => {
+          if (!map[t]) map[t] = { tag: t, count: 0, totalDuration: 0 };
+          map[t].count++;
+          map[t].totalDuration += (s.actualDuration || 0);
+        });
+      });
+      const total = Object.values(map).reduce((sum, v) => sum + v.totalDuration, 0);
+      return Object.values(map).map(v => ({ ...v, percentage: total > 0 ? v.totalDuration / total : 0 }));
+    });
+
+    const dayHeaders = ['日', '一', '二', '三', '四', '五', '六'];
+    const tagColors = ['#4A6CF7', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6'];
+
+    // ============ Methods ============
+    function formatTime(dt) { if (!dt) return ''; return dt.slice(11, 16); }
+    function formatDate(dt) { if (!dt) return ''; const d = new Date(dt); return `${d.getMonth()+1}/${d.getDate()}`; }
+    function formatDateTime(dt) { if (!dt) return ''; const d = new Date(dt); return d.toLocaleString('zh-CN'); }
+    function formatSeconds(s) { const m = Math.floor(s / 60); const sec = s % 60; return `${m}分${sec}秒`; }
+    function formatMinutes(m) { if (m >= 60) return `${Math.floor(m/60)}小时${m%60}分`; return `${m}分钟`; }
+    function formatTimer(s) { const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s % 60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
+
+    function statusLabel(s) {
+      return { PENDING:'待开始', IN_PROGRESS:'进行中', PAUSED:'已暂停', COMPLETED:'已完成', CANCELLED:'已取消', TIMEOUT:'已超时' }[s] || s;
+    }
+
+    function getTodayStr() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    // Auth
+    function handleAuth() {
+      authLoading.value = true;
+      setTimeout(() => {
+        userInfo.username = authForm.username;
+        userInfo.nickname = authForm.nickname || authForm.username;
+        userInfo.email = authForm.email || authForm.username + '@example.com';
+        userInfo.points = 1500;
+        isLoggedIn.value = true;
+        authLoading.value = false;
+        initMockData();
+      }, 600);
+    }
+
+    function logout() {
+      if (confirm('确定退出登录吗？')) {
+        stopTimer();
+        isLoggedIn.value = false;
+        schedules.value = [];
+        notifications.value = [];
+        aiMessages.value = [{ role: 'bot', content: '你好！我是梭子 AI 助手 🤖...' }];
+        aiSuggestions.value = [];
+      }
+    }
+
+    // Timer
+    function startTimer() {
+      stopTimer();
+      timerInterval = setInterval(() => { elapsedSeconds.value++; }, 1000);
+      localStorage.setItem('shuttle_timer_schedule', JSON.stringify(activeSchedule.value));
+      localStorage.setItem('shuttle_timer_start', Date.now().toString());
+      localStorage.setItem('shuttle_timer_elapsed', elapsedSeconds.value.toString());
+    }
+
+    function stopTimer() {
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    }
+
+    function startSchedule(s) {
+      if (activeSchedule.value && activeSchedule.value.id !== s.id) {
+        alert('请先结束正在进行的日程');
+        return;
+      }
+      s.status = 'IN_PROGRESS';
+      s.actualStartTime = new Date().toISOString();
+      activeSchedule.value = s;
+      elapsedSeconds.value = 0;
+      startTimer();
+    }
+
+    function pauseSchedule(s) {
+      s.status = 'PAUSED';
+      stopTimer();
+      activeSchedule.value = { ...s };
+    }
+
+    function resumeSchedule(s) {
+      s.status = 'IN_PROGRESS';
+      startTimer();
+      activeSchedule.value = { ...s };
+    }
+
+    function endSchedule(s) {
+      stopTimer();
+      s.status = 'COMPLETED';
+      s.actualDuration = elapsedSeconds.value;
+      s.actualEndTime = new Date().toISOString();
+      const pointsEarned = Math.floor(elapsedSeconds.value / 60) + 10;
+      userInfo.points += pointsEarned;
+      activeSchedule.value = null;
+      elapsedSeconds.value = 0;
+      localStorage.removeItem('shuttle_timer_schedule');
+      localStorage.removeItem('shuttle_timer_start');
+      localStorage.removeItem('shuttle_timer_elapsed');
+      alert(`✅ 日程完成！获得 ${pointsEarned} 积分`);
+    }
+
+    function cancelSchedule(s) {
+      if (confirm('确定取消此日程吗？')) {
+        s.status = 'CANCELLED';
+        if (activeSchedule.value && activeSchedule.value.id === s.id) {
+          stopTimer();
+          activeSchedule.value = null;
+          elapsedSeconds.value = 0;
+        }
+      }
+    }
+
+    // Calendar
+    function prevMonth() { if (calMonth.value === 1) { calMonth.value = 12; calYear.value--; } else calMonth.value--; }
+    function nextMonth() { if (calMonth.value === 12) { calMonth.value = 1; calYear.value++; } else calMonth.value++; }
+    function goToToday() { const d = new Date(); calYear.value = d.getFullYear(); calMonth.value = d.getMonth() + 1; }
+    function selectCalendarDay(day) {
+      selectedDayLabel.value = day.dateStr;
+      selectedDayDate.value = day.dateStr;
+      selectedDaySchedules.value = schedules.value.filter(s => s.plannedStartTime && s.plannedStartTime.startsWith(day.dateStr));
+    }
+
+    // Schedule CRUD
+    function saveSchedule() {
+      if (!scheduleForm.title || !scheduleForm.plannedStartTime) { alert('请填写标题和计划时间'); return; }
+      const tags = scheduleForm.tagsStr ? scheduleForm.tagsStr.split(',').map(t => t.trim()).filter(Boolean) : [];
+      const data = {
+        id: editingSchedule.value ? editingSchedule.value.id : Date.now(),
+        userId: userInfo.id,
+        title: scheduleForm.title,
+        description: scheduleForm.description,
+        plannedStartTime: scheduleForm.plannedStartTime,
+        plannedDuration: scheduleForm.plannedDuration,
+        priority: scheduleForm.priority,
+        tags,
+        color: scheduleForm.color,
+        status: editingSchedule.value ? editingSchedule.value.status : 'PENDING',
+        actualStartTime: editingSchedule.value ? editingSchedule.value.actualStartTime : null,
+        actualEndTime: editingSchedule.value ? editingSchedule.value.actualEndTime : null,
+        actualDuration: editingSchedule.value ? editingSchedule.value.actualDuration : null,
+        createdAt: editingSchedule.value ? editingSchedule.value.createdAt : new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      if (editingSchedule.value) {
+        const idx = schedules.value.findIndex(s => s.id === editingSchedule.value.id);
+        if (idx >= 0) schedules.value[idx] = data;
+      } else {
+        schedules.value.push(data);
+      }
+      showScheduleModal.value = false;
+      editingSchedule.value = null;
+      resetScheduleForm();
+    }
+
+    function editSchedule(s) {
+      editingSchedule.value = s;
+      scheduleForm.title = s.title;
+      scheduleForm.description = s.description || '';
+      scheduleForm.plannedStartTime = s.plannedStartTime || '';
+      scheduleForm.plannedDuration = s.plannedDuration || 60;
+      scheduleForm.priority = s.priority || 'MEDIUM';
+      scheduleForm.tagsStr = (s.tags || []).join(', ');
+      scheduleForm.color = s.color || '#4A6CF7';
+      showScheduleModal.value = true;
+    }
+
+    function deleteSchedule(s) {
+      if (confirm(`确定删除日程"${s.title}"吗？`)) {
+        schedules.value = schedules.value.filter(x => x.id !== s.id);
+        if (activeSchedule.value && activeSchedule.value.id === s.id) {
+          stopTimer();
+          activeSchedule.value = null;
+        }
+      }
+    }
+
+    function openScheduleDetail(s) {
+      scheduleDetail.value = { ...s, timeRecords: s.timeRecords || [] };
+    }
+
+    function loadScheduleDetail(id) {
+      const s = schedules.value.find(x => x.id === id);
+      if (s) scheduleDetail.value = { ...s, timeRecords: s.timeRecords || [] };
+    }
+
+    function resetScheduleForm() {
+      scheduleForm.title = '';
+      scheduleForm.description = '';
+      scheduleForm.plannedStartTime = getTodayStr() + 'T09:00';
+      scheduleForm.plannedDuration = 60;
+      scheduleForm.priority = 'MEDIUM';
+      scheduleForm.tagsStr = '';
+      scheduleForm.color = '#4A6CF7';
+    }
+
+    // AI
+    function sendAiMessage() {
+      if (!aiInput.value.trim() || aiLoading.value) return;
+      const userMsg = aiInput.value.trim();
+      aiMessages.value.push({ role: 'user', content: userMsg });
+      aiInput.value = '';
+      aiLoading.value = true;
+
+      nextTick(() => {
+        const el = document.querySelector('.ai-chat-messages');
+        if (el) el.scrollTop = el.scrollHeight;
+      });
+
+      setTimeout(() => {
+        aiLoading.value = false;
+
+        // Simulate AI response
+        if (userMsg.includes('规划') || userMsg.includes('安排') || userMsg.includes('计划')) {
+          aiMessages.value.push({
+            role: 'bot',
+            content: '好的！我已经分析了你的需求，为你生成了以下日程规划建议 👇\n\n你可以查看右侧面板，选择合适的建议一键采纳创建日程。'
+          });
+          // Generate suggestions
+          const now = new Date();
+          const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
+          const dateStr = tomorrow.toISOString().slice(0, 10);
+
+          aiSuggestions.value = [
+            { title: '学习Java核心技术', suggestedStart: '09:00', duration: 120, priority: 'HIGH', tags: ['学习', 'Java'], reason: '上午精力充沛，适合技术学习' },
+            { title: '午间休息', suggestedStart: '12:00', duration: 60, priority: 'MEDIUM', tags: ['生活'], reason: '保证充足休息，提升下午效率' },
+            { title: '运动锻炼', suggestedStart: '14:00', duration: 60, priority: 'MEDIUM', tags: ['运动', '健康'], reason: '下午运动有助于恢复精力' },
+            { title: '晚间阅读', suggestedStart: '20:00', duration: 60, priority: 'LOW', tags: ['阅读', '生活'], reason: '睡前阅读有助于放松' }
+          ];
+        } else if (userMsg.includes('总结')) {
+          aiMessages.value.push({
+            role: 'bot',
+            content: '📊 **今日总结**\n\n今日完成日程 5 项，总专注时长 4.5 小时，完成率 83%。\n\n✅ **亮点**：\n- 技术学习投入充足，完成了 Spring Boot 核心章节\n- 按时完成所有计划任务\n\n💡 **建议**：\n- 可以考虑增加休息间隔，提升持续专注力\n- 下午时段效率略低，可以安排更多体力活动'
+          });
+        } else if (userMsg.includes('效率') || userMsg.includes('分析')) {
+          aiMessages.value.push({
+            role: 'bot',
+            content: '📈 **本周效率分析**\n\n- 总日程数：28 项\n- 完成率：85.7%\n- 平均每日专注时长：3.8 小时\n- 最高效时段：上午 9:00-11:00\n- 标签分布：学习 45%、工作 30%、运动 15%、其他 10%\n\n📊 效率评分：⭐⭐⭐⭐ (良好)\n整体表现不错，建议保持上午高效时段，适当增加运动安排。'
+          });
+        } else {
+          aiMessages.value.push({
+            role: 'bot',
+            content: '感谢你的提问！作为你的 AI 日程助手，我可以帮你：\n\n📅 **规划日程**：试试说"帮我规划明天的日程"\n📊 **效率分析**：试试说"分析我这周的效率"\n📝 **生成总结**：试试说"生成今日总结"\n💡 **管理建议**：试试说"给我一些时间管理建议"\n\n请告诉我你需要什么帮助？'
+          });
+        }
+        nextTick(() => {
+          const el = document.querySelector('.ai-chat-messages');
+          if (el) el.scrollTop = el.scrollHeight;
+        });
+      }, 800 + Math.random() * 1200);
+    }
+
+    function aiQuickPrompt(prompt) {
+      aiInput.value = prompt;
+      sendAiMessage();
+    }
+
+    function adoptSuggestion(index) {
+      const sg = aiSuggestions.value[index];
+      if (!sg) return;
+      const targetDate = new Date();
+      targetDate.setDate(targetDate.getDate() + 1);
+      const dateStr = targetDate.toISOString().slice(0, 10);
+      const newSchedule = {
+        id: Date.now() + index,
+        userId: userInfo.id,
+        title: sg.title,
+        description: sg.reason || '',
+        plannedStartTime: `${dateStr}T${sg.suggestedStart}:00`,
+        plannedDuration: sg.duration,
+        priority: sg.priority || 'MEDIUM',
+        tags: sg.tags || [],
+        color: tagColors[index % tagColors.length],
+        status: 'PENDING',
+        actualStartTime: null, actualEndTime: null, actualDuration: null,
+        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+      };
+      schedules.value.push(newSchedule);
+      aiSuggestions.value.splice(index, 1);
+      aiMessages.value.push({ role: 'bot', content: `✅ 已采纳并创建日程：**${sg.title}**` });
+    }
+
+    function adoptAllSuggestions() {
+      aiSuggestions.value.forEach((sg, i) => {
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + 1);
+        const dateStr = targetDate.toISOString().slice(0, 10);
+        schedules.value.push({
+          id: Date.now() + i,
+          userId: userInfo.id, title: sg.title, description: sg.reason || '',
+          plannedStartTime: `${dateStr}T${sg.suggestedStart}:00`,
+          plannedDuration: sg.duration, priority: sg.priority || 'MEDIUM',
+          tags: sg.tags || [], color: tagColors[i % tagColors.length],
+          status: 'PENDING',
+          actualStartTime: null, actualEndTime: null, actualDuration: null,
+          createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+        });
+      });
+      const count = aiSuggestions.value.length;
+      aiSuggestions.value = [];
+      aiMessages.value.push({ role: 'bot', content: `✅ 已全部采纳！成功创建了 ${count} 个日程。` });
+    }
+
+    // Reports
+    function generateReport(type) {
+      generatingReport.value = true;
+      setTimeout(() => {
+        generatingReport.value = false;
+        const now = new Date().toISOString();
+        const typeName = { DAILY: '每日', WEEKLY: '每周', MONTHLY: '月度', YEARLY: '年度' }[type];
+        aiReports.value.unshift({
+          id: Date.now(), userId: userInfo.id, type,
+          title: `${new Date().toLocaleDateString('zh-CN')} ${typeName}总结`,
+          content: type === 'DAILY'
+            ? `📊 **${typeName}总结报告**\n\n## 概览\n今日共完成 **5** 项日程，总专注时长 **4.5** 小时。\n\n## 各时段分析\n- 🌅 上午 (8:00-12:00): 完成 2 项，效率最高\n- 🌤 下午 (13:00-18:00): 完成 2 项\n- 🌙 晚上 (19:00-22:00): 完成 1 项\n\n## 标签分布\n- 学习: 60%\n- 工作: 25%\n- 运动: 15%\n\n## AI 点评\n今天的整体效率不错！上午的学习任务完成得很好，建议明天继续保持这个节奏。下午的效率略有下降，可以考虑增加短暂休息。\n\n## 明日建议\n- 保持上午高效学习时段\n- 增加下午运动量\n- 尝试番茄工作法提升专注力`
+            : type === 'MONTHLY'
+            ? `📊 **${typeName}总结报告**\n\n## 月度概览\n本月共安排 **142** 项日程，完成 **118** 项，完成率 **83.1%**。\n总专注时长 **89** 小时。\n\n## 趋势分析\n本月效率呈上升趋势，最后一周完成率达到 92%。\n\n## 高频标签\n- 🥇 学习 (45%)\n- 🥈 工作 (30%)\n- 🥉 运动 (15%)\n- 其他 (10%)\n\n## 改进建议\n- 增加休息间隔，避免长时间连续工作\n- 周末安排更多放松活动\n- 可以尝试将大任务拆分为小任务`
+            : `📊 **${typeName}总结报告**\n\n## 年度概览\n今年是丰收的一年！\n\n- 总日程数: **1,680**\n- 完成率: **85.2%**\n- 总专注时长: **1,020** 小时\n- 连续打卡最长: **45** 天\n\n## 成长轨迹\n- Q1: 完成率 78%，处于适应期\n- Q2: 完成率 85%，稳步上升\n- Q3: 完成率 89%，进入高效期\n- Q4: 完成率 88%，保持稳定\n\n## 年度高光\n🎯 最专注的一天: 2026-03-15 (8.5小时)\n🔥 最长连续打卡: 45天\n⭐ 获得积分: 15,800`,
+          generatedAt: now,
+          highlights: [],
+          suggestions: [],
+          status: 'COMPLETED'
+        });
+      }, 2000);
+    }
+
+    function viewReportDetail(r) { viewingReport.value = r; }
+
+    // Mall
+    function purchaseItem(item) { purchaseConfirm.value = item; }
+    function confirmPurchase() {
+      const item = purchaseConfirm.value;
+      if (!item || userInfo.points < item.price) return;
+      userInfo.points -= item.price;
+      item.owned = true;
+      wardrobe.value.push({
+        id: Date.now(), userId: userInfo.id,
+        item: { ...item }, isActive: false, purchasedAt: new Date().toISOString()
+      });
+      purchaseConfirm.value = null;
+      alert(`✅ 成功购买 "${item.name}"！`);
+    }
+
+    function useItem(item) {
+      wardrobe.value.forEach(w => { if (w.item.type === item.type) w.isActive = false; });
+      const w = wardrobe.value.find(w => w.item.id === item.id);
+      if (w) w.isActive = true;
+      item.isActive = true;
+    }
+
+    // Notifications
+    function readNotif(n) {
+      n.isRead = true;
+    }
+    function markAllRead() {
+      notifications.value.forEach(n => n.isRead = true);
+    }
+
+    // Profile
+    function saveProfile() {
+      profileSaved.value = true;
+      setTimeout(() => { profileSaved.value = false; }, 2000);
+    }
+    function saveReminderSettings() {
+      alert('✅ 提醒设置已保存');
+    }
+
+    // Init mock data
+    function initMockData() {
+      const today = getTodayStr();
+      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().slice(0, 10);
+      const dayAfter = new Date(); dayAfter.setDate(dayAfter.getDate() + 2);
+      const dayAfterStr = dayAfter.toISOString().slice(0, 10);
+
+      schedules.value = [
+        { id: 1, userId: 1, title: '学习Spring Boot', description: '完成REST API开发章节', plannedStartTime: `${today}T09:00:00`, plannedDuration: 120, actualStartTime: `${today}T09:05:00`, actualEndTime: `${today}T11:10:00`, actualDuration: 7500, status: 'COMPLETED', priority: 'HIGH', tags: ['学习', 'Java'], color: '#4A6CF7', createdAt: today, updatedAt: today },
+        { id: 2, userId: 1, title: '午休', description: '', plannedStartTime: `${today}T12:00:00`, plannedDuration: 45, status: 'COMPLETED', priority: 'LOW', tags: ['生活'], color: '#10B981', createdAt: today, updatedAt: today },
+        { id: 3, userId: 1, title: '运动健身', description: '跑步5公里', plannedStartTime: `${today}T14:00:00`, plannedDuration: 60, status: 'PENDING', priority: 'MEDIUM', tags: ['运动', '健康'], color: '#F59E0B', createdAt: today, updatedAt: today },
+        { id: 4, userId: 1, title: '阅读《代码整洁之道》', description: '第3-4章', plannedStartTime: `${today}T16:00:00`, plannedDuration: 90, status: 'PENDING', priority: 'MEDIUM', tags: ['阅读', '学习'], color: '#8B5CF6', createdAt: today, updatedAt: today },
+        { id: 5, userId: 1, title: '英语单词复习', description: '复习200个单词', plannedStartTime: `${today}T20:00:00`, plannedDuration: 45, status: 'PENDING', priority: 'LOW', tags: ['学习', '英语'], color: '#EC4899', createdAt: today, updatedAt: today },
+        { id: 6, userId: 1, title: '团队周会', description: '汇报本周进展', plannedStartTime: `${tomorrowStr}T10:00:00`, plannedDuration: 60, status: 'PENDING', priority: 'HIGH', tags: ['工作'], color: '#6366F1', createdAt: today, updatedAt: today },
+        { id: 7, userId: 1, title: '学习微服务架构', description: 'Spring Cloud入门', plannedStartTime: `${tomorrowStr}T14:00:00`, plannedDuration: 180, status: 'PENDING', priority: 'HIGH', tags: ['学习', 'Java'], color: '#4A6CF7', createdAt: today, updatedAt: today },
+        { id: 8, userId: 1, title: '产品需求评审', description: '评审Q3新功能需求', plannedStartTime: `${dayAfterStr}T09:30:00`, plannedDuration: 90, status: 'PENDING', priority: 'URGENT', tags: ['工作'], color: '#EF4444', createdAt: today, updatedAt: today },
+      ];
+
+      notifications.value = [
+        { id: 1, userId: 1, type: 'REMINDER', title: '日程提醒', content: '"运动健身"将在30分钟后开始', isRead: false, createdAt: '2026-06-14 13:30' },
+        { id: 2, userId: 1, type: 'SUMMARY', title: '昨日总结已生成', content: '查看你昨天的效率分析报告', isRead: false, createdAt: '2026-06-14 08:00' },
+        { id: 3, userId: 1, type: 'SYSTEM', title: '连续打卡奖励', content: '已连续打卡7天，获得 50 积分奖励！', isRead: true, createdAt: '2026-06-13 20:00' },
+        { id: 4, userId: 1, type: 'PROMOTION', title: '新品上架', content: '积分商城上架"星空主题"新皮肤，限时8折！', isRead: true, createdAt: '2026-06-12 10:00' },
+      ];
+
+      mallItems.value = [
+        { id: 1, name: '深海蓝主题', type: 'SKIN', description: '清爽的蓝色主题皮肤', price: 200, color: 'blue', owned: false, isActive: false },
+        { id: 2, name: '翡翠绿主题', type: 'SKIN', description: '护眼的绿色主题皮肤', price: 200, color: 'green', owned: false, isActive: false },
+        { id: 3, name: '星空紫主题', type: 'SKIN', description: '神秘的紫色星空主题', price: 300, color: 'purple', owned: false, isActive: false },
+        { id: 4, name: '活力橙主题', type: 'SKIN', description: '充满活力的橙色主题', price: 200, color: 'orange', owned: false, isActive: false },
+        { id: 5, name: '暗夜黑主题', type: 'SKIN', description: '酷炫的暗黑风格主题', price: 350, color: 'dark', owned: false, isActive: false },
+        { id: 6, name: '粉红甜心主题', type: 'SKIN', description: '可爱的粉色主题', price: 250, color: 'pink', owned: false, isActive: false },
+        { id: 7, name: '学霸徽章', type: 'BADGE', description: '连续学习30天专属徽章', price: 500, color: 'blue', owned: false, isActive: false },
+        { id: 8, name: '运动达人徽章', type: 'BADGE', description: '运动累计100小时专属徽章', price: 500, color: 'green', owned: false, isActive: false },
+        { id: 9, name: '效率大师徽章', type: 'BADGE', description: '完成率95%以上专属徽章', price: 800, color: 'purple', owned: false, isActive: false },
+        { id: 10, name: '闪光头像框', type: 'AVATAR', description: '酷炫的金色头像边框', price: 400, color: 'orange', owned: false, isActive: false },
+      ];
+
+      // Auto-add some items to wardrobe for demo
+      wardrobe.value = [
+        { id: 1, userId: 1, item: { id: 1, name: '默认主题', type: 'SKIN', price: 0 }, isActive: true, purchasedAt: today }
+      ];
+
+      // Set default schedule form date
+      resetScheduleForm();
+
+      // Restore timer state
+      const savedSchedule = localStorage.getItem('shuttle_timer_schedule');
+      const savedStart = localStorage.getItem('shuttle_timer_start');
+      const savedElapsed = localStorage.getItem('shuttle_timer_elapsed');
+      if (savedSchedule && savedStart) {
+        try {
+          activeSchedule.value = JSON.parse(savedSchedule);
+          const startTime = parseInt(savedStart);
+          const storedElapsed = parseInt(savedElapsed) || 0;
+          elapsedSeconds.value = storedElapsed + Math.floor((Date.now() - startTime) / 1000);
+          startTimer();
+        } catch(e) {}
+      }
+    }
+
+    // Lifecycle
+    onMounted(() => {
+      resetScheduleForm();
+      // Check for saved login (demo: auto-login for convenience)
+      const savedUser = localStorage.getItem('shuttle_user');
+      if (savedUser) {
+        try {
+          const u = JSON.parse(savedUser);
+          Object.assign(userInfo, u);
+          isLoggedIn.value = true;
+          initMockData();
+        } catch(e) {}
+      }
+    });
+
+    onUnmounted(() => { stopTimer(); });
+
+    // Watch for login state to save
+    watch(isLoggedIn, (v) => {
+      if (v) {
+        localStorage.setItem('shuttle_user', JSON.stringify({ ...userInfo }));
+      } else {
+        localStorage.removeItem('shuttle_user');
+      }
+    });
+
+    return {
+      // Auth
+      authMode, authForm, authLoading, isLoggedIn, userInfo,
+      handleAuth, logout,
+      // Nav
+      currentPage,
+      // Timer
+      activeSchedule, elapsedSeconds,
+      startSchedule, pauseSchedule, resumeSchedule, endSchedule, cancelSchedule,
+      formatTimer,
+      // Data
+      schedules, notifications, mallItems, wardrobe, aiReports,
+      // Calendar
+      calYear, calMonth, calendarDays, dayHeaders,
+      prevMonth, nextMonth, goToToday, selectCalendarDay,
+      selectedDaySchedules, selectedDayLabel, selectedDayDate,
+      // AI
+      aiInput, aiMessages, aiLoading, aiSuggestions,
+      sendAiMessage, aiQuickPrompt, adoptSuggestion, adoptAllSuggestions,
+      // Stats
+      stats, todayStats, todaySchedules, upcomingSchedules,
+      filteredSchedules, filteredMallItems,
+      trendData, tagStats,
+      // Filters
+      scheduleFilter, mallTab,
+      // Modals
+      showScheduleModal, editingSchedule, scheduleDetail,
+      purchaseConfirm, viewingReport, generatingReport,
+      // Forms
+      scheduleForm, reminderSettings, profileSaved,
+      // Mall
+      purchaseItem, confirmPurchase, useItem,
+      // Notifications
+      unreadNotifCount, readNotif, markAllRead,
+      // Schedule CRUD
+      saveSchedule, editSchedule, deleteSchedule,
+      openScheduleDetail, loadScheduleDetail,
+      // Reports
+      generateReport, viewReportDetail,
+      // Profile
+      saveProfile, saveReminderSettings,
+      // Utils
+      formatTime, formatDate, formatDateTime, formatSeconds, formatMinutes,
+      statusLabel, todayStr, tagColors, getTodayStr,
+    };
+  }
+});
+
+app.mount('#app');
+</script>
+</body>
+</html>

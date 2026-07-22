@@ -1,0 +1,1947 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "梭子 - 智能日程管理平台 API",
+    "version": "1.0.0",
+    "description": "梭子（Shuttle）是一个智能日程记录与管理平台，提供高效记录、AI辅助规划、积分激励与个性化装扮等功能。\n\n## 微服务架构\n- **user-service**: 用户注册登录、信息管理、积分账户\n- **schedule-service**: 日程CRUD、计时控制、日历视图、统计接口\n- **ai-service**: AI规划生成、每日/月度总结\n- **notification-service**: 消息推送、提醒生成\n- **mall-service**: 虚拟商品管理、购买记录、用户装扮\n\n## 认证方式\n除登录注册外，所有接口需在 Header 中携带 JWT Token：\n```\nAuthorization: Bearer <token>\n```",
+    "contact": {
+      "name": "梭子开发团队"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080/api/v1",
+      "description": "Gateway 统一入口 (开发环境)"
+    }
+  ],
+  "tags": [
+    { "name": "认证接口", "description": "用户注册、登录、JWT管理 (user-service)" },
+    { "name": "用户接口", "description": "用户信息与积分管理 (user-service)" },
+    { "name": "日程接口", "description": "日程CRUD与计时控制 (schedule-service)" },
+    { "name": "日历接口", "description": "日历视图与日程聚合 (schedule-service)" },
+    { "name": "统计接口", "description": "数据统计与分析 (schedule-service)" },
+    { "name": "AI助手", "description": "AI规划生成与总结 (ai-service)" },
+    { "name": "提醒通知", "description": "消息推送与提醒 (notification-service)" },
+    { "name": "积分商城", "description": "虚拟商品与购买 (mall-service)" },
+    { "name": "装扮管理", "description": "用户装扮与切换 (mall-service)" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT Token 认证，登录接口返回"
+      }
+    },
+    "schemas": {
+      "ApiResponse": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer", "description": "状态码，200 表示成功", "example": 200 },
+          "message": { "type": "string", "description": "提示信息", "example": "操作成功" },
+          "data": { "description": "响应数据" }
+        }
+      },
+      "PageResult": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer", "example": 200 },
+          "message": { "type": "string", "example": "查询成功" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "records": { "type": "array", "description": "数据列表" },
+              "total": { "type": "integer", "description": "总记录数" },
+              "page": { "type": "integer", "description": "当前页码" },
+              "pageSize": { "type": "integer", "description": "每页大小" },
+              "totalPages": { "type": "integer", "description": "总页数" }
+            }
+          }
+        }
+      },
+
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["username", "password", "email"],
+        "properties": {
+          "username": { "type": "string", "minLength": 3, "maxLength": 30, "description": "用户名", "example": "zhangsan" },
+          "password": { "type": "string", "minLength": 6, "maxLength": 32, "description": "密码", "example": "abc123" },
+          "email": { "type": "string", "format": "email", "description": "邮箱", "example": "zhangsan@example.com" },
+          "phone": { "type": "string", "pattern": "^1[3-9]\\d{9}$", "description": "手机号（可选）", "example": "13800138000" },
+          "nickname": { "type": "string", "maxLength": 30, "description": "昵称（可选，默认同用户名）" }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["username", "password"],
+        "properties": {
+          "username": { "type": "string", "description": "用户名或邮箱或手机号", "example": "zhangsan" },
+          "password": { "type": "string", "description": "密码", "example": "abc123" }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": { "type": "string", "description": "JWT Access Token" },
+          "refreshToken": { "type": "string", "description": "刷新 Token" },
+          "expiresIn": { "type": "integer", "description": "过期时间（秒）", "example": 7200 },
+          "userInfo": { "$ref": "#/components/schemas/UserInfo" }
+        }
+      },
+      "UserInfo": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64", "description": "用户ID" },
+          "username": { "type": "string" },
+          "nickname": { "type": "string" },
+          "email": { "type": "string" },
+          "phone": { "type": "string" },
+          "avatarUrl": { "type": "string", "description": "头像URL" },
+          "points": { "type": "integer", "description": "当前积分余额" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "UpdateUserRequest": {
+        "type": "object",
+        "properties": {
+          "nickname": { "type": "string", "maxLength": 30 },
+          "email": { "type": "string", "format": "email" },
+          "phone": { "type": "string" },
+          "avatarUrl": { "type": "string", "description": "头像URL" }
+        }
+      },
+      "PointsLogEntry": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "userId": { "type": "integer", "format": "int64" },
+          "change": { "type": "integer", "description": "变化量（正数为增加，负数为扣减）" },
+          "reason": { "type": "string", "description": "变动原因（完成日程/购买商品/签到奖励等）" },
+          "relatedId": { "type": "integer", "format": "int64", "description": "关联业务ID" },
+          "balanceAfter": { "type": "integer", "description": "变动后余额" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+
+      "Schedule": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "userId": { "type": "integer", "format": "int64" },
+          "title": { "type": "string", "description": "日程标题", "example": "学习Spring Boot" },
+          "description": { "type": "string", "description": "详细描述", "example": "完成第3章：REST API开发" },
+          "plannedStartTime": { "type": "string", "format": "date-time", "description": "计划开始时间" },
+          "plannedDuration": { "type": "integer", "description": "预计时长（分钟）", "example": 120 },
+          "actualStartTime": { "type": "string", "format": "date-time", "description": "实际开始时间" },
+          "actualEndTime": { "type": "string", "format": "date-time", "description": "实际结束时间" },
+          "actualDuration": { "type": "integer", "description": "实际持续时长（秒）" },
+          "status": {
+            "type": "string",
+            "enum": ["PENDING", "IN_PROGRESS", "PAUSED", "COMPLETED", "CANCELLED", "TIMEOUT"],
+            "description": "日程状态：PENDING=待开始, IN_PROGRESS=进行中, PAUSED=已暂停, COMPLETED=已完成, CANCELLED=已取消, TIMEOUT=已超时"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["LOW", "MEDIUM", "HIGH", "URGENT"],
+            "description": "优先级",
+            "default": "MEDIUM"
+          },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "标签列表",
+            "example": ["学习", "Java"]
+          },
+          "color": { "type": "string", "description": "日程显示颜色（十六进制）", "example": "#4A90D9" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CreateScheduleRequest": {
+        "type": "object",
+        "required": ["title", "plannedStartTime"],
+        "properties": {
+          "title": { "type": "string", "maxLength": 100, "description": "日程标题" },
+          "description": { "type": "string", "maxLength": 1000, "description": "详细描述" },
+          "plannedStartTime": { "type": "string", "format": "date-time", "description": "计划开始时间" },
+          "plannedDuration": { "type": "integer", "minimum": 1, "description": "预计时长（分钟），默认60", "default": 60 },
+          "priority": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "URGENT"], "description": "优先级", "default": "MEDIUM" },
+          "tags": { "type": "array", "items": { "type": "string" }, "description": "标签列表" },
+          "color": { "type": "string", "description": "显示颜色" }
+        }
+      },
+      "UpdateScheduleRequest": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "maxLength": 100 },
+          "description": { "type": "string", "maxLength": 1000 },
+          "plannedStartTime": { "type": "string", "format": "date-time" },
+          "plannedDuration": { "type": "integer", "minimum": 1 },
+          "priority": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "URGENT"] },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "color": { "type": "string" }
+        }
+      },
+      "TimeRecord": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "scheduleId": { "type": "integer", "format": "int64" },
+          "startTime": { "type": "string", "format": "date-time" },
+          "endTime": { "type": "string", "format": "date-time" },
+          "duration": { "type": "integer", "description": "该段时长（秒）" },
+          "type": { "type": "string", "enum": ["ACTIVE", "PAUSE"], "description": "计时类型" }
+        }
+      },
+
+      "CalendarDay": {
+        "type": "object",
+        "properties": {
+          "date": { "type": "string", "format": "date", "description": "日期" },
+          "dayOfWeek": { "type": "integer", "description": "星期几（0=周日）" },
+          "isToday": { "type": "boolean" },
+          "totalCount": { "type": "integer", "description": "当日日程总数" },
+          "completedCount": { "type": "integer", "description": "已完成数" },
+          "schedules": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Schedule" },
+            "description": "当日日程摘要列表"
+          }
+        }
+      },
+      "CalendarResponse": {
+        "type": "object",
+        "properties": {
+          "year": { "type": "integer" },
+          "month": { "type": "integer" },
+          "days": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CalendarDay" }
+          }
+        }
+      },
+
+      "StatisticsSummary": {
+        "type": "object",
+        "properties": {
+          "period": { "type": "string", "description": "统计周期：day/week/month/year" },
+          "startDate": { "type": "string", "format": "date" },
+          "endDate": { "type": "string", "format": "date" },
+          "totalSchedules": { "type": "integer", "description": "总日程数" },
+          "completedSchedules": { "type": "integer", "description": "已完成数" },
+          "completionRate": { "type": "number", "format": "double", "description": "完成率 (0-1)" },
+          "totalFocusTime": { "type": "integer", "description": "总专注时长（秒）" },
+          "avgFocusTime": { "type": "integer", "description": "日均专注时长（秒）" },
+          "tagDistribution": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "tag": { "type": "string" },
+                "count": { "type": "integer" },
+                "totalDuration": { "type": "integer", "description": "该标签总时长（秒）" }
+              }
+            }
+          },
+          "dailyTrend": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": { "type": "string", "format": "date" },
+                "completed": { "type": "integer" },
+                "totalDuration": { "type": "integer" }
+              }
+            }
+          }
+        }
+      },
+
+      "AIPlanRequest": {
+        "type": "object",
+        "required": ["userPrompt"],
+        "properties": {
+          "userPrompt": { "type": "string", "maxLength": 2000, "description": "用户的自然语言描述", "example": "明天上午学习Java 2小时，下午运动1小时，晚上看书" },
+          "targetDate": { "type": "string", "format": "date", "description": "目标日期（默认明天）" },
+          "preferences": {
+            "type": "object",
+            "description": "用户偏好设置",
+            "properties": {
+              "preferredStartHour": { "type": "integer", "example": 9 },
+              "preferredEndHour": { "type": "integer", "example": 22 },
+              "defaultDuration": { "type": "integer", "example": 60 }
+            }
+          }
+        }
+      },
+      "AIPlanResponse": {
+        "type": "object",
+        "properties": {
+          "planId": { "type": "string", "description": "规划ID" },
+          "suggestions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": { "type": "string" },
+                "description": { "type": "string" },
+                "suggestedStart": { "type": "string", "description": "建议开始时间 HH:mm" },
+                "duration": { "type": "integer", "description": "建议时长（分钟）" },
+                "priority": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] },
+                "tags": { "type": "array", "items": { "type": "string" } },
+                "reason": { "type": "string", "description": "AI推荐理由" }
+              }
+            }
+          },
+          "adopted": { "type": "boolean", "description": "是否已被用户采纳" },
+          "createdScheduleIds": {
+            "type": "array",
+            "items": { "type": "integer", "format": "int64" },
+            "description": "采纳后创建的日程ID列表"
+          }
+        }
+      },
+      "AdoptPlanRequest": {
+        "type": "object",
+        "required": ["planId"],
+        "properties": {
+          "planId": { "type": "string", "description": "要采纳的规划ID" },
+          "selectedIndices": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "description": "选择采纳的建议索引（空则全部采纳）"
+          },
+          "adjustments": {
+            "type": "object",
+            "description": "用户手动调整",
+            "properties": {
+              "startOffset": { "type": "integer", "description": "整体开始时间偏移（分钟）" },
+              "date": { "type": "string", "format": "date", "description": "覆盖日期" }
+            }
+          }
+        }
+      },
+      "AISummaryRequest": {
+        "type": "object",
+        "properties": {
+          "date": { "type": "string", "format": "date", "description": "指定日期（默认今天）" },
+          "stream": { "type": "boolean", "description": "是否流式返回", "default": true }
+        }
+      },
+      "AIReportInfo": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "userId": { "type": "integer", "format": "int64" },
+          "type": { "type": "string", "enum": ["DAILY", "WEEKLY", "MONTHLY", "YEARLY"] },
+          "title": { "type": "string" },
+          "content": { "type": "string", "description": "Markdown 格式的报告内容" },
+          "completionRate": { "type": "number" },
+          "totalFocusTime": { "type": "integer" },
+          "highlights": { "type": "array", "items": { "type": "string" } },
+          "suggestions": { "type": "array", "items": { "type": "string" } },
+          "generatedAt": { "type": "string", "format": "date-time" },
+          "status": { "type": "string", "enum": ["GENERATING", "COMPLETED", "FAILED"] }
+        }
+      },
+
+      "Notification": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "userId": { "type": "integer", "format": "int64" },
+          "type": { "type": "string", "enum": ["REMINDER", "SUMMARY", "SYSTEM", "PROMOTION"], "description": "通知类型" },
+          "title": { "type": "string" },
+          "content": { "type": "string" },
+          "isRead": { "type": "boolean", "default": false },
+          "relatedId": { "type": "integer", "format": "int64", "description": "关联业务ID" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ReminderSetting": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "scheduleId": { "type": "integer", "format": "int64" },
+          "advanceMinutes": { "type": "integer", "description": "提前多少分钟提醒", "example": 15 },
+          "channels": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["APP", "EMAIL", "SMS"] },
+            "description": "提醒渠道"
+          },
+          "enabled": { "type": "boolean", "default": true }
+        }
+      },
+
+      "MallItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "name": { "type": "string", "description": "商品名称", "example": "星空主题皮肤" },
+          "type": { "type": "string", "enum": ["SKIN", "AVATAR", "BADGE", "STICKER"], "description": "商品类型" },
+          "description": { "type": "string" },
+          "imageUrl": { "type": "string", "description": "商品图片URL" },
+          "previewUrl": { "type": "string", "description": "预览图URL" },
+          "price": { "type": "integer", "description": "所需积分" },
+          "stock": { "type": "integer", "description": "库存，-1 表示无限" },
+          "status": { "type": "string", "enum": ["ON_SALE", "OFF_SHELF"], "description": "上架状态" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PurchaseRequest": {
+        "type": "object",
+        "required": ["itemId"],
+        "properties": {
+          "itemId": { "type": "integer", "format": "int64" }
+        }
+      },
+      "WardrobeItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "userId": { "type": "integer", "format": "int64" },
+          "item": { "$ref": "#/components/schemas/MallItem" },
+          "isActive": { "type": "boolean", "description": "是否当前使用中" },
+          "purchasedAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["认证接口"],
+        "summary": "用户注册",
+        "description": "创建新用户账号，用户名和邮箱需唯一",
+        "operationId": "register",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RegisterRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "注册成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    { "properties": { "data": { "$ref": "#/components/schemas/UserInfo" } } }
+                  ]
+                }
+              }
+            }
+          },
+          "400": { "description": "参数校验失败或用户名已存在" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["认证接口"],
+        "summary": "用户登录",
+        "description": "使用用户名/邮箱/手机号 + 密码登录，返回 JWT Token",
+        "operationId": "login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "登录成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    { "properties": { "data": { "$ref": "#/components/schemas/LoginResponse" } } }
+                  ]
+                }
+              }
+            }
+          },
+          "401": { "description": "用户名或密码错误" }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": ["认证接口"],
+        "summary": "刷新Token",
+        "operationId": "refreshToken",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["refreshToken"],
+                "properties": {
+                  "refreshToken": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "刷新成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    { "properties": { "data": { "$ref": "#/components/schemas/LoginResponse" } } }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["认证接口"],
+        "summary": "退出登录",
+        "description": "使当前 Token 失效",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "logout",
+        "responses": {
+          "200": { "description": "退出成功" }
+        }
+      }
+    },
+
+    "/users/me": {
+      "get": {
+        "tags": ["用户接口"],
+        "summary": "获取当前用户信息",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "getCurrentUser",
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    { "properties": { "data": { "$ref": "#/components/schemas/UserInfo" } } }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["用户接口"],
+        "summary": "更新用户信息",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "updateCurrentUser",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateUserRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    { "properties": { "data": { "$ref": "#/components/schemas/UserInfo" } } }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me/avatar": {
+      "post": {
+        "tags": ["用户接口"],
+        "summary": "上传头像",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "uploadAvatar",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": { "type": "string", "format": "binary", "description": "头像图片（支持 jpg/png/webp，最大 2MB）" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "上传成功，返回头像URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    { "properties": { "data": { "type": "string", "description": "头像URL" } } }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me/password": {
+      "put": {
+        "tags": ["用户接口"],
+        "summary": "修改密码",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "changePassword",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["oldPassword", "newPassword"],
+                "properties": {
+                  "oldPassword": { "type": "string" },
+                  "newPassword": { "type": "string", "minLength": 6, "maxLength": 32 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "修改成功" },
+          "400": { "description": "旧密码错误" }
+        }
+      }
+    },
+    "/users/points": {
+      "get": {
+        "tags": ["用户接口"],
+        "summary": "查询积分余额及明细",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "getPointsLog",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          { "name": "reason", "in": "query", "schema": { "type": "string" }, "description": "按原因筛选" }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "currentPoints": { "type": "integer", "example": 1500 },
+                            "logs": {
+                              "type": "array",
+                              "items": { "$ref": "#/components/schemas/PointsLogEntry" }
+                            },
+                            "total": { "type": "integer" }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/points/deduct": {
+      "post": {
+        "tags": ["用户接口"],
+        "summary": "扣减积分（内部调用）",
+        "description": "由 mall-service 等内部服务调用，用于购买商品时扣减积分",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "deductPoints",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["amount", "reason"],
+                "properties": {
+                  "amount": { "type": "integer", "minimum": 1, "description": "扣减数量" },
+                  "reason": { "type": "string" },
+                  "relatedId": { "type": "integer", "format": "int64" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "扣减成功" },
+          "400": { "description": "积分不足" }
+        }
+      }
+    },
+
+    "/schedules": {
+      "post": {
+        "tags": ["日程接口"],
+        "summary": "创建日程",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "createSchedule",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateScheduleRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    { "properties": { "data": { "$ref": "#/components/schemas/Schedule" } } }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["日程接口"],
+        "summary": "查询日程列表",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "listSchedules",
+        "parameters": [
+          { "name": "date", "in": "query", "schema": { "type": "string", "format": "date" }, "description": "指定日期查询" },
+          { "name": "view", "in": "query", "schema": { "type": "string", "enum": ["day", "week", "month"] }, "description": "视图类型" },
+          { "name": "startDate", "in": "query", "schema": { "type": "string", "format": "date" }, "description": "开始日期" },
+          { "name": "endDate", "in": "query", "schema": { "type": "string", "format": "date" }, "description": "结束日期" },
+          { "name": "status", "in": "query", "schema": { "type": "string" }, "description": "状态筛选，多个用逗号分隔" },
+          { "name": "priority", "in": "query", "schema": { "type": "string" }, "description": "优先级筛选" },
+          { "name": "tag", "in": "query", "schema": { "type": "string" }, "description": "标签筛选" },
+          { "name": "keyword", "in": "query", "schema": { "type": "string" }, "description": "标题/描述关键词搜索" },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["plannedStartTime", "priority", "createdAt"] }, "description": "排序字段" },
+          { "name": "order", "in": "query", "schema": { "type": "string", "enum": ["asc", "desc"], "default": "asc" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PageResult" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/schedules/{id}": {
+      "get": {
+        "tags": ["日程接口"],
+        "summary": "查询日程详情",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "getSchedule",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "properties": {
+                        "data": {
+                          "allOf": [
+                            { "$ref": "#/components/schemas/Schedule" },
+                            {
+                              "properties": {
+                                "timeRecords": {
+                                  "type": "array",
+                                  "items": { "$ref": "#/components/schemas/TimeRecord" }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": { "description": "日程不存在" }
+        }
+      },
+      "put": {
+        "tags": ["日程接口"],
+        "summary": "更新日程",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "updateSchedule",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateScheduleRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    { "properties": { "data": { "$ref": "#/components/schemas/Schedule" } } }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["日程接口"],
+        "summary": "删除日程",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "deleteSchedule",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": { "description": "删除成功" },
+          "404": { "description": "日程不存在" }
+        }
+      }
+    },
+    "/schedules/{id}/start": {
+      "post": {
+        "tags": ["日程接口"],
+        "summary": "开始计时",
+        "description": "将日程状态变为 IN_PROGRESS，记录实际开始时间。同时只能有一个日程在计时中。",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "startSchedule",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "开始成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    { "properties": { "data": { "$ref": "#/components/schemas/Schedule" } } }
+                  ]
+                }
+              }
+            }
+          },
+          "409": { "description": "已有其他日程正在进行中" }
+        }
+      }
+    },
+    "/schedules/{id}/pause": {
+      "post": {
+        "tags": ["日程接口"],
+        "summary": "暂停计时",
+        "description": "暂停当前计时，累加已用时长，状态变为 PAUSED",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "pauseSchedule",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "暂停成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    { "properties": { "data": { "$ref": "#/components/schemas/Schedule" } } }
+                  ]
+                }
+              }
+            }
+          },
+          "400": { "description": "日程不处于进行中状态" }
+        }
+      }
+    },
+    "/schedules/{id}/resume": {
+      "post": {
+        "tags": ["日程接口"],
+        "summary": "恢复计时",
+        "description": "从暂停状态恢复计时，状态变为 IN_PROGRESS",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "resumeSchedule",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "恢复成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    { "properties": { "data": { "$ref": "#/components/schemas/Schedule" } } }
+                  ]
+                }
+              }
+            }
+          },
+          "400": { "description": "日程不处于暂停状态" }
+        }
+      }
+    },
+    "/schedules/{id}/end": {
+      "post": {
+        "tags": ["日程接口"],
+        "summary": "结束计时",
+        "description": "结束计时，计算总耗时，状态变为 COMPLETED，触发积分奖励",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "endSchedule",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "manualActualDuration": { "type": "integer", "description": "手动录入实际耗时（秒），优先级高于计时器" },
+                  "note": { "type": "string", "description": "完成备注" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "结束成功，返回获得的积分",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "schedule": { "$ref": "#/components/schemas/Schedule" },
+                            "earnedPoints": { "type": "integer", "description": "本次获得的积分" },
+                            "totalDuration": { "type": "integer", "description": "总耗时（秒）" }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/schedules/{id}/cancel": {
+      "post": {
+        "tags": ["日程接口"],
+        "summary": "取消日程",
+        "description": "将日程标记为已取消",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "cancelSchedule",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": { "type": "string", "description": "取消原因" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "取消成功" }
+        }
+      }
+    },
+    "/schedules/active": {
+      "get": {
+        "tags": ["日程接口"],
+        "summary": "获取当前进行中的日程",
+        "description": "返回用户当前正在计时或暂停的日程（用于计时器持久化恢复）",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "getActiveSchedule",
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "properties": {
+                        "data": {
+                          "nullable": true,
+                          "allOf": [
+                            { "$ref": "#/components/schemas/Schedule" },
+                            {
+                              "properties": {
+                                "elapsedSeconds": { "type": "integer", "description": "当前已计时秒数" },
+                                "timerStartedAt": { "type": "string", "format": "date-time", "description": "最近一次计时开始时间" }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/schedules/batch": {
+      "post": {
+        "tags": ["日程接口"],
+        "summary": "批量创建日程",
+        "description": "配合 AI 规划，一次性创建多个日程",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "batchCreateSchedules",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["schedules"],
+                "properties": {
+                  "schedules": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/CreateScheduleRequest" },
+                    "maxItems": 50
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "批量创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/Schedule" }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/calendar": {
+      "get": {
+        "tags": ["日历接口"],
+        "summary": "获取日历视图数据",
+        "description": "获取指定月份的日历视图，包含每日日程数量和摘要信息",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "getCalendarView",
+        "parameters": [
+          { "name": "year", "in": "query", "required": true, "schema": { "type": "integer" }, "description": "年份", "example": 2026 },
+          { "name": "month", "in": "query", "required": true, "schema": { "type": "integer", "minimum": 1, "maximum": 12 }, "description": "月份", "example": 6 }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    { "properties": { "data": { "$ref": "#/components/schemas/CalendarResponse" } } }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/calendar/week": {
+      "get": {
+        "tags": ["日历接口"],
+        "summary": "获取周视图",
+        "description": "获取指定周的日程分布",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "getWeekView",
+        "parameters": [
+          { "name": "date", "in": "query", "schema": { "type": "string", "format": "date" }, "description": "该周内的任意日期" }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "weekStart": { "type": "string", "format": "date" },
+                            "weekEnd": { "type": "string", "format": "date" },
+                            "days": {
+                              "type": "array",
+                              "items": { "$ref": "#/components/schemas/CalendarDay" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/calendar/today": {
+      "get": {
+        "tags": ["日历接口"],
+        "summary": "获取今日概览",
+        "description": "返回今天的日程概览和快捷操作数据",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "getTodayOverview",
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "date": { "type": "string", "format": "date" },
+                            "totalCount": { "type": "integer" },
+                            "completedCount": { "type": "integer" },
+                            "inProgressCount": { "type": "integer" },
+                            "pendingCount": { "type": "integer" },
+                            "activeSchedule": { "$ref": "#/components/schemas/Schedule" },
+                            "upcomingSchedules": {
+                              "type": "array",
+                              "items": { "$ref": "#/components/schemas/Schedule" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/statistics/summary": {
+      "get": {
+        "tags": ["统计接口"],
+        "summary": "获取统计汇总",
+        "description": "获取指定周期的效率统计数据",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "getStatisticsSummary",
+        "parameters": [
+          { "name": "period", "in": "query", "required": true, "schema": { "type": "string", "enum": ["day", "week", "month", "year"] }, "description": "统计周期" },
+          { "name": "date", "in": "query", "schema": { "type": "string", "format": "date" }, "description": "基准日期（默认今天）" }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    { "properties": { "data": { "$ref": "#/components/schemas/StatisticsSummary" } } }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/statistics/trend": {
+      "get": {
+        "tags": ["统计接口"],
+        "summary": "获取趋势数据",
+        "description": "获取最近N天的完成趋势数据",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "getTrend",
+        "parameters": [
+          { "name": "days", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 365 }, "description": "最近天数，默认30", "default": 30 }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "date": { "type": "string", "format": "date" },
+                              "completed": { "type": "integer" },
+                              "total": { "type": "integer" },
+                              "totalDuration": { "type": "integer" },
+                              "completionRate": { "type": "number" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/statistics/tags": {
+      "get": {
+        "tags": ["统计接口"],
+        "summary": "标签统计",
+        "description": "获取用户常用标签及其分布",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "getTagStats",
+        "parameters": [
+          { "name": "period", "in": "query", "schema": { "type": "string", "enum": ["week", "month", "year", "all"] }, "description": "统计周期", "default": "month" }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "tag": { "type": "string" },
+                              "count": { "type": "integer" },
+                              "totalDuration": { "type": "integer" },
+                              "percentage": { "type": "number" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/ai/plan": {
+      "post": {
+        "tags": ["AI助手"],
+        "summary": "AI 生成日程规划",
+        "description": "输入自然语言描述，AI 解析并生成结构化日程建议，支持流式输出（SSE）",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "generatePlan",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AIPlanRequest" }
+            }
+          }
+        },
+        "parameters": [
+          { "name": "stream", "in": "query", "schema": { "type": "boolean", "default": false }, "description": "是否使用 SSE 流式返回" }
+        ],
+        "responses": {
+          "200": {
+            "description": "规划生成成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    { "properties": { "data": { "$ref": "#/components/schemas/AIPlanResponse" } } }
+                  ]
+                }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "SSE 事件流，逐条返回建议"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/plan/{planId}/adopt": {
+      "post": {
+        "tags": ["AI助手"],
+        "summary": "采纳 AI 规划",
+        "description": "一键将AI规划建议创建为实际日程",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "adoptPlan",
+        "parameters": [
+          { "name": "planId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AdoptPlanRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "采纳成功，返回创建的日程列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/Schedule" }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/summary/daily": {
+      "post": {
+        "tags": ["AI助手"],
+        "summary": "生成每日总结",
+        "description": "对当日已完成日程进行智能总结，分析效率和时间分配。支持 SSE 流式返回。",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "generateDailySummary",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AISummaryRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "总结生成成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    { "properties": { "data": { "$ref": "#/components/schemas/AIReportInfo" } } }
+                  ]
+                }
+              },
+              "text/event-stream": {
+                "schema": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/summary/monthly": {
+      "post": {
+        "tags": ["AI助手"],
+        "summary": "生成月度总结",
+        "description": "异步生成月度总结报告，返回报告ID供后续查询",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "generateMonthlySummary",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "year": { "type": "integer" },
+                  "month": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "已提交异步生成任务",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "reportId": { "type": "integer", "format": "int64" },
+                            "status": { "type": "string", "enum": ["GENERATING"] },
+                            "estimatedSeconds": { "type": "integer", "description": "预计生成时间（秒）" }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/summary/yearly": {
+      "post": {
+        "tags": ["AI助手"],
+        "summary": "生成年度总结",
+        "description": "异步生成年度总结报告",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "generateYearlySummary",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "year": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "已提交异步生成任务"
+          }
+        }
+      }
+    },
+    "/ai/reports": {
+      "get": {
+        "tags": ["AI助手"],
+        "summary": "查询历史报告列表",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "listReports",
+        "parameters": [
+          { "name": "type", "in": "query", "schema": { "type": "string", "enum": ["DAILY", "WEEKLY", "MONTHLY", "YEARLY"] }, "description": "报告类型" },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer", "default": 10 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PageResult" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/reports/{id}": {
+      "get": {
+        "tags": ["AI助手"],
+        "summary": "获取报告详情",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "getReport",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    { "properties": { "data": { "$ref": "#/components/schemas/AIReportInfo" } } }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/chat": {
+      "post": {
+        "tags": ["AI助手"],
+        "summary": "AI 对话助手",
+        "description": "与 AI 自由对话，获取日程管理建议，支持流式返回",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "chatWithAI",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["message"],
+                "properties": {
+                  "message": { "type": "string", "maxLength": 2000 },
+                  "conversationId": { "type": "string", "description": "对话ID（可选，多轮对话时传入）" },
+                  "stream": { "type": "boolean", "default": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "AI 回复",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "conversationId": { "type": "string" },
+                            "reply": { "type": "string" },
+                            "suggestedActions": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "type": { "type": "string", "enum": ["CREATE_SCHEDULE", "VIEW_STATS", "GENERATE_SUMMARY"] },
+                                  "label": { "type": "string" },
+                                  "payload": { "type": "object" }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/notifications": {
+      "get": {
+        "tags": ["提醒通知"],
+        "summary": "查询通知列表",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "listNotifications",
+        "parameters": [
+          { "name": "type", "in": "query", "schema": { "type": "string" }, "description": "通知类型筛选" },
+          { "name": "isRead", "in": "query", "schema": { "type": "boolean" }, "description": "已读/未读筛选" },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer", "default": 20 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "records": { "type": "array", "items": { "$ref": "#/components/schemas/Notification" } },
+                            "unreadCount": { "type": "integer" },
+                            "total": { "type": "integer" }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/{id}/read": {
+      "put": {
+        "tags": ["提醒通知"],
+        "summary": "标记通知已读",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "markNotificationRead",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": { "description": "标记成功" }
+        }
+      }
+    },
+    "/notifications/read-all": {
+      "put": {
+        "tags": ["提醒通知"],
+        "summary": "全部标记已读",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "markAllNotificationsRead",
+        "responses": {
+          "200": { "description": "操作成功" }
+        }
+      }
+    },
+    "/notifications/settings": {
+      "get": {
+        "tags": ["提醒通知"],
+        "summary": "获取提醒设置",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "getReminderSettings",
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "defaultAdvanceMinutes": { "type": "integer", "description": "默认提前提醒分钟数" },
+                            "channels": { "type": "array", "items": { "type": "string" }, "description": "启用的提醒渠道" },
+                            "quietHoursEnabled": { "type": "boolean", "description": "是否启用免打扰时段" },
+                            "quietStart": { "type": "string", "description": "免打扰开始 HH:mm" },
+                            "quietEnd": { "type": "string", "description": "免打扰结束 HH:mm" }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["提醒通知"],
+        "summary": "更新提醒设置",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "updateReminderSettings",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "defaultAdvanceMinutes": { "type": "integer" },
+                  "channels": { "type": "array", "items": { "type": "string" } },
+                  "quietHoursEnabled": { "type": "boolean" },
+                  "quietStart": { "type": "string" },
+                  "quietEnd": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "更新成功" }
+        }
+      }
+    },
+
+    "/mall/items": {
+      "get": {
+        "tags": ["积分商城"],
+        "summary": "获取商品列表",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "listMallItems",
+        "parameters": [
+          { "name": "type", "in": "query", "schema": { "type": "string", "enum": ["SKIN", "AVATAR", "BADGE", "STICKER"] }, "description": "商品类型筛选" },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer", "default": 20 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "records": { "type": "array", "items": { "$ref": "#/components/schemas/MallItem" } },
+                            "total": { "type": "integer" },
+                            "userPoints": { "type": "integer", "description": "用户当前积分" }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mall/items/{id}": {
+      "get": {
+        "tags": ["积分商城"],
+        "summary": "获取商品详情",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "getMallItem",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    { "properties": { "data": {
+                      "allOf": [
+                        { "$ref": "#/components/schemas/MallItem" },
+                        {
+                          "properties": {
+                            "owned": { "type": "boolean", "description": "是否已购买" },
+                            "purchaseCount": { "type": "integer", "description": "总购买人次" }
+                          }
+                        }
+                      ]
+                    }}}
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mall/purchase": {
+      "post": {
+        "tags": ["积分商城"],
+        "summary": "购买商品",
+        "description": "扣减积分并发放商品到用户装扮仓库",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "purchaseItem",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PurchaseRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "购买成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "purchaseId": { "type": "integer", "format": "int64" },
+                            "item": { "$ref": "#/components/schemas/MallItem" },
+                            "remainingPoints": { "type": "integer" }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": { "description": "积分不足或商品已售罄" }
+        }
+      }
+    },
+
+    "/users/wardrobe": {
+      "get": {
+        "tags": ["装扮管理"],
+        "summary": "获取装扮仓库",
+        "description": "获取用户已购买的所有装扮物品",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "getWardrobe",
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiResponse" },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/WardrobeItem" }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/wardrobe/active": {
+      "put": {
+        "tags": ["装扮管理"],
+        "summary": "切换当前使用的装扮",
+        "description": "将指定装扮设为当前生效（皮肤/头像/徽章等）",
+        "security": [{ "bearerAuth": [] }],
+        "operationId": "activateWardrobeItem",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["itemId"],
+                "properties": {
+                  "itemId": { "type": "integer", "format": "int64" },
+                  "type": { "type": "string", "enum": ["SKIN", "AVATAR", "BADGE"], "description": "同类型切换时，之前生效的将自动取消" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "切换成功" }
+        }
+      }
+    }
+  }
+}
