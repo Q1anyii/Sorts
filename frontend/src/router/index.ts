@@ -29,10 +29,10 @@ const routes: RouteRecordRaw[] = [
       { path: 'timer', name: 'timer', component: () => import('@/views/timer/TimerView.vue'), meta: { title: '穿梭计时' } },
       { path: 'statistics', name: 'statistics', component: () => import('@/views/statistics/StatisticsView.vue'), meta: { title: '纹谱统计' } },
       { path: 'ai', name: 'ai', component: () => import('@/views/ai/AiView.vue'), meta: { title: 'AI 织师' } },
-      { path: 'mall', name: 'mall', component: stub, meta: { title: '锦市' } },
-      { path: 'wardrobe', name: 'wardrobe', component: stub, meta: { title: '衣橱' } },
-      { path: 'notifications', name: 'notifications', component: stub, meta: { title: '飞鸽传书' } },
-      { path: 'settings', name: 'settings', component: stub, meta: { title: '设置' } }
+      { path: 'mall', name: 'mall', component: () => import('@/views/mall/MallView.vue'), meta: { title: '锦市' } },
+      { path: 'wardrobe', name: 'wardrobe', component: () => import('@/views/wardrobe/WardrobeView.vue'), meta: { title: '衣橱' } },
+      { path: 'notifications', name: 'notifications', component: () => import('@/views/notify/NotifyView.vue'), meta: { title: '飞鸽传书' } },
+      { path: 'settings', name: 'settings', component: () => import('@/views/settings/SettingsView.vue'), meta: { title: '设置' } }
     ]
   },
   {
