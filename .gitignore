@@ -39,3 +39,8 @@ Thumbs.db
 .env.local
 .env.*.local
 application-secret.yml
+
+# ========== 会话数据：保留项目记忆，忽略临时产物 ==========
+.workbuddy/*
+!.workbuddy/memory/
+!.workbuddy/memory/**
