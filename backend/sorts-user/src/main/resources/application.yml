@@ -5,9 +5,10 @@ spring:
   application:
     name: sorts-user
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/sorts_user?useUnicode=true&characterEncoding=utf8mb4&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    # 本地开发：MySQL 跑在 WSL Docker 中，端口 3307（避开宿主 3306）
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3307}/sorts_user?useUnicode=true&characterEncoding=utf8mb4&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: ${MYSQL_USER:root}
-    password: ${MYSQL_PASSWORD:root}
+    password: ${MYSQL_PASSWORD:sorts_dev}
     driver-class-name: com.mysql.cj.jdbc.Driver
   data:
     redis:

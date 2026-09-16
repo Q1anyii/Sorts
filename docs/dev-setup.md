@@ -35,15 +35,25 @@
 ### 1) WSL Ubuntu：启动中间件
 
 ```bash
-# 在 WSL 内执行（Redis → 6380、Nacos 8848、RabbitMQ 5672/15672、初始化 5 个库）
+# 在 WSL 内执行（全部用 Docker 承载，端口：Redis 6380 / MySQL 3307 / Nacos 8848 / RabbitMQ 5672）
 bash scripts/wsl-middleware.sh start
 
-# 查看状态 / 停止
+# 查看状态 / 跟随日志 / 停止
 bash scripts/wsl-middleware.sh status
+bash scripts/wsl-middleware.sh logs sorts-mysql
 bash scripts/wsl-middleware.sh stop
 ```
 
-> MySQL 账号密码通过环境变量传入：`MYSQL_USER=root MYSQL_PASSWORD=xxx bash scripts/wsl-middleware.sh start`
+| 中间件 | 端口 | 账号 |
+|---|---|---|
+| Redis | **6380**（约定：默认端口 +1） | 无密码 |
+| MySQL 8 | **3307**（避开宿主 3306 冲突） | root / sorts_dev |
+| Nacos | 8848（控制台 `/nacos`） | 免鉴权（单机开发） |
+| RabbitMQ | 5672 / 管理台 15672 | sorts / sorts_dev |
+
+> 首次启动 MySQL 时，`scripts/sql/*.sql` 会被自动执行（建 5 个库 + 建表）。
+> 账号密码可用环境变量覆盖：`MYSQL_ROOT_PASSWORD=xxx MYSQL_PORT=3307 bash scripts/wsl-middleware.sh start`
+> 服务侧对应环境变量：`MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_USER` / `MYSQL_PASSWORD` / `REDIS_PORT`
 
 ### 2) Windows：构建后端
 
