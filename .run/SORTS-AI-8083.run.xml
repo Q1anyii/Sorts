@@ -1,0 +1,16 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="SORTS · AI (8083)" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="false">
+    <module name="sorts-ai" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.sorts.ai.AiApplication" />
+    <option name="VM_PARAMETERS" value="-Dfile.encoding=UTF-8" />
+    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+    <!-- 模型密钥不入库：本地调试时在 IDEA 的运行配置里填 DEEPSEEK_API_KEY（或设系统环境变量） -->
+    <envs>
+      <env name="DEEPSEEK_API_KEY" value="" />
+      <env name="AI_TOOL_ALLOW_WRITE" value="false" />
+    </envs>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
