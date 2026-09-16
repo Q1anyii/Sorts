@@ -23,6 +23,7 @@
         <module>sorts-common</module>
         <module>sorts-gateway</module>
         <module>sorts-user</module>
+        <module>sorts-schedule</module>
     </modules>
 
     <properties>
