@@ -1,0 +1,117 @@
+/* ============================================================
+ * 动效（docs/theme-design.md §十）
+ * 只允许 transform / opacity；全部支持降级。
+ * ============================================================ */
+
+/* ---------- ① 穿梭过场（§10.2：梭形掠过 220ms） ---------- */
+@keyframes shuttle-sweep {
+  0%   { transform: translateX(-15%); opacity: 0; }
+  12%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { transform: translateX(115%); opacity: 0; }
+}
+.shuttle-sweep {
+  animation: shuttle-sweep var(--sorts-dur-base) var(--sorts-ease-out) both;
+}
+
+/* 路由淡入（与过场同拍） */
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.view-in {
+  animation: view-in var(--sorts-dur-base) var(--sorts-ease-out) both;
+}
+
+/* ---------- ② 流光（§10.2：只描边，不铺底、不外发光） ---------- */
+@property --sorts-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes shimmer-angle {
+  to { --sorts-angle: 360deg; }
+}
+.shimmer-border {
+  position: relative;
+}
+.shimmer-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--sorts-angle, 0deg),
+    transparent 0deg 250deg,
+    var(--sorts-color-gold-300) 300deg,
+    var(--sorts-color-gold-500) 330deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          mask-composite: exclude;
+  pointer-events: none;
+  animation: shimmer-angle var(--sorts-dur-slow) linear infinite;
+}
+
+/* ---------- ③ 落梭压印（§10.2：scale .9→1 + opacity，180ms 带回弹） ---------- */
+@keyframes seal-stamp {
+  from { transform: scale(.9); opacity: 0; }
+  to   { transform: scale(1);  opacity: 1; }
+}
+.seal-stamp {
+  animation: seal-stamp 180ms var(--sorts-ease-press) both;
+}
+
+/* ---------- ④ 经纬编织（§10.2：条目依次进场，stagger 24ms） ---------- */
+@keyframes weave-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.weave-in {
+  animation: weave-in 240ms var(--sorts-ease-out) both;
+}
+
+/* ---------- 印章呼吸（§9.2：缃金实心印，2s） ---------- */
+@keyframes seal-breath {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .88; }
+}
+.seal-breath {
+  animation: seal-breath var(--sorts-dur-slow) ease-in-out infinite;
+}
+
+/* ---------- 骨架屏微光 ---------- */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .55; }
+}
+.skeleton-pulse {
+  animation: skeleton-pulse 1400ms ease-in-out infinite;
+}
+
+/* ---------- 降级（§10.3） ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .shuttle-enter-active,
+  .shuttle-leave-active {
+    transition: none !important;
+  }
+  .shuttle-sweep,
+  .shimmer-border::before,
+  .seal-stamp,
+  .weave-in,
+  .seal-breath,
+  .skeleton-pulse,
+  .view-in {
+    animation: none !important;
+  }
+  /* 流光降级为静态缃金描边 */
+  .shimmer-border::before {
+    background: none;
+    border: 1.5px solid var(--sorts-color-gold-500);
+    mask: none;
+    -webkit-mask: none;
+  }
+}

@@ -1,0 +1,64 @@
+/* ============================================================
+ * 夜梭 · 暗色主题（docs/theme-design.md §6.4）
+ * 只覆盖语义 token，不写第二套组件样式。
+ * ============================================================ */
+
+html[data-theme="night"] {
+  /* 语义：文本 / 面 / 线 */
+  --sorts-text: #EDEAE1;
+  --sorts-text-soft: #A8B0BC;
+  --sorts-text-faint: #8A93A0;
+  --sorts-bg: #141A24;
+  --sorts-surface: #1E2633;
+  --sorts-surface-raise: #26303F;
+  --sorts-border: #2E3947;
+  --sorts-border-soft: #27303C;
+  --sorts-mask: rgba(6, 9, 14, .55);
+  --sorts-focus: #6BA6C9;
+
+  /* 主色提亮（暗底需提亮才够对比） */
+  --sorts-gold: #E0B75E;
+  --sorts-late: #D67A5F;
+  --sorts-arrow: #6BA6C9;
+  --sorts-moon: #141A24;
+  --sorts-paper: #1E2633;
+
+  /* 状态语义：暗色底纹 */
+  --sorts-status-pending-fg: #9AA3B0;
+  --sorts-status-pending-bg: #232B38;
+  --sorts-status-pending-bd: #39424F;
+
+  --sorts-status-running-fg: #E0B75E;
+  --sorts-status-running-bg: #2E2A1C;
+  --sorts-status-running-bd: #4F4726;
+
+  --sorts-status-paused-fg: #C7A45C;
+  --sorts-status-paused-bg: #262C37;
+  --sorts-status-paused-bd: #4F4726;
+
+  --sorts-status-completed-fg: #6BA6C9;
+  --sorts-status-completed-bg: #1C2833;
+  --sorts-status-completed-bd: #2E4A5E;
+
+  --sorts-status-cancelled-fg: #767C86;
+  --sorts-status-cancelled-bg: #20262F;
+  --sorts-status-cancelled-bd: #2E3947;
+
+  --sorts-status-timeout-fg: #D67A5F;
+  --sorts-status-timeout-bg: #2E211C;
+  --sorts-status-timeout-bd: #553227;
+
+  /* 阴影：暗色下改为更重的深色阴影 */
+  --sorts-shadow-1: 0 1px 3px rgba(0, 0, 0, .3);
+  --sorts-shadow-2: 0 4px 10px rgba(0, 0, 0, .36);
+  --sorts-shadow-3: 0 10px 24px rgba(0, 0, 0, .44);
+}
+
+/* 暗色下取消宣纸噪点（会显脏），纹样透明度减半（§6.4 纪律） */
+html[data-theme="night"] body::before {
+  opacity: 0;
+}
+
+html[data-theme="night"] .weave-bg {
+  opacity: .5;
+}

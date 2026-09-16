@@ -1,0 +1,71 @@
+/* ============================================================
+ * 基础样式（reset + 排版默认值）
+ * 依据 docs/theme-design.md §7：字阶 8 级、字重只用 400/500、衬线不越界
+ * ============================================================ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: var(--sorts-font-sans);
+  font-size: var(--sorts-fs-body);
+  line-height: 1.6;
+  color: var(--sorts-text);
+  background: var(--sorts-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+#app { position: relative; z-index: 1; min-height: 100vh; }
+
+input, textarea, select, button { font-family: inherit; font-size: inherit; color: inherit; }
+button { background: none; border: none; cursor: pointer; }
+ul, ol { list-style: none; }
+img, svg { display: block; }
+a { color: var(--sorts-arrow); text-decoration: none; }
+
+/* ---------- 标题（衬线只在品牌位：§7.2） ---------- */
+.font-serif { font-family: var(--sorts-font-serif); }
+
+h1, .h1 { font-family: var(--sorts-font-serif); font-size: var(--sorts-fs-h1); line-height: 32px; font-weight: 500; }
+h2, .h2 { font-size: var(--sorts-fs-h2); line-height: 26px; font-weight: 500; }
+h3, .h3 { font-size: var(--sorts-fs-h3); line-height: 22px; font-weight: 500; }
+
+.text-display { font-family: var(--sorts-font-serif); font-size: var(--sorts-fs-display); line-height: 40px; font-weight: 500; }
+.text-body-sm { font-size: var(--sorts-fs-body-sm); line-height: 20px; }
+.text-caption { font-size: var(--sorts-fs-caption); line-height: 18px; color: var(--sorts-text-faint); }
+.text-micro { font-family: var(--sorts-font-serif); font-size: var(--sorts-fs-micro); line-height: 16px; font-weight: 500; letter-spacing: .12em; }
+.text-soft { color: var(--sorts-text-soft); }
+.text-faint { color: var(--sorts-text-faint); }
+
+/* 数字列一律等宽 + tabular-nums（§7.4） */
+.num, .timer-display { font-family: var(--sorts-font-mono); font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+/* ---------- 焦点环（§11.1：2px 箭青 + 2px offset） ---------- */
+:focus-visible {
+  outline: 2px solid var(--sorts-focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ---------- 滚动条 ---------- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: var(--sorts-color-line-500); border-radius: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- 工具类 ---------- */
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  clip-path: inset(50%); overflow: hidden; white-space: nowrap;
+}
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.flex-1 { flex: 1; min-width: 0; }
+.gap-1 { gap: 4px; } .gap-2 { gap: 8px; } .gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; } .gap-6 { gap: 24px; }
+.mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; } .mt-4 { margin-top: 16px; } .mt-6 { margin-top: 24px; }
+.mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; } .mb-4 { margin-bottom: 16px; } .mb-6 { margin-bottom: 24px; }
+.truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.w-full { width: 100%; }

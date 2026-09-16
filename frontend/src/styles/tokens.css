@@ -1,0 +1,168 @@
+/* ============================================================
+ * 梭子 SORTS · 设计令牌（唯一真源）
+ * 依据 docs/theme-design.md v2（§三 / §六）
+ * 分层：原始色阶 → 语义色 → 组件语义；组件内禁止写死色值。
+ * ============================================================ */
+
+:root {
+  /* ---------- 原始色阶（§6.2，10 档，500 档 = v1 原值） ---------- */
+  --sorts-color-gold-50: #FAF6EC;
+  --sorts-color-gold-100: #F2E8D0;
+  --sorts-color-gold-200: #E5D3A5;
+  --sorts-color-gold-300: #D9BE7A;
+  --sorts-color-gold-400: #D0AC5B;
+  --sorts-color-gold-500: #C89B3C;
+  --sorts-color-gold-600: #A87F2E;
+  --sorts-color-gold-700: #856322;
+  --sorts-color-gold-800: #5C4417;
+  --sorts-color-gold-900: #33250C;
+
+  --sorts-color-late-50: #FBF0ED;
+  --sorts-color-late-100: #F5D9D2;
+  --sorts-color-late-200: #EBB5A7;
+  --sorts-color-late-300: #E0917B;
+  --sorts-color-late-400: #D2735A;
+  --sorts-color-late-500: #C0563B;
+  --sorts-color-late-600: #9E452F;
+  --sorts-color-late-700: #7A3524;
+  --sorts-color-late-800: #522418;
+  --sorts-color-late-900: #2B130C;
+
+  --sorts-color-arrow-50: #EFF5F9;
+  --sorts-color-arrow-100: #D6E7F1;
+  --sorts-color-arrow-200: #AECFE3;
+  --sorts-color-arrow-300: #85B7D5;
+  --sorts-color-arrow-400: #5D9ABD;
+  --sorts-color-arrow-500: #3D7EA6;
+  --sorts-color-arrow-600: #316585;
+  --sorts-color-arrow-700: #254D65;
+  --sorts-color-arrow-800: #193444;
+  --sorts-color-arrow-900: #0C1B23;
+
+  --sorts-color-ink-50: #F0F2F5;
+  --sorts-color-ink-100: #D6DBE3;
+  --sorts-color-ink-200: #AEB8C7;
+  --sorts-color-ink-300: #8594AB;
+  --sorts-color-ink-400: #5D708E;
+  --sorts-color-ink-500: #3A4F6E;
+  --sorts-color-ink-600: #2A3D57;
+  --sorts-color-ink-700: #1B2A41;
+  --sorts-color-ink-800: #131E2F;
+  --sorts-color-ink-900: #0C131D;
+
+  --sorts-color-line-50: #FBF9F4;
+  --sorts-color-line-100: #F5F2E9;
+  --sorts-color-line-200: #EEEADE;
+  --sorts-color-line-300: #E4E1D8;
+  --sorts-color-line-400: #D5D1C5;
+  --sorts-color-line-500: #C2BDB0;
+  --sorts-color-line-600: #A9A496;
+  --sorts-color-line-700: #8B867B;
+  --sorts-color-line-800: #63605A;
+  --sorts-color-line-900: #3B3936;
+
+  /* ---------- v1 九令牌（§三，原值不动；别名映射到语义 token） ---------- */
+  --sorts-ink: var(--sorts-color-ink-700);
+  --sorts-ink-soft: #4A5B70;
+  --sorts-moon: #F7F5EF;
+  --sorts-paper: #FFFFFF;
+  --sorts-gold: var(--sorts-color-gold-500);
+  --sorts-arrow: var(--sorts-color-arrow-500);
+  --sorts-sand: #E6DCC3;
+  --sorts-late: var(--sorts-color-late-500);
+  --sorts-line: var(--sorts-color-line-300);
+
+  /* ---------- 语义：文本 / 面 / 线 ---------- */
+  --sorts-text: var(--sorts-color-ink-700);
+  --sorts-text-soft: var(--sorts-ink-soft);
+  --sorts-text-faint: #6B7280;            /* §14：月白底对比度 4.8:1，替换原 #94A3B8 */
+  --sorts-bg: var(--sorts-moon);
+  --sorts-surface: var(--sorts-paper);
+  --sorts-surface-raise: var(--sorts-color-line-50);
+  --sorts-border: var(--sorts-color-line-300);
+  --sorts-border-soft: var(--sorts-color-line-200);
+  --sorts-mask: rgba(27, 42, 65, .35);
+  --sorts-focus: var(--sorts-color-arrow-500);
+
+  /* ---------- 状态语义三值（§6.3：前景 / 底 / 边） ---------- */
+  --sorts-status-pending-fg: #6B7280;
+  --sorts-status-pending-bg: #F1F0EC;
+  --sorts-status-pending-bd: #DAD7CD;
+
+  --sorts-status-running-fg: var(--sorts-color-gold-600);
+  --sorts-status-running-bg: #FBF3E2;
+  --sorts-status-running-bd: var(--sorts-color-gold-200);
+
+  --sorts-status-paused-fg: var(--sorts-color-gold-700);
+  --sorts-status-paused-bg: var(--sorts-color-line-100);
+  --sorts-status-paused-bd: var(--sorts-color-gold-300);
+
+  --sorts-status-completed-fg: var(--sorts-color-arrow-600);
+  --sorts-status-completed-bg: var(--sorts-color-arrow-50);
+  --sorts-status-completed-bd: var(--sorts-color-arrow-200);
+
+  --sorts-status-cancelled-fg: #9A9891;
+  --sorts-status-cancelled-bg: #F4F4F2;
+  --sorts-status-cancelled-bd: var(--sorts-color-line-300);
+
+  --sorts-status-timeout-fg: var(--sorts-color-late-600);
+  --sorts-status-timeout-bg: var(--sorts-color-late-50);
+  --sorts-status-timeout-bd: var(--sorts-color-late-200);
+
+  /* ---------- 优先级 ---------- */
+  --sorts-priority-urgent: var(--sorts-color-late-500);
+  --sorts-priority-high: var(--sorts-color-gold-500);
+  --sorts-priority-medium: var(--sorts-color-arrow-500);
+  --sorts-priority-low: var(--sorts-color-line-600);
+
+  /* ---------- 字体（§7.1） ---------- */
+  --sorts-font-sans: "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+  --sorts-font-mono: "JetBrains Mono", "SF Mono", ui-monospace, monospace;
+  --sorts-font-serif: "Source Han Serif SC", "Songti SC", "Noto Serif SC", "STSong", "SimSun", serif;
+
+  /* ---------- 字阶（§7.3，8 级；字重只用 400/500） ---------- */
+  --sorts-fs-display: 32px;
+  --sorts-fs-h1: 24px;
+  --sorts-fs-h2: 18px;
+  --sorts-fs-h3: 15px;
+  --sorts-fs-body: 14px;
+  --sorts-fs-body-sm: 13px;
+  --sorts-fs-caption: 12px;
+  --sorts-fs-micro: 11px;
+
+  /* ---------- 间距（4px 基准） ---------- */
+  --sorts-space-1: 4px;
+  --sorts-space-2: 8px;
+  --sorts-space-3: 12px;
+  --sorts-space-4: 16px;
+  --sorts-space-5: 20px;
+  --sorts-space-6: 24px;
+  --sorts-space-8: 32px;
+  --sorts-space-10: 40px;
+
+  /* ---------- 圆角（§11.1：容器 10 / 控件 6 / 印章 3） ---------- */
+  --sorts-radius-seal: 3px;
+  --sorts-radius-ctl: 6px;
+  --sorts-radius-box: 10px;
+
+  /* ---------- 暖灰阴影（§6.5：不用黑） ---------- */
+  --sorts-shadow-1: 0 1px 3px rgba(27, 42, 65, .06);
+  --sorts-shadow-2: 0 4px 10px rgba(27, 42, 65, .10);
+  --sorts-shadow-3: 0 10px 24px rgba(27, 42, 65, .14);
+
+  /* ---------- 动效（§10.1） ---------- */
+  --sorts-ease-out: cubic-bezier(.32, .72, 0, 1);
+  --sorts-ease-press: cubic-bezier(.2, 1.4, .4, 1);
+  --sorts-dur-fast: 120ms;
+  --sorts-dur-base: 220ms;
+  --sorts-dur-slow: 2000ms;
+
+  /* ---------- 布局 ---------- */
+  --sorts-sidebar-w: 216px;
+  --sorts-topbar-h: 56px;
+  --sorts-z-nav: 100;
+  --sorts-z-overlay: 900;
+  --sorts-z-modal: 1000;
+  --sorts-z-toast: 1100;
+  --sorts-z-shuttle: 1200;
+}
