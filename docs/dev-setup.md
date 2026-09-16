@@ -32,32 +32,43 @@
 
 ## 三、本地环境准备
 
-### 1) WSL Ubuntu：启动中间件
+### 1) 启动中间件（Docker Compose 统一管理）
 
 ```bash
-# 在 WSL 内执行（全部用 Docker 承载，端口：Redis 6380 / MySQL 3307 / Nacos 8848 / RabbitMQ 5672）
-bash scripts/wsl-middleware.sh start
+# 在 WSL 或 Git Bash 内执行（唯一入口，首次会自动生成 docker/.env）
+bash scripts/docker.sh up
 
-# 查看状态 / 跟随日志 / 停止
-bash scripts/wsl-middleware.sh status
-bash scripts/wsl-middleware.sh logs sorts-mysql
-bash scripts/wsl-middleware.sh stop
+# 状态 / 日志 / 停止
+bash scripts/docker.sh status
+bash scripts/docker.sh logs mysql
+bash scripts/docker.sh down
 
-# 新增模块的建表脚本后，补执行一次（容器初始化目录只在「首次创建」时执行）
-bash scripts/wsl-middleware.sh sql
+# 新增模块的建表脚本后补执行一次（初始化目录只在「首次创建数据卷」时执行）
+bash scripts/docker.sh sql
+
+# 全容器化运行后端与前端（可选）
+bash scripts/docker.sh app        # 构建并启动 6 个服务，网关 8080
+bash scripts/docker.sh web        # 前端站点 8088（nginx 反代 /api）
+bash scripts/docker.sh clean-legacy   # 清理历史上手动 run 出来的容器
 ```
 
 | 中间件 | 端口 | 账号 |
 |---|---|---|
-| Redis | **6380**（约定：默认端口 +1） | 无密码 |
-| MySQL 8 | **3307**（避开宿主 3306 冲突） | root / sorts_dev |
-| Nacos | 8848（控制台 `/nacos`） | 免鉴权（单机开发） |
+| Redis（redis-stack：含 RediSearch 等模块） | **6379** | 密码 `sorts_dev` |
+| MySQL 8 | **3307**（避开其他项目占用的 3306） | root / sorts_dev |
+| Nacos | 8848 / 9848 / 9849（控制台 `/nacos`） | 免鉴权（单机开发） |
 | RabbitMQ | 5672 / 管理台 15672 | sorts / sorts_dev |
 
 > 首次启动 MySQL 时，`scripts/sql/*.sql` 会被自动执行（建 5 个库 + 建表，按文件名排序，`00-init-databases.sql` 在最前）。
-> 容器已存在时不会重跑初始化目录，用 `bash scripts/wsl-middleware.sh sql` 补执行（脚本内均为 `CREATE ... IF NOT EXISTS`，可重复执行）。
-> 账号密码可用环境变量覆盖：`MYSQL_ROOT_PASSWORD=xxx MYSQL_PORT=3307 bash scripts/wsl-middleware.sh start`
-> 中间件相关环境变量：`MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_USER` / `MYSQL_PASSWORD` / `REDIS_HOST` / `REDIS_PORT` / `NACOS_ADDR` / `NACOS_ENABLED`
+> 容器已存在时不会重跑初始化目录，用 `bash scripts/docker.sh sql` 补执行（脚本内均为 `CREATE ... IF NOT EXISTS`，可重复执行）。
+> 端口与口令统一在 `docker/.env` 里改（模板 `docker/.env.example`，`.env` 不入库）。
+> 服务侧可用环境变量覆盖：`MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_USER` / `MYSQL_PASSWORD` / `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` / `NACOS_ADDR` / `NACOS_ENABLED`。
+
+**关于 6379 / 6380（重要，历史坑）**
+
+- 现在 **6379 就是项目的 Redis**，由 `docker/compose.yml` 的 `sorts-redis` 提供（redis-stack 镜像，一个端口同时具备 Redis 本体与 RediSearch/RedisJSON 等模块能力），密码见 `docker/.env`（默认 `sorts_dev`）。
+- 历史上项目的 Redis 跑在 **6380**（约定「默认端口 +1」），而且那其实是 **WSL 里装的「原生 redis-server」**（`/etc/redis/redis.conf`，`requirepass` 记不清就极易连不上）。容器化后该实例已停用（`bash scripts/docker.sh clean-legacy` 会确认并 disable），后端默认端口也随之改为 6379。
+- 若老数据仍需要，可从原生实例导出：`redis-cli -p 6380 -a <旧密码> --rdb /tmp/dump.rdb`（旧配置里的口令为 `1234`，仅供找回数据时核对，勿继续沿用）。
 
 **AI 服务额外环境变量**（`sorts-ai`）：
 
@@ -115,18 +126,29 @@ bash scripts/mvn.sh clean test   # 仅跑测试
 ### 3) 启动顺序
 
 Nacos → 业务服务（user → schedule → ai → notification → mall）→ 网关。
+（容器方式由 compose 的 `depends_on` + healthcheck 自动保证这个顺序。）
 
 ## 四、目录结构
 
 ```
+docker/                  # 容器编排（唯一入口）
+├── compose.yml          # 中间件（默认）+ 6 个服务（--profile app）+ 前端（--profile web）
+├── Dockerfile.backend   # 服务通用镜像（多阶段 Maven → JRE，按 MODULE 参数复用）
+├── Dockerfile.frontend  # 前端镜像（Node 构建 → nginx）
+├── nginx.conf           # SPA 兜底 + /api 反代（含 SSE 关缓冲）
+└── .env.example         # 端口/口令模板（本地 cp 为 .env）
 backend/
 ├── pom.xml              # 父工程（依赖与插件版本统一管理）
 ├── sorts-common/        # 公共模块（自动装配）
 ├── sorts-gateway/       # 网关
-└── sorts-{user,schedule,ai,notification,mall}/   # 各业务服务（按里程碑交付）
-docs/                    # 设计文档
-scripts/                 # 构建与中间件脚本
-frontend/                # 前端（M6 起工程化重写）
+└── sorts-{user,schedule,ai,notification,mall}/   # 各业务服务
+frontend/                # Vue3 + Vite 工程（src/{api,components,layouts,router,stores,styles,types,utils,views}）
+├── tests/               # vitest 单测
+└── legacy-demo/         # 早期单文件演示页（参考用）
+docs/                    # 设计文档（PROGRESS / dev-setup / ide-setup / theme-design）
+scripts/                 # docker.sh（容器入口）、mvn.sh（沙箱构建）、sql/（建库建表）
+.github/workflows/ci.yml # CI：矩阵构建 6 个服务 + 前端，推镜像/部署默认关闭
+.run/                    # IDEA 共享运行配置
 ```
 
 ## 五、Git 提交规范

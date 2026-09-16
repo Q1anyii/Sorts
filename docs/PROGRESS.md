@@ -315,6 +315,45 @@ event: error   data: {"code":503,"message":"..."}
 
 ---
 
+### M6 前端（✅ 已完成）
+
+**一、工程化重写**
+
+- 技术栈：Vite 6 + Vue 3.5 + TypeScript（strict）+ Pinia + Vue Router 4 + axios；旧的单文件演示页 `git mv` 到 `frontend/legacy-demo/` 留作参考，不再参与构建。
+- 目录：`src/{api,components,layouts,router,stores,styles,types,utils,views}`，路由级懒加载，`vite build` 产物约 173 KB（gzip 67 KB）。
+- 主题「织锦流光」落地为 CSS 层：`tokens.css`（5 主色 × 10 阶 + 语义别名）、`theme-night.css`（夜梭）、`textures.css`（纸纹/经纬网格/冰裂）、`motion.css`（穿梭过场/流光描边/落梭压印/印章呼吸，全部支持 `prefers-reduced-motion` 降级）、`base.css`。
+
+**二、契约对齐（前后端最容易对不上的三处，已按后端实现为准）**
+
+| 项 | api-spec | 后端实现（前端按此对接） |
+|---|---|---|
+| 成功码 | `200` | **`code = 0`** |
+| 分页字段 | `records` | **`list`**（`PageData.list` / `MallItemPageVO.list` / `NotificationPageVO.list`） |
+| 流式开关 | 请求体 `stream` | **query 参数**：`/ai/chat` 默认 SSE（`?stream=false` 走 JSON），`/ai/plan` 反之 |
+
+- 类型层 `src/types/index.ts` 与各服务 DTO/VO 一一对齐，含 `IN_PROGRESS`/`TIMEOUT` 等真实枚举值与「时长一律秒、`plannedDuration` 例外为分钟」的口径。
+
+**三、数据层**
+
+- `http.ts`：统一解包 `Result`、错误归一化为 `ApiError`（按 code 归类 401/429/409/503）、**401 单飞续期 + 重放**（裸 axios 并发续期只跑一次，`_retried` 防递归）。
+- `sse.ts`：`EventSource` 只支持 GET 且不能带鉴权头，三个流式接口都是 POST + JSON + Bearer，所以用 **fetch + ReadableStream 手写 SSE 解析**；`splitFrames` 处理「一包多帧 / 跨包半帧 / `\r\n` 兼容」，并支持用户中止（`abort` 静默结束，不当错误）。
+- 各 store：`auth`（双令牌会话 + 用户同步）、`app`（主题 / Toast）、`timer`（断线恢复 + 秒级走针，`actualDuration + (now - actualStartTime)` 计算已织时长）、`notify`（未读红点，顶栏每分钟轮询）。
+
+**四、界面**
+
+- 布局：织机栏（9 项导航）+ 梭行条（主题切换 / 未读角标 / 登出）+ 移动端底部导航；页面切换用 `mode="out-in"` 的穿梭过场定位，避免新旧页面同屏闪烁。
+- 页面：入梭（登录/注册一体）、今日经纬、织历（月格 + 选中日明细）、日程清单（筛选/分页/CRUD/状态机动作）、穿梭计时（大表盘 + 状态机五连）、纹谱统计（纯 SVG 趋势 + 标签分布）、AI 织师（对话/规划/梭影报告）、锦市、衣橱、飞鸽传书、设置。
+- 原子组件 15 个 + 24 枚内置图标（`SIcon`，currentColor 描边）；状态与优先级映射集中在 `utils/status.ts`，与后端状态机一一对应。
+- AI 写入走**双钥匙**：前端开关需弹窗确认后才置位 `allowWrite=true`。
+
+**五、测试**
+
+- vitest 19 例：时长/时辰/节气工具、状态机映射、SSE 帧切分、`ApiError` 语义。
+- 修掉两个真实缺陷：① `shichenLabel` 对子时（23:00–01:00）跨零点误判为亥时；② `types/index.ts` 块注释里出现 `*/` 提前闭合注释，构建能过但 vitest 执行时抛 `ReferenceError`。
+
+---
+
+
 ## 五、关键决策记录
 
 | 议题                      | 结论                                           | 理由                                |
@@ -325,7 +364,8 @@ event: error   data: {"code":503,"message":"..."}
 | 业务服务是否上 Spring Security | **否**，只用 crypto 做 BCrypt                     | 鉴权集中在网关，避免过滤器链重复建设                |
 | 用户身份传递                  | 网关写 `X-User-Id` 头，服务端 `@RequestHeader` 读取    | 简单、可测，避免 ThreadLocal 隐式传递         |
 | 主题方向                    | **「织锦流光」**（吸收流光与时间刻度）                        | 三方案对比见 `docs/theme-design.md`     |
-| 中间件部署                   | WSL 内 Docker（Nacos/RabbitMQ）+ 本机 MySQL/Redis | 用户环境，Windows 侧用 localhost 直连      |
+| 中间件部署                   | **WSL 内 Docker + docker-compose 单文件编排**（`docker/compose.yml`） | 历史上逐个 `docker run` 会漂移（端口、口令、重启策略各写一遍）；compose 一份文件 + healthcheck + 命名卷，`scripts/docker.sh` 统一入口 |
+| Redis 端口（M7 变更）          | 从 **6380** 改为 **6379**（redis-stack 镜像）         | 6380 原本是 WSL 里装的「原生 redis-server」，口令散落在 `/etc/redis/redis.conf`；改用容器后取回标准端口，且 redis-stack 一个端口同时提供 RediSearch/RedisJSON 等模块 |
 | AI SDK 选型               | **自实现 OpenAI 兼容客户端**（M4）                     | Spring AI 1.0.0 锁定 Boot 3.4.5，与本项目 Boot 3.3.4 冲突；藏在 `ChatModelClient` 接口后，将来可无痛换回 |
 | AI 写数据权限                | **双钥匙**：服务端开关 + 单次请求用户确认                     | 非 AI Native 项目，写操作必须显式授权，避免「AI 擅自改用户数据」   |
 | 同一路径 JSON / SSE 双通道     | `params` 条件拆成两个处理方法                            | Spring MVC 按「方法声明返回类型」选处理器，返回 `Object` 会让 `SseEmitter` 被 Jackson 序列化 |
@@ -339,12 +379,13 @@ event: error   data: {"code":503,"message":"..."}
 
 ### 已知限制 / 待办技术债
 
-1. ~~Redis 端口 / Nacos / RabbitMQ 未就绪~~ → **已解决**（2026-09-16）：全部通过 `scripts/wsl-middleware.sh start` 以 Docker 方式启动，Windows 侧端口探测 6380 / 3307 / 8848 / 5672 / 15672 均可达。
-2. **WSL 内已无 MySQL**：数据库统一由 Docker 容器 `sorts-mysql` 承载（3307）；Windows 宿主上原有的 3306 实例不作为项目数据源。
+1. ~~Redis 端口 / Nacos / RabbitMQ 未就绪~~ → **已解决，并已 compose 化**（2026-09-16 M7）：中间件全部由 `docker/compose.yml` 管理，`bash scripts/docker.sh up` 拉起；端口探测 3307 / 6379 / 8848 / 5672 / 15672 均可达，四个容器 healthcheck 全部 healthy。
+2. **WSL 内已无 MySQL**：数据库统一由容器 `sorts-mysql` 承载（3307，root/`sorts_dev`）；宿主与 WSL 上原有的 3306 实例（MySQL 9.7，属其他项目）已删除容器（数据仍以 bind mount 保留在 `/root/mysql/data`，未做清理）。
+2.1 **WSL 内原生 redis-server（6380）已停用**：其口令遗留在 `/etc/redis/redis.conf`（`1234`）——这是「Redis 连不上」的历史坑源。现统一到容器 Redis 6379（口令在 `docker/.env`）。
 3. ~~内部接口（`/users/points/change`）目前只依赖网关透传的用户头，缺少服务间密钥校验，M5 需补 `X-Internal-Token` 校验。~~ → **已完成**（M5）：`@InternalApi` + `InternalApiInterceptor`，网关同时剥离外部伪造的 `X-Internal-Token`。
 4. ~~网关尚未实现限流~~ → **已完成**（M2：Redis 令牌桶 + 429 统一响应）。
 5. `sorts-user` 尚无 `@SpringBootTest` 级别的集成测试（需要真实 DB/Redis，计划 M7 用 Testcontainers 或连 WSL 中间件）。
-6. WSL 命令受沙箱限制，AI 无法直接执行 WSL 内命令，中间件相关操作需用户手动执行脚本。
+6. **WSL 命令可直接执行**（2026-09-16 M7 更正）：`wsl -d Ubuntu -u root -- bash <script>` 在沙箱内可用，中间件与容器操作不再必须由用户手动执行。**踩坑**：WSL 内自建 dockerd 时 `/etc/docker/daemon.json` 里写了 `proxies.default`（非法指令，正确键是 `http-proxy`/`https-proxy`/`no-proxy`）+ 代理 `10.255.255.254:7890` 已不可达，导致 `systemctl start docker` 一直失败、看起来像「Docker 坏了」。已修复并备份原文件为 `daemon.json.bak.20260916`。
 7. 网关尚无路由级限流差异化配置（当前全局限流），如需对登录接口单独收紧，在对应路由 `filters` 中覆盖 `RequestRateLimiter` 参数即可。
 8. **AI 服务缺密钥时不可用**：`DEEPSEEK_API_KEY` 必须通过环境变量注入（仓库内不留密钥），未配置时相关接口返回 503 与可读提示；服务本身仍可正常启动、跑单测。
 9. **`allowWrite` 是本项目的扩展字段**（api-spec 未定义）：长在 `/ai/chat` 请求体上，用于开启单次对话的写权限；前端需在用户确认后置位。
@@ -356,6 +397,10 @@ event: error   data: {"code":503,"message":"..."}
 15. **定时提醒是单实例语义**（M5）：`@Scheduled` 在多实例部署下每个实例都会扫描。当前靠 `t_reminder_log` 唯一键保证**不会重复推送**（幂等生效），但会产生多余的 Feign 调用。如需多实例，加 ShedLock 或改用 RabbitMQ 延迟队列。
 16. **商城只实现了「买」**（M5）：商品上架/下架/改价暂无后台接口，靠 `scripts/sql/sorts_mall.sql` 的种子数据维护；`PROMOTION` 类型的营销推送也还没有触发入口。
 17. **购买接口的错误码与 api-spec 存在偏差**（M5）：api-spec 对 `/mall/purchase` 只声明 `400 积分不足或商品已售罄`；本项目沿用既有约定——积分不足透传 `sorts-user` 的 409，售罄/已下架/已拥有用 409，抢锁失败用 429。与第 11 条同属「统一响应体与 api-spec 的已知偏差」，前端请以 `Result.code` 为准。
+18. **服务镜像体积约 625 MB/个**（M7）：多阶段构建已剥离 Maven 与源码，但 Spring Boot fat jar + JRE 本身就有这个量级。若要压到 200 MB 级，需改 layered jar + `jarmode=layertools` 分层复制，或换 jlink/AppCDS；当前本地/CI 场景收益有限，暂不做。
+19. **未做 Testcontainers 集成测试**（M7 剩余项）：`sorts-user` / `sorts-ai` 仍缺「真实 DB + Redis」的集成测试，单测全部基于 Mock。路线图原计划在 M7 补齐，本次先交付编排与 CI，集成测试列入下一批。
+20. **CI 的镜像推送与部署默认关闭**（M7）：`.github/workflows/ci.yml` 里 `push_images` / `deploy` 为 `workflow_dispatch` 开关，需先在仓库 Secrets 配置 `ACR_*` / `ECS_*`；当前只跑「后端全量构建 + 单测」「前端构建 + vitest」「6 个服务的镜像构建」。
+21. **前端容器只做静态托管 + 反代**：`docker/Dockerfile.frontend` 构建产物由 nginx 托管，`/api` 反代到 `gateway:8080` 并关闭缓冲（SSE 必需）。若要给前端做 CDN/多环境注入，需把 `VITE_API_BASE` 参数化到构建期。
 
 ---
 
@@ -392,14 +437,20 @@ bash scripts/mvn.sh clean test     # 只跑测试
 >
 > **IDE 运行细节（JDK/模块/运行配置/报错速查）见 [`docs/ide-setup.md`](./ide-setup.md)。**
 
-### 中间件（WSL 内执行）
+### 中间件与服务（Docker Compose 统一入口）
 
 ```bash
-bash scripts/wsl-middleware.sh start    # Redis→6380、Nacos 8848、RabbitMQ 5672/15672、建 5 个库
-bash scripts/wsl-middleware.sh status
+bash scripts/docker.sh up        # 中间件：MySQL 3307 / Redis 6379 / Nacos 8848 / RabbitMQ 5672
+bash scripts/docker.sh status    # 端口 + 容器 + 数据库一览
+bash scripts/docker.sh app       # 构建并启动 6 个服务（网关 8080）
+bash scripts/docker.sh web       # 前端站点 8088（nginx 反代 /api）
+bash scripts/docker.sh clean-legacy  # 清理历史上手动 run 出来的容器
 ```
 
-MySQL 账号密码通过 `MYSQL_USER` / `MYSQL_PASSWORD` 传入，服务侧用 `MYSQL_USER`/`MYSQL_PASSWORD`/`REDIS_PORT` 等环境变量覆盖。
+- 编排文件：`docker/compose.yml`（单文件 + profile：默认只起中间件，`--profile app` 起服务，`--profile web` 起前端）。
+- 口令与端口改 `docker/.env`（模板 `docker/.env.example`，`.env` 不入库）。
+- 服务侧环境变量：`MYSQL_HOST/PORT/USER/PASSWORD`、`REDIS_HOST/PORT/PASSWORD`、`NACOS_ADDR`、`INTERNAL_TOKEN`、`DEEPSEEK_API_KEY`。
+- 旧的 `scripts/wsl-middleware.sh` 保留为兼容层，命令映射到 `docker.sh`。
 
 ### Git 与推送
 
@@ -429,8 +480,9 @@ MySQL 账号密码通过 `MYSQL_USER` / `MYSQL_PASSWORD` 传入，服务侧用 `
 | ~~**M3 日程服务**~~ ✅ | ~~日程 CRUD、计时状态机、日历聚合视图、统计接口、落梭发积分（Feign 调 user）~~                                | 已完成：非法流转被拒；总时长按片段重算；`time_record` 可回溯每段耗时；64 个单测                        |
 | ~~**M4 AI 服务**~~ ✅    | ~~Spring AI + DeepSeek 流式输出、工具集（Tool Calling）、规划生成、日/月/年总结（异步 + `ai_report` 表）~~ | 已完成：AI 可通过工具查日程/建日程/查统计；总结报告落库可查询；**自实现客户端替代 Spring AI**（版本冲突）；103 个单测 |
 | ~~**M5 商城 + 通知**~~ ✅ | ~~商品/购买（Redisson 锁防超扣）/装扮仓库；通知列表/已读/定时提醒~~                     | 已完成：Redisson 按商品加锁 + 条件更新双保险防超卖；积分不足与售罄路径都有单测；定时提醒按用户提前量与免打扰生成并幂等去重；**顺带补掉服务间凭证技术债**；145 个单测 |
-| **M6 前端**         | Vue3+Vite 工程化重写、主题落地（CSS tokens/织锦日历/流光计时/穿梭过场）、AI 流式对话 UI、商城与装扮页                       | 主题规范 100% 落地；移动端可用                                                      |
-| **M7 CI/CD + 测试** | GitHub Actions（矩阵构建 6 个服务 → ACR 推送）、Testcontainers 集成测试                          | 参考 `E:\工作文件\AgentProject\.github\workflows\acr-cicd.yml`，部署阶段留开关（当前不部署） |
+| ~~**M6 前端**~~ ✅       | ~~Vue3+Vite 工程化重写、主题落地（CSS tokens/织锦日历/流光计时/穿梭过场）、AI 流式对话 UI、商城与装扮页~~ | 已完成：11 条路由 + 15 个原子组件 + 19 个 vitest 用例；主题规范落地为 CSS 层（含降级）；桌面/移动双布局 |
+| **M7 容器化 + CI**    | 中间件与服务全部 compose 化、服务镜像可构建、GitHub Actions 矩阵构建（部署留开关）                | 已完成：`docker/compose.yml`（单文件 + profile）统一管理；6 个服务镜像构建通过；端口/healthcheck 全绿；CI 默认不推镜像不部署 |
+| **M7 剩余**          | Testcontainers 集成测试（user / ai 服务需要真实 DB + Redis）                      | 待办                                                  |
 
 ### AI 工具集设计要点（M4 已落地）
 
@@ -451,27 +503,37 @@ MySQL 账号密码通过 `MYSQL_USER` / `MYSQL_PASSWORD` 传入，服务侧用 `
 
 ```
 D:\SORTS(梭子)/
+├── README.md                # 项目总览、快速开始、端口与约定、常见问题
 ├── api-spec.json            # OpenAPI 契约（开发接口前先查它！）
 ├── 需求分析.docx             # 需求源文档（已忽略入库）
-├── backend/
-│   ├── pom.xml              # 父工程（已注册 7 个模块）
+├── docker/                  # 容器编排（唯一入口）
+│   ├── compose.yml          # 中间件（默认）+ 6 服务（--profile app）+ 前端（--profile web）
+│   ├── Dockerfile.backend   # 服务通用镜像（多阶段 Maven → JRE，按 MODULE 复用）
+│   ├── Dockerfile.frontend  # 前端镜像（Node 构建 → nginx）
+│   ├── nginx.conf           # SPA 兜底 + /api 反代（SSE 关缓冲）
+│   └── .env.example         # 端口/口令模板（.env 不入库）
+├── backend/                 # Maven 多模块（8 模块，含 Wrapper）
 │   ├── sorts-common/        # ✅ 公共模块（Result/异常/JWT/PageData/服务间凭证）
 │   ├── sorts-gateway/       # ✅ 网关（路由 + 鉴权 + 限流 + 剥离伪造内部凭证）
 │   ├── sorts-user/          # ✅ 用户服务
 │   ├── sorts-schedule/      # ✅ 日程服务（CRUD/计时/日历/统计 + 内部提醒取数接口）
-│   ├── sorts-ai/            # ✅ AI 服务（llm 客户端 / tool 工具集 / service 对话·规划·报告 / controller）
+│   ├── sorts-ai/            # ✅ AI 服务（llm / tool / service / controller）
 │   ├── sorts-notification/  # ✅ 通知服务（通知列表·已读 / 提醒设置 / 定时提醒扫描）
 │   └── sorts-mall/          # ✅ 商城服务（商品 / 购买防超卖 / 装扮仓库）
-├── frontend/                # 单文件演示版（M6 重写为 Vite 工程）
+├── frontend/                # ✅ Vue3 + Vite 工程（src/{api,components,layouts,router,stores,styles,types,utils,views}）
+│   ├── tests/               # vitest 单测
+│   └── legacy-demo/         # 早期单文件演示页（参考用，不参与构建）
 ├── docs/
 │   ├── theme-design.md      # 主题设计规范
 │   ├── dev-setup.md         # 开发手册（中间件、端口、命令、内部凭证与购买一致性约定）
 │   ├── ide-setup.md         # IDEA 运行手册（导入 Maven、JDK 17、共享运行配置、报错速查）
 │   └── PROGRESS.md          # 本文档
+├── .github/workflows/ci.yml # CI：矩阵构建 6 服务 + 前端；推镜像/部署默认关闭
 ├── .run/                    # IDEA 共享运行配置（6 个服务 + Compound「全部服务」）
 ├── scripts/
-│   ├── mvn.sh               # 构建封装（必须用）
-│   ├── wsl-middleware.sh    # 中间件一键脚本（start/stop/status/sql/logs）
+│   ├── docker.sh            # 容器统一入口（up/app/web/status/logs/sql/clean/reset…）
+│   ├── mvn.sh               # 沙箱构建封装（必须用）
+│   ├── wsl-middleware.sh    # 兼容层 → docker.sh
 │   └── sql/
 │       ├── 00-init-databases.sql     # 建 5 个库（先执行）
 │       ├── sorts_user.sql            # 用户库建表
@@ -481,6 +543,11 @@ D:\SORTS(梭子)/
 │       └── sorts_mall.sql            # 商城库建表（商品、购买记录、装扮仓库 + 种子商品）
 └── .workbuddy/              # 会话数据与构建日志（勿删）
 ```
+
+> M7 目录整理（2026-09-16）：删除了早期遗留的 `client/`（一个 5 行的 express 静态服务器，
+> 且把 node_modules 误提交进了仓库）与重复的根 `index.html`（与 `frontend/legacy-demo/index.html` 完全相同），
+> 空目录 `sorts/` 一并移除；容器相关文件集中到 `docker/`，脚本集中到 `scripts/`。
+
 
 ---
 
