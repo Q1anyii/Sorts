@@ -1,0 +1,17 @@
+# 构建上下文瘦身：容器内只保留源码与 pom（依赖在容器内解析，要的是干净的工作区）
+.git
+.gitignore
+.idea
+.run
+.workbuddy
+.claude
+**/target
+**/node_modules
+frontend/dist
+frontend/legacy-demo
+docs
+archive
+*.md
+*.docx
+~$*
+docker/.env

@@ -1,0 +1,121 @@
+# =====================================================================
+# 梭子 SORTS · 中间件编排（唯一入口，不再逐个 docker run）
+#   用法：
+#     cd docker && docker compose --env-file .env up -d
+#   或（推荐，自动准备 .env 并等待就绪）：
+#     bash scripts/docker.sh up
+#
+#   端口约定（宿主可见，Windows 侧用 localhost 直连）：
+#     MySQL      3307  （容器内 3306，避开宿主/其他项目的 3306）
+#     Redis      6379  （redis-stack：Redis + RediSearch 等模块，需密码）
+#     Nacos      8848  （9848/9849 为 gRPC，客户端必须可达）
+#     RabbitMQ   5672 / 管理台 15672
+# =====================================================================
+name: sorts
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: sorts-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-sorts_dev}
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
+    ports:
+      - "${MYSQL_PORT:-3307}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      # 首次创建数据卷时自动执行建库建表脚本（顺序即文件名顺序）
+      - ../scripts/sql:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    networks: [sorts-net]
+
+  # 6379 就是项目的 Redis（用 redis-stack 镜像：Redis 本体 + RediSearch/RedisJSON，
+  # 单一端口同时满足「普通 Redis 用途」和「向量/检索模块用途」）
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: sorts-redis
+    restart: unless-stopped
+    environment:
+      REDIS_ARGS: "--requirepass ${REDIS_PASSWORD:-sorts_dev} --appendonly yes --appendfsync everysec"
+      TZ: Asia/Shanghai
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD:-sorts_dev} ping 2>/dev/null | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks: [sorts-net]
+
+  nacos:
+    image: nacos/nacos-server:v2.4.3
+    container_name: sorts-nacos
+    restart: unless-stopped
+    environment:
+      MODE: standalone
+      NACOS_AUTH_ENABLE: "false"
+      JVM_XMS: 512m
+      JVM_XMX: 512m
+      JVM_XMN: 256m
+      TZ: Asia/Shanghai
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+      - "9849:9849"
+    volumes:
+      - nacos-data:/home/nacos/data
+      - nacos-logs:/home/nacos/logs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8848/nacos/v1/console/health/liveness || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    networks: [sorts-net]
+
+  # 当前代码里提醒走 @Scheduled（无 MQ 依赖），此容器为「事务性消息 / outbox」技术债预留
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: sorts-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-sorts}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-sorts_dev}
+      TZ: Asia/Shanghai
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_CONSOLE_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    networks: [sorts-net]
+
+networks:
+  sorts-net:
+    name: sorts-net
+    driver: bridge
+
+volumes:
+  mysql-data:
+  redis-data:
+  nacos-data:
+  nacos-logs:
+  rabbitmq-data:
