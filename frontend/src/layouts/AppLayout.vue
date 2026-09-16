@@ -20,7 +20,7 @@ const NAV = [
   { name: 'schedules', label: '日程清单', icon: 'list' },
   { name: 'timer', label: '穿梭计时', icon: 'timer' },
   { name: 'statistics', label: '纹谱统计', icon: 'chart' },
-  { name: 'ai', label: 'AI 织师', icon: 'ai' },
+  { name: 'ai', label: '梭灵', icon: 'ai' },
   { name: 'mall', label: '锦市', icon: 'shop' },
   { name: 'wardrobe', label: '衣橱', icon: 'wardrobe' },
   { name: 'settings', label: '设置', icon: 'gear' }

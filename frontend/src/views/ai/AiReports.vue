@@ -67,6 +67,9 @@ async function generateAsync(kind: 'monthly' | 'yearly') {
     const res = await fn()
     if (res.status === 'COMPLETED') {
       generating.value = null
+      // 命中同周期已有报告：直接打开，否则用户会以为「点了没反应」
+      if (res.reused) app.toast('该周期已有梭影，已为你打开', 'info')
+      viewing.value = await getReport(res.reportId)
       loadList()
       return
     }
@@ -220,7 +223,7 @@ onUnmounted(() => {
           </ul>
         </template>
         <template v-if="viewing.suggestions?.length">
-          <h4 class="reports__detail-sub">织师建议</h4>
+          <h4 class="reports__detail-sub">梭灵建议</h4>
           <ul class="reports__detail-ul">
             <li v-for="(s, i) in viewing.suggestions" :key="i">{{ s }}</li>
           </ul>

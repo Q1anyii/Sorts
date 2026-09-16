@@ -221,6 +221,115 @@ class ReportServiceImplTest {
         verify(composer, never()).compose(any(), anyString(), anyString(), any(), any(), eq(true), any());
     }
 
+    // ---------------------------------------------------------------- 同周期幂等
+
+    @Test
+    @DisplayName("月报：同周期已生成完成 → 直接复用，不再调模型也不新增记录")
+    void monthlyReusesCompletedReport() {
+        AiReport existing = existing(2026, 9, ReportType.MONTHLY, "2026-09", ReportStatus.COMPLETED);
+        when(reportMapper.selectOne(any())).thenReturn(existing);
+
+        PeriodSummaryRequest request = new PeriodSummaryRequest();
+        request.setYear(2026);
+        request.setMonth(9);
+
+        AsyncReportResponse response = service.generateMonthly(USER_ID, request);
+
+        assertEquals(99L, response.getReportId());
+        assertEquals(ReportStatus.COMPLETED, response.getStatus());
+        assertEquals(0, response.getEstimatedSeconds());
+        assertTrue(response.isReused(), "命中同周期已完成报告时应标记复用");
+        verify(reportMapper, never()).insert(any(AiReport.class));
+        verify(generator, never()).generate(any(), any(), anyString(), anyString(), anyString(), any(), any());
+    }
+
+    @Test
+    @DisplayName("月报：同周期仍在生成中 → 复用同一个 reportId 继续轮询，不重复提交任务")
+    void monthlyReusesGeneratingReport() {
+        AiReport existing = existing(2026, 9, ReportType.MONTHLY, "2026-09", ReportStatus.GENERATING);
+        when(reportMapper.selectOne(any())).thenReturn(existing);
+
+        PeriodSummaryRequest request = new PeriodSummaryRequest();
+        request.setYear(2026);
+        request.setMonth(9);
+
+        AsyncReportResponse response = service.generateMonthly(USER_ID, request);
+
+        assertEquals(99L, response.getReportId());
+        assertEquals(ReportStatus.GENERATING, response.getStatus());
+        assertTrue(response.isReused());
+        verify(reportMapper, never()).insert(any(AiReport.class));
+        verify(generator, never()).generate(any(), any(), anyString(), anyString(), anyString(), any(), any());
+    }
+
+    @Test
+    @DisplayName("月报：同周期上一条失败 → 清掉旧记录后重新生成")
+    void monthlyRegeneratesAfterFailure() {
+        AiReport failed = existing(2026, 9, ReportType.MONTHLY, "2026-09", ReportStatus.FAILED);
+        when(reportMapper.selectOne(any())).thenReturn(failed);
+
+        PeriodSummaryRequest request = new PeriodSummaryRequest();
+        request.setYear(2026);
+        request.setMonth(9);
+
+        AsyncReportResponse response = service.generateMonthly(USER_ID, request);
+
+        assertEquals(ReportStatus.GENERATING, response.getStatus());
+        assertEquals(false, response.isReused());
+        verify(reportMapper).deleteById(99L);
+        verify(reportMapper).insert(any(AiReport.class));
+        verify(generator).generate(eq(1L), eq(USER_ID), eq(ReportType.MONTHLY.label()), eq("month"),
+                eq(ReportType.MONTHLY.name()), eq(LocalDate.of(2026, 9, 1)), eq(LocalDate.of(2026, 9, 30)));
+    }
+
+    @Test
+    @DisplayName("月报：force=true 时覆盖刷新，重新调模型")
+    void monthlyForceRegenerates() {
+        AiReport existing = existing(2026, 9, ReportType.MONTHLY, "2026-09", ReportStatus.COMPLETED);
+        when(reportMapper.selectOne(any())).thenReturn(existing);
+
+        PeriodSummaryRequest request = new PeriodSummaryRequest();
+        request.setYear(2026);
+        request.setMonth(9);
+        request.setForce(true);
+
+        AsyncReportResponse response = service.generateMonthly(USER_ID, request);
+
+        assertEquals(ReportStatus.GENERATING, response.getStatus());
+        assertEquals(false, response.isReused());
+        verify(reportMapper).deleteById(99L);
+        verify(generator).generate(any(), any(), anyString(), anyString(), anyString(), any(), any());
+    }
+
+    @Test
+    @DisplayName("年报：同周期已存在 → 同样按幂等处理")
+    void yearlyIsIdempotent() {
+        AiReport existing = existing(2026, null, ReportType.YEARLY, "2026", ReportStatus.COMPLETED);
+        when(reportMapper.selectOne(any())).thenReturn(existing);
+
+        PeriodSummaryRequest request = new PeriodSummaryRequest();
+        request.setYear(2026);
+
+        AsyncReportResponse response = service.generateYearly(USER_ID, request);
+
+        assertEquals(99L, response.getReportId());
+        assertTrue(response.isReused());
+        verify(reportMapper, never()).insert(any(AiReport.class));
+    }
+
+    /** 构造一条「已存在」的报告记录（id 固定 99，便于断言复用） */
+    private AiReport existing(int year, Integer month, ReportType type, String periodKey, String status) {
+        AiReport report = new AiReport();
+        report.setId(99L);
+        report.setUserId(USER_ID);
+        report.setType(type.name());
+        report.setPeriodKey(periodKey);
+        report.setTitle(type.label() + year + (month == null ? "" : "-" + month));
+        report.setStatus(status);
+        report.setCreatedAt(LocalDateTime.now());
+        return report;
+    }
+
     private ReportComposer.Composed composed(String title, String content, List<String> highlights,
                                              List<String> suggestions) {
         return new ReportComposer.Composed(title, content, highlights, suggestions, null);

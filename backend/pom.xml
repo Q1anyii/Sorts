@@ -45,6 +45,8 @@
         <redisson.version>3.36.0</redisson.version>
         <hutool.version>5.8.32</hutool.version>
         <knife4j.version>4.5.0</knife4j.version>
+        <!-- Testcontainers：真实 DB / Redis 集成测试（mvn -Pintegration test 才跑） -->
+        <testcontainers.version>1.20.4</testcontainers.version>
     </properties>
 
     <dependencyManagement>
@@ -89,8 +91,46 @@
                 <artifactId>hutool-core</artifactId>
                 <version>${hutool.version}</version>
             </dependency>
+            <!-- Testcontainers BOM：集成测试用真实中间件，版本由 BOM 统一 -->
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <profiles>
+        <!--
+          集成测试：需要 Docker（真实 MySQL / Redis 容器），因此**默认不跑**，
+          避免 `mvn test` 在没有 Docker 的环境里直接失败。
+
+            mvn -Pintegration test          # 跑 *Test 与 *IT
+            mvn -Pintegration test -pl sorts-user
+
+          用例本身还标注了 @Testcontainers(disabledWithoutDocker = true)，
+          即使带了 profile 但环境没有 Docker，也只是跳过而非失败。
+        -->
+        <profile>
+            <id>integration</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <includes>
+                                <include>**/*Test.java</include>
+                                <include>**/*IT.java</include>
+                            </includes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
     <dependencies>
         <!-- 健康检查：容器编排（healthcheck / 部署门禁）与被监控都需要 /actuator/health -->

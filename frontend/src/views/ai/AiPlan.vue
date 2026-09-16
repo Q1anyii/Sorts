@@ -102,7 +102,7 @@ async function adopt() {
           <SInput v-model="targetDate" type="date" />
         </SField>
         <SButton variant="gold" :loading="generating" :disabled="!prompt.trim()" @click="generate">
-          {{ generating ? '织师思考中…' : '生成规划' }}
+          {{ generating ? '梭灵思考中…' : '生成规划' }}
         </SButton>
       </div>
     </SCard>
@@ -130,7 +130,7 @@ async function adopt() {
           </div>
           <p class="plan__suggestion-meta num">{{ s.suggestedStart }} · {{ s.duration }} 分钟</p>
           <p v-if="s.description" class="plan__suggestion-desc">{{ s.description }}</p>
-          <p v-if="s.reason" class="plan__suggestion-reason">织师按：{{ s.reason }}</p>
+          <p v-if="s.reason" class="plan__suggestion-reason">梭灵按：{{ s.reason }}</p>
           <div v-if="s.tags.length" class="plan__suggestion-tags">
             <STag v-for="t in s.tags" :key="t">#{{ t }}</STag>
           </div>
@@ -146,7 +146,7 @@ async function adopt() {
     <SEmpty
       v-else-if="!generating"
       text="还没有规划"
-      hint="描述你的安排，织师会给出带理由的建议"
+      hint="描述你的安排，梭灵会给出带理由的建议"
       icon="ai"
     />
   </div>

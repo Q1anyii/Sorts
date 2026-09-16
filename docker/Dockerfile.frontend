@@ -9,6 +9,10 @@ WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY frontend/ ./
+# VITE_API_BASE 在构建期注入：留空则走同源 /api/v1（dev 由 Vite 代理、容器由 Nginx 反代），
+# 只有前后端分离部署（独立域名 / CDN）才需要显式指定
+ARG VITE_API_BASE=""
+ENV VITE_API_BASE=$VITE_API_BASE
 RUN npm run build
 
 # ---------- 运行阶段 ----------

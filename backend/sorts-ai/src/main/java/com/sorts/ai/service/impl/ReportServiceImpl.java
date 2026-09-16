@@ -87,7 +87,7 @@ public class ReportServiceImpl implements ReportService {
         LocalDate start = yearMonth.atDay(1);
         LocalDate end = yearMonth.atEndOfMonth();
 
-        return submit(userId, ReportType.MONTHLY, start, end);
+        return submit(userId, ReportType.MONTHLY, start, end, request != null && Boolean.TRUE.equals(request.getForce()));
     }
 
     @Override
@@ -97,7 +97,7 @@ public class ReportServiceImpl implements ReportService {
         LocalDate start = LocalDate.of(year, 1, 1);
         LocalDate end = LocalDate.of(year, 12, 31);
 
-        return submit(userId, ReportType.YEARLY, start, end);
+        return submit(userId, ReportType.YEARLY, start, end, request != null && Boolean.TRUE.equals(request.getForce()));
     }
 
     @Override
@@ -133,12 +133,36 @@ public class ReportServiceImpl implements ReportService {
         return assembler.toInfo(report);
     }
 
-    /** 落一条 GENERATING 记录 → 提交异步任务 → 立即返回 reportId */
-    private AsyncReportResponse submit(Long userId, ReportType type, LocalDate start, LocalDate end) {
+    /**
+     * 落一条 GENERATING 记录 → 提交异步任务 → 立即返回 reportId。
+     *
+     * <p>同周期幂等：月度 / 年度为「一个周期一份报告」的语义，重复点击不应重复调模型、
+     * 也不该堆出多条记录。命中同周期已有报告且状态为 GENERATING / COMPLETED 时直接复用；
+     * 状态为 FAILED 或显式 {@code force=true} 时，先清掉旧记录再重新生成。</p>
+     */
+    private AsyncReportResponse submit(Long userId, ReportType type, LocalDate start, LocalDate end, boolean force) {
+        String periodKey = assembler.periodKey(type, start);
+
+        AiReport existing = findLatest(userId, type, periodKey);
+        if (existing != null) {
+            boolean reusable = !force && !ReportStatus.FAILED.equals(existing.getStatus());
+            if (reusable) {
+                return AsyncReportResponse.builder()
+                        .reportId(existing.getId())
+                        .status(existing.getStatus())
+                        .estimatedSeconds(ReportStatus.COMPLETED.equals(existing.getStatus())
+                                ? 0 : ESTIMATED_SECONDS)
+                        .reused(true)
+                        .build();
+            }
+            // 失败记录没有留存价值；force 时允许覆盖刷新——都先清掉再重来，不占「同周期」名额
+            reportMapper.deleteById(existing.getId());
+        }
+
         AiReport report = new AiReport();
         report.setUserId(userId);
         report.setType(type.name());
-        report.setPeriodKey(assembler.periodKey(type, start));
+        report.setPeriodKey(periodKey);
         report.setTitle(assembler.defaultTitle(type, start));
         report.setStatus(ReportStatus.GENERATING);
         reportMapper.insert(report);
@@ -151,6 +175,16 @@ public class ReportServiceImpl implements ReportService {
                 .status(ReportStatus.GENERATING)
                 .estimatedSeconds(ESTIMATED_SECONDS)
                 .build();
+    }
+
+    /** 按「用户 + 类型 + 周期」取最新一条（含逻辑删除过滤，由 MP 自动追加） */
+    private AiReport findLatest(Long userId, ReportType type, String periodKey) {
+        return reportMapper.selectOne(Wrappers.<AiReport>lambdaQuery()
+                .eq(AiReport::getUserId, userId)
+                .eq(AiReport::getType, type.name())
+                .eq(AiReport::getPeriodKey, periodKey)
+                .orderByDesc(AiReport::getCreatedAt)
+                .last("LIMIT 1"));
     }
 
     private String periodOf(ReportType type) {

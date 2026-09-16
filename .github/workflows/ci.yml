@@ -51,6 +51,13 @@ jobs:
           chmod +x mvnw
           ./mvnw -B -ntp clean verify
 
+      - name: 集成测试（Testcontainers，真实 MySQL + Redis）
+        # GitHub Runner 自带 Docker；本地无 Docker 时这些用例会自动跳过
+        working-directory: backend
+        run: |
+          chmod +x mvnw
+          ./mvnw -B -ntp -Pintegration test -Dtest='*IT' -Dsurefire.failIfNoSpecifiedTests=false
+
       - name: 归档测试报告
         if: always()
         uses: actions/upload-artifact@v4

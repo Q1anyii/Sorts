@@ -90,8 +90,16 @@ public class AiController {
 
     // ==================== 对话助手 ====================
 
-    /** 流式对话（默认） */
-    @PostMapping(value = "/chat", params = "!stream=false")
+    /**
+     * 流式对话（默认）。
+     *
+     * <p>刻意**不写** {@code params}：早期这里写的是 {@code !stream=false}，实测在
+     * {@code stream} 参数「完全缺省」时匹配不上（Spring 的参数否定表达式对缺省值不成立），
+     * 不带参调用会直接 500（UnsatisfiedServletRequestParameterException）。
+     * 现在改成「SSE 无 params 条件 = 兜底；JSON 带 {@code stream=false} = 更具体」，
+     * 两者同时匹配时 Spring 按「params 表达式更多者更优先」选中 JSON，语义稳定。</p>
+     */
+    @PostMapping("/chat")
     public SseEmitter chatStream(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
                                  @Valid @RequestBody ChatRequest request) {
         return stream(out -> out.done(chatService.chat(userId, request, out::delta)));
@@ -109,10 +117,10 @@ public class AiController {
     /**
      * 非流式生成规划（默认）。
      *
-     * <p>注意与 /chat 的差异：api-spec 中 /ai/plan 的 {@code stream} 默认值是 false，
-     * 因此这里「不传 stream」走 JSON，显式 {@code stream=true} 才走 SSE。</p>
+     * <p>与 /chat 相反：api-spec 中 {@code stream} 默认值是 false，因此「不传 stream」走 JSON。
+     * 同样不使用 {@code !stream=true}，理由见 {@link #chatStream} 的说明。</p>
      */
-    @PostMapping(value = "/plan", params = "!stream=true")
+    @PostMapping("/plan")
     public Result<AIPlanResponse> plan(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
                                        @Valid @RequestBody AIPlanRequest request) {
         return Result.success(planService.generate(userId, request, false, null));
@@ -137,8 +145,8 @@ public class AiController {
 
     // ==================== 周期总结 ====================
 
-    /** 流式生成每日总结（默认） */
-    @PostMapping(value = "/summary/daily", params = "!stream=false")
+    /** 流式生成每日总结（默认）。同样不使用 {@code !stream=false}，理由见 {@link #chatStream} */
+    @PostMapping("/summary/daily")
     public SseEmitter dailyStream(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
                                   @Valid @RequestBody(required = false) AISummaryRequest request) {
         AISummaryRequest payload = request == null ? new AISummaryRequest() : request;

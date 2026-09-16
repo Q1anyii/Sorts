@@ -16,6 +16,8 @@
 #   bash scripts/docker.sh clean           # 删除本项目容器（保留数据卷）
 #   bash scripts/docker.sh reset           # 删除本项目容器 + 数据卷（数据库清空，慎用）
 #   bash scripts/docker.sh shell mysql     # 进容器（mysql / redis / nacos / rabbitmq）
+#   bash scripts/docker.sh keepalive       # 占住 WSL 会话（WSL 会在会话结束后回收发行版，
+#                                          #   把 dockerd 与容器一起停掉；需长时间常驻时用）
 #
 # 端口：MySQL 3307、Redis 6379、Nacos 8848(+9848/9849)、RabbitMQ 5672/15672、
 #      网关 8080、前端 8088
@@ -42,16 +44,73 @@ log()  { printf '\033[36m[SORTS]\033[0m %s\n' "$*"; }
 warn() { printf '\033[33m[WARN ]\033[0m %s\n' "$*"; }
 err()  { printf '\033[31m[ERROR]\033[0m %s\n' "$*" >&2; }
 
-require_docker() {
-  command -v docker >/dev/null 2>&1 || { err "未找到 docker，请在 Docker Desktop 中开启 WSL 集成（或启动 WSL 内 dockerd）"; exit 1; }
-  if ! docker info >/dev/null 2>&1; then
-    warn "Docker 守护进程未响应，尝试在 WSL 内启动…"
-    if command -v wsl.exe >/dev/null 2>&1; then
-      wsl.exe -d Ubuntu -u root -- bash -lc 'systemctl start docker' || true
-    fi
-    sleep 5
+# ---------------------------------------------------------------- docker 通路
+# 本机存在两种 Docker 守护进程来源，脚本自动选一条能用通的：
+#   · local —— Docker Desktop 的命名管道（装了并在跑，Git Bash 可直连）
+#   · wsl   —— WSL 发行版内的 dockerd（systemd 管理，Git Bash 够不着，需转发）
+# 判定完成后所有 docker 调用都走 docker_run / dc，业务命令不必关心通路。
+DOCKER_DISTRO="${SORTS_WSL_DISTRO:-Ubuntu}"
+DOCKER_MODE=""
+export WSL_UTF8=1   # 让 wsl.exe 自身输出 UTF-8，否则警告/中文在管道里会变成乱码
+
+# Windows 路径 → WSL 路径（D:/a/b → /mnt/d/a/b）；已是 WSL 路径则原样返回
+to_wsl_path() {
+  local p="$1"
+  if command -v cygpath >/dev/null 2>&1; then
+    p="$(cygpath -u "$p" 2>/dev/null || printf '%s' "$p")"
   fi
-  docker info >/dev/null 2>&1 || { err "Docker 守护进程仍未就绪：先启动 Docker Desktop，或在 WSL 内执行 systemctl start docker"; exit 1; }
+  case "$p" in
+    /[a-zA-Z]/*) printf '/mnt%s\n' "$p" ;;
+    *)           printf '%s\n' "$p" ;;
+  esac
+}
+
+# 唯一的 docker 执行入口
+docker_run() {
+  case "$DOCKER_MODE" in
+    wsl) wsl.exe -d "$DOCKER_DISTRO" -u root -- docker "$@" ;;
+    *)   docker "$@" ;;
+  esac
+}
+
+# WSL 内以 root 执行任意命令（仅在 wsl 通路下有意义）
+in_wsl_root() {
+  wsl.exe -d "$DOCKER_DISTRO" -u root -- bash -lc "$1"
+}
+
+docker_daemon_ready() {
+  case "$1" in
+    local) docker info >/dev/null 2>&1 ;;
+    wsl)   in_wsl_root 'docker info' >/dev/null 2>&1 ;;
+    *)     return 1 ;;
+  esac
+}
+
+require_docker() {
+  [ -n "$DOCKER_MODE" ] && return 0
+  command -v docker >/dev/null 2>&1 || { err "未找到 docker CLI：请安装 Docker Desktop，或确认 docker 在 PATH 中"; exit 1; }
+
+  if docker_daemon_ready local; then
+    DOCKER_MODE=local
+    return 0
+  fi
+
+  # 宿主守护进程没响应（多为 Docker Desktop 未启动），改走 WSL 内的 dockerd
+  if command -v wsl.exe >/dev/null 2>&1; then
+    warn "宿主 Docker 守护进程未响应，改用 WSL($DOCKER_DISTRO) 内的 dockerd"
+    in_wsl_root 'systemctl start docker' >/dev/null 2>&1 || true
+    local i=0
+    while [ "$i" -lt 10 ]; do
+      docker_daemon_ready wsl && { DOCKER_MODE=wsl; log "通路：wsl（$DOCKER_DISTRO 内的 dockerd）"; return 0; }
+      sleep 1; i=$((i + 1))
+    done
+  fi
+
+  err "Docker 守护进程不可用。三选一："
+  err "  1) 启动 Docker Desktop；"
+  err "  2) 在 WSL 内执行 systemctl start docker；"
+  err "  3) 用 SORTS_WSL_DISTRO=<发行版名> 指定正确的 WSL 发行版（当前：$DOCKER_DISTRO）"
+  exit 1
 }
 
 prepare_env() {
@@ -61,7 +120,15 @@ prepare_env() {
   fi
 }
 
-dc() { docker compose --project-directory "$DOCKER_DIR" --env-file "$ENV_FILE" -f "$DOCKER_DIR/compose.yml" "$@"; }
+# compose 调用入口：wsl 通路下 --project-directory / --env-file / -f 都要先转成 WSL 路径，
+# 否则容器内的 dockerd 找不到文件（compose 相对 build context 也跟着切到 /mnt/... ，与 compose.yml 的 `..` 一致）
+dc() {
+  if [ "$DOCKER_MODE" = wsl ]; then
+    in_wsl_root "docker compose --project-directory '$(to_wsl_path "$DOCKER_DIR")' --env-file '$(to_wsl_path "$ENV_FILE")' -f '$(to_wsl_path "$DOCKER_DIR/compose.yml")' $(printf '%q ' "$@")"
+  else
+    docker compose --project-directory "$DOCKER_DIR" --env-file "$ENV_FILE" -f "$DOCKER_DIR/compose.yml" "$@"
+  fi
+}
 # 后端服务与前端站点在同一个 compose 文件里，靠 profile 区分：
 # 不指定 profile = 只起中间件；--profile app = 起 6 个服务；--profile web = 起前端站点
 APP_SERVICES=(gateway user schedule ai notification mall)
@@ -82,7 +149,7 @@ wait_port() {
 wait_healthy() {
   local cname="$1" timeout="${2:-120}" i=0 st
   while [ "$i" -lt "$timeout" ]; do
-    st="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$cname" 2>/dev/null || echo missing)"
+    st="$(docker_run inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$cname" 2>/dev/null || echo missing)"
     [ "$st" = "healthy" ] && return 0
     sleep 2; i=$((i + 2))
   done
@@ -114,6 +181,10 @@ cmd_up() {
   wait_healthy sorts-mysql 150 || true
   init_databases
   cmd_status
+  # WSL 会在最后一个会话结束后回收发行版（实测 2.7.12 如此，.wslconfig 的 vmIdleTimeout 只管 VM 不管发行版），
+  # 容器本身靠 restart: unless-stopped 会在下次冷启动时自动回来，但健康检查要从头跑一遍
+  warn "提示：WSL 发行版会在最后一个终端会话结束后被回收，dockerd 与容器一并停止；下次命令会冷启动自动恢复。"
+  warn "      需要长时间不间断运行（远程调试 / 长任务）时，另开一个窗口执行：bash scripts/docker.sh keepalive"
 }
 
 cmd_down()      { require_docker; dc down; log "中间件已停止（数据卷保留）"; }
@@ -131,17 +202,23 @@ cmd_status() {
     fi
   done
   log "=== 容器 ==="
-  docker ps -a --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | grep -E 'sorts-|NAMES' || echo "  无 SORTS 容器"
+  docker_run ps -a --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | grep -E 'sorts-|NAMES' || echo "  无 SORTS 容器"
+  # 冷启动识别：全部容器都在 90 秒内起步，说明发行版刚被回收又拉起，健康检查还没跑完
+  local ages
+  ages="$(docker_run ps --filter name=sorts- --format '{{.Status}}' 2>/dev/null | grep -c 'Up [0-9]* seconds' || true)"
+  if [ "${ages:-0}" -ge 4 ]; then
+    warn "检测到疑似冷启动恢复：$ages 个容器起步不足 1 分钟（WSL 回收发行版后自动拉起），健康检查需要再等一会儿"
+  fi
   log "=== 数据库 ==="
-  docker exec sorts-mysql mysql -uroot -p"$(env_value MYSQL_ROOT_PASSWORD)" -N \
+  docker_run exec sorts-mysql mysql -uroot -p"$(env_value MYSQL_ROOT_PASSWORD)" -N \
     -e "SHOW DATABASES LIKE 'sorts%';" 2>/dev/null || echo "  （MySQL 未运行，跳过）"
 }
 
 init_databases() {
-  docker ps --format '{{.Names}}' | grep -qx sorts-mysql || { warn "sorts-mysql 未运行，跳过建库校验"; return 0; }
+  docker_run ps --format '{{.Names}}' | grep -qx sorts-mysql || { warn "sorts-mysql 未运行，跳过建库校验"; return 0; }
   log "校验数据库（首次创建数据卷时已自动执行 scripts/sql/*.sql）"
   for db in sorts_user sorts_schedule sorts_ai sorts_notification sorts_mall; do
-    if docker exec sorts-mysql mysql -uroot -p"$(env_value MYSQL_ROOT_PASSWORD)" \
+    if docker_run exec sorts-mysql mysql -uroot -p"$(env_value MYSQL_ROOT_PASSWORD)" \
         -e "CREATE DATABASE IF NOT EXISTS ${db} DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" >/dev/null 2>&1; then
       echo "  ✓ ${db}"
     else
@@ -152,11 +229,11 @@ init_databases() {
 
 apply_sql() {
   require_docker; prepare_env
-  docker ps --format '{{.Names}}' | grep -qx sorts-mysql || { err "sorts-mysql 未运行，请先执行 bash scripts/docker.sh up"; exit 1; }
+  docker_run ps --format '{{.Names}}' | grep -qx sorts-mysql || { err "sorts-mysql 未运行，请先执行 bash scripts/docker.sh up"; exit 1; }
   log "按文件名顺序执行 $SQL_DIR/*.sql"
   for file in $(ls "$SQL_DIR"/*.sql | sort); do
     printf '  → %s ... ' "$(basename "$file")"
-    if docker exec -i sorts-mysql mysql -uroot -p"$(env_value MYSQL_ROOT_PASSWORD)" < "$file" 2>/dev/null; then
+    if docker_run exec -i sorts-mysql mysql -uroot -p"$(env_value MYSQL_ROOT_PASSWORD)" < "$file" 2>/dev/null; then
       printf '\033[32mOK\033[0m\n'
     else
       printf '\033[31mFAILED\033[0m\n'; err "执行失败：$(basename "$file")"; exit 1
@@ -167,7 +244,7 @@ apply_sql() {
 
 cmd_app() {
   require_docker; prepare_env
-  docker ps --format '{{.Names}}' | grep -qx sorts-mysql || { err "中间件未启动：先执行 bash scripts/docker.sh up"; exit 1; }
+  docker_run ps --format '{{.Names}}' | grep -qx sorts-mysql || { err "中间件未启动：先执行 bash scripts/docker.sh up"; exit 1; }
   log "构建并启动后端服务（首次构建需拉取 maven/JRE 基础镜像并下载依赖，约 5~15 分钟）"
   dc --profile app up -d --build "${APP_SERVICES[@]}"
   if wait_http_up "http://localhost:$(env_value GATEWAY_PORT)/actuator/health" 240; then
@@ -196,32 +273,33 @@ cmd_clean_legacy() {
   log "删除历史遗留容器（数据卷保留，可随时 docker volume ls 查看）"
   local removed=0 skipped=0
   for name in "${LEGACY_CONTAINERS[@]}"; do
-    if docker ps -a --format '{{.Names}}' | grep -qx "$name"; then
+    if docker_run ps -a --format '{{.Names}}' | grep -qx "$name"; then
       # 只跳过「本项目 compose」接管的容器；其他 compose 项目（如 Agent 的 Milvus）按名单照删
       local project
-      project="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$name" 2>/dev/null || true)"
+      project="$(docker_run inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$name" 2>/dev/null || true)"
       if [ "$project" = "sorts" ]; then
         warn "跳过 $name（已由本项目 compose 管理）"; skipped=$((skipped + 1)); continue
       fi
       [ -n "$project" ] && warn "$name 来自其他 compose 项目（$project），按你的要求一并删除（如需恢复，回到该项目执行 compose up）"
-      docker rm -f "$name" >/dev/null && { echo "  ✗ 已删除 $name"; removed=$((removed + 1)); }
+      docker_run rm -f "$name" >/dev/null && { echo "  ✗ 已删除 $name"; removed=$((removed + 1)); }
     fi
   done
   [ "$removed" -eq 0 ] && log "没有需要清理的遗留容器" || log "共删除 $removed 个容器（跳过 $skipped 个）"
 
   # Agent 项目遗留的 Milvus 专用网络（容器已删，网络留着只占名字）
-  if docker network ls --format '{{.Name}}' | grep -qx milvus; then
-    docker network rm milvus >/dev/null 2>&1 && echo "  ✗ 已删除网络 milvus" || warn "网络 milvus 仍被占用，稍后重试"
+  if docker_run network ls --format '{{.Name}}' | grep -qx milvus; then
+    docker_run network rm milvus >/dev/null 2>&1 && echo "  ✗ 已删除网络 milvus" || warn "网络 milvus 仍被占用，稍后重试"
   fi
-  if docker network ls --format '{{.Name}}' | grep -qx hm-net; then
-    docker network rm hm-net >/dev/null 2>&1 && echo "  ✗ 已删除网络 hm-net" || true
+  if docker_run network ls --format '{{.Name}}' | grep -qx hm-net; then
+    docker_run network rm hm-net >/dev/null 2>&1 && echo "  ✗ 已删除网络 hm-net" || true
   fi
 
   # 6380 的「原生 redis-server」不再需要：密码遗留在 /etc/redis/redis.conf
-  if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files 2>/dev/null | grep -q '^redis-server'; then
-    if systemctl is-active --quiet redis-server 2>/dev/null; then
+  # （它跑在 WSL 里，Git Bash 侧没有 systemctl，故统一交给 WSL 执行）
+  if [ "$DOCKER_MODE" = wsl ] && in_wsl_root 'command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files 2>/dev/null | grep -q "^redis-server"'; then
+    if in_wsl_root 'systemctl is-active --quiet redis-server'; then
       log "停用 WSL 原生 redis-server（6380，密码遗留在 /etc/redis/redis.conf，已由容器 Redis 6379 接管）"
-      systemctl disable --now redis-server >/dev/null 2>&1 || warn "停用失败，请手动 systemctl disable --now redis-server"
+      in_wsl_root 'systemctl disable --now redis-server' >/dev/null 2>&1 || warn "停用失败，请手动 systemctl disable --now redis-server"
     fi
   fi
   log "清理完成，可用 bash scripts/docker.sh up 以 compose 方式重新拉起"
@@ -250,14 +328,28 @@ cmd_logs() {
   esac
 }
 
+# 保持 WSL 会话存活：WSL 2（实测 2.7.12）会在最后一个 wsl.exe 会话结束后回收发行版，
+# 连带停掉 dockerd 与容器（容器靠 restart: unless-stopped 在下次冷启动时自动恢复，
+# 但健康检查要从头跑一遍）。需要容器长时间不间断运行时，用这个命令占住一个会话。
+cmd_keepalive() {
+  require_docker
+  if [ "$DOCKER_MODE" != "wsl" ]; then
+    log "当前走宿主 Docker Desktop 通路，不存在发行版被回收的问题，无需 keepalive"
+    return 0
+  fi
+  log "保持 WSL($DOCKER_DISTRO) 会话存活：此命令会一直阻塞，Ctrl-C 结束"
+  log "（保持期间容器不会被连带回收；关掉本窗口后 WSL 会回收发行版）"
+  in_wsl_root 'trap "exit 0" TERM INT; while true; do sleep 300; done'
+}
+
 cmd_shell() {
   require_docker; prepare_env
   case "${1:-mysql}" in
-    mysql)    docker exec -it sorts-mysql mysql -uroot -p"$(env_value MYSQL_ROOT_PASSWORD)" ;;
-    redis)    docker exec -it sorts-redis redis-cli -a "$(env_value REDIS_PASSWORD)" ;;
-    nacos)    docker exec -it sorts-nacos sh ;;
-    rabbitmq) docker exec -it sorts-rabbitmq bash ;;
-    *)        docker exec -it "$1" sh ;;
+    mysql)    docker_run exec -it sorts-mysql mysql -uroot -p"$(env_value MYSQL_ROOT_PASSWORD)" ;;
+    redis)    docker_run exec -it sorts-redis redis-cli -a "$(env_value REDIS_PASSWORD)" ;;
+    nacos)    docker_run exec -it sorts-nacos sh ;;
+    rabbitmq) docker_run exec -it sorts-rabbitmq bash ;;
+    *)        docker_run exec -it "$1" sh ;;
   esac
 }
 
@@ -270,12 +362,13 @@ case "${1:-up}" in
   sql)           apply_sql ;;
   app)           cmd_app ;;
   app-down)      cmd_app_down ;;
-  app-logs)      shift; docker compose --project-directory "$DOCKER_DIR" --env-file "$ENV_FILE" -f "$DOCKER_DIR/compose.yml" --profile app logs -f --tail 150 "${1:-gateway}" ;;
+  app-logs)      shift; require_docker; prepare_env; dc --profile app logs -f --tail 150 "${1:-gateway}" ;;
   build)         cmd_build ;;
   web)           cmd_web ;;
   clean-legacy)  cmd_clean_legacy ;;
   clean)         cmd_clean ;;
   reset)         cmd_reset ;;
   shell)         shift; cmd_shell "${1:-mysql}" ;;
+  keepalive)     cmd_keepalive ;;
   *)             sed -n '2,30p' "$0"; exit 1 ;;
 esac

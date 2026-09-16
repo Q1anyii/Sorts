@@ -5,7 +5,7 @@ import AiChat from './AiChat.vue'
 import AiPlan from './AiPlan.vue'
 import AiReports from './AiReports.vue'
 
-/** AI 织师：对话 / 规划 / 梭影报告 三合一 */
+/** 梭灵：对话 / 规划 / 梭影报告 三合一 */
 const tab = ref('chat')
 </script>
 

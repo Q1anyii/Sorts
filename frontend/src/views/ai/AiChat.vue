@@ -69,7 +69,7 @@ function send(text?: string, write = allowWrite.value) {
       onError: (e: ApiError) => {
         assistant.streaming = false
         assistant.failed = true
-        assistant.content = assistant.content || `织师暂不可用：${e.message}`
+        assistant.content = assistant.content || `梭灵暂不可用：${e.message}`
         streaming.value = false
       }
     }
@@ -114,7 +114,7 @@ function confirmAllowWrite() {
   <div class="chat">
     <div ref="listRef" class="chat__list">
       <div v-if="!messages.length" class="chat__welcome">
-        <p class="chat__welcome-title">AI 织师在此</p>
+        <p class="chat__welcome-title">梭灵在此</p>
         <p class="chat__welcome-hint">问排程、问总结、问怎么织更顺手，都可以。</p>
       </div>
 
@@ -145,7 +145,7 @@ function confirmAllowWrite() {
         v-model="input"
         class="chat__input"
         rows="2"
-        placeholder="和织师说点什么…（Enter 发送，Shift+Enter 换行）"
+        placeholder="和梭灵说点什么…（Enter 发送，Shift+Enter 换行）"
         @keydown.enter.exact.prevent="send()"
       />
       <SButton v-if="streaming" variant="ghost" @click="stop">
@@ -157,7 +157,7 @@ function confirmAllowWrite() {
     <!-- 双钥匙确认 -->
     <SModal :open="confirmOpen" title="允许 AI 代为织入" :width="420" @close="confirmOpen = false">
       <p class="chat__confirm-text">
-        打开后，织师可以代为创建或修改你的日程。服务端还有第二道开关把关，但请知悉：每一次写入都来自你的指令。
+        打开后，梭灵可以代为创建或修改你的日程。服务端还有第二道开关把关，但请知悉：每一次写入都来自你的指令。
       </p>
       <template #footer>
         <SButton variant="ghost" @click="confirmOpen = false">先不</SButton>

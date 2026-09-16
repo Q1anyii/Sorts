@@ -300,12 +300,16 @@ export interface AISummaryRequest {
 export interface PeriodSummaryRequest {
   year?: number
   month?: number
+  /** true = 忽略同周期已有报告，强制重新生成 */
+  force?: boolean
 }
 
 export interface AsyncReportResponse {
   reportId: number
   status: ReportStatus | string
   estimatedSeconds: number | null
+  /** true = 命中同周期已有报告，本次未重新调用模型 */
+  reused?: boolean
 }
 
 export interface AIReportInfo {
