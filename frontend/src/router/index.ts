@@ -28,7 +28,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'schedules', name: 'schedules', component: () => import('@/views/schedules/ScheduleListView.vue'), meta: { title: '日程清单' } },
       { path: 'timer', name: 'timer', component: () => import('@/views/timer/TimerView.vue'), meta: { title: '穿梭计时' } },
       { path: 'statistics', name: 'statistics', component: () => import('@/views/statistics/StatisticsView.vue'), meta: { title: '纹谱统计' } },
-      { path: 'ai', name: 'ai', component: stub, meta: { title: 'AI 织师' } },
+      { path: 'ai', name: 'ai', component: () => import('@/views/ai/AiView.vue'), meta: { title: 'AI 织师' } },
       { path: 'mall', name: 'mall', component: stub, meta: { title: '锦市' } },
       { path: 'wardrobe', name: 'wardrobe', component: stub, meta: { title: '衣橱' } },
       { path: 'notifications', name: 'notifications', component: stub, meta: { title: '飞鸽传书' } },
