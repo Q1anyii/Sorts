@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="SORTS · User (8081)" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="false">
+    <module name="sorts-user" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.sorts.user.UserApplication" />
+    <option name="VM_PARAMETERS" value="-Dfile.encoding=UTF-8" />
+    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

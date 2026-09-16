@@ -1,0 +1,8 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="SORTS · 全部服务" type="CompoundRunConfigurationType">
+    <toRun name="SORTS · User (8081)" type="SpringBootApplicationConfigurationType" />
+    <toRun name="SORTS · Schedule (8082)" type="SpringBootApplicationConfigurationType" />
+    <toRun name="SORTS · Gateway (8080)" type="SpringBootApplicationConfigurationType" />
+    <method v="2" />
+  </configuration>
+</component>
