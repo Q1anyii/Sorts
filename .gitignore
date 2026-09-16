@@ -1,2 +1,41 @@
-/~$需求分析.docx
-/需求分析.docx
+# ========== Office 临时文件 / 需求源文档 ==========
+~$*.docx
+需求分析.docx
+
+# ========== Maven ==========
+target/
+**/target/
+.mvn/timing.properties
+!**/src/main/**/target/
+!**/src/test/**/target/
+pom.xml.versionsBackup
+
+# ========== Node ==========
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+
+# ========== IDE / 编辑器 ==========
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+
+# ========== 日志 / 运行时 ==========
+*.log
+logs/
+*.pid
+.DS_Store
+Thumbs.db
+
+# ========== 敏感配置 ==========
+*.env
+.env.local
+.env.*.local
+application-secret.yml
