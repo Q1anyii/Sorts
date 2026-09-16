@@ -1,0 +1,78 @@
+server:
+  port: ${GATEWAY_PORT:8080}
+
+spring:
+  application:
+    name: sorts-gateway
+  main:
+    web-application-type: reactive
+  cloud:
+    nacos:
+      # 注册中心地址：本地开发直连 WSL 内 Nacos（localhost 即 WSL 映射）
+      server-addr: ${NACOS_ADDR:localhost:8848}
+      username: ${NACOS_USERNAME:nacos}
+      password: ${NACOS_PASSWORD:nacos}
+      discovery:
+        enabled: ${NACOS_ENABLED:true}
+        namespace: ${NACOS_NAMESPACE:public}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+    gateway:
+      # 关闭自动路由，避免后端内部接口被意外暴露
+      discovery:
+        locator:
+          enabled: false
+      httpclient:
+        connect-timeout: 3000
+        response-timeout: 15s
+      routes:
+        # ========== 用户服务 ==========
+        - id: sorts-user
+          uri: lb://sorts-user
+          predicates:
+            - Path=/api/v1/auth/**,/api/v1/users/**
+          filters:
+            - StripPrefix=0
+        # ========== 日程服务 ==========
+        - id: sorts-schedule
+          uri: lb://sorts-schedule
+          predicates:
+            - Path=/api/v1/schedules/**,/api/v1/calendar/**,/api/v1/statistics/**
+        # ========== AI 服务 ==========
+        - id: sorts-ai
+          uri: lb://sorts-ai
+          predicates:
+            - Path=/api/v1/ai/**
+        # ========== 通知服务 ==========
+        - id: sorts-notification
+          uri: lb://sorts-notification
+          predicates:
+            - Path=/api/v1/notifications/**
+        # ========== 商城服务 ==========
+        - id: sorts-mall
+          uri: lb://sorts-mall
+          predicates:
+            - Path=/api/v1/mall/**,/api/v1/users/wardrobe/**
+
+# ========== 项目自定义配置 ==========
+sorts:
+  jwt:
+    # 生产环境务必通过环境变量 JWT_SECRET 注入，各服务保持一致
+    secret: ${JWT_SECRET:sorts-dev-secret-please-override-by-env-jwt-secret}
+    access-expire-minutes: ${JWT_ACCESS_EXPIRE:30}
+    refresh-expire-days: ${JWT_REFRESH_EXPIRE:7}
+    issuer: sorts
+  gateway:
+    whitelist:
+      - /api/v1/auth/**
+      - /actuator/**
+      - /doc.html
+      - /webjars/**
+      - /v3/api-docs/**
+      - /favicon.ico
+      - /error
+
+# ========== 日志 ==========
+logging:
+  level:
+    com.sorts: debug
+    org.springframework.cloud.gateway: info
