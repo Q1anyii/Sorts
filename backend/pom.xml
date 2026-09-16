@@ -25,6 +25,7 @@
         <module>sorts-user</module>
         <module>sorts-schedule</module>
         <module>sorts-ai</module>
+        <module>sorts-notification</module>
     </modules>
 
     <properties>
