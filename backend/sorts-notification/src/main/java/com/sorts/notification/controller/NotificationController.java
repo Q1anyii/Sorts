@@ -4,11 +4,16 @@ import com.sorts.common.constant.AuthConstants;
 import com.sorts.common.result.Result;
 import com.sorts.notification.dto.NotificationPageVO;
 import com.sorts.notification.dto.NotificationQuery;
+import com.sorts.notification.dto.ReminderSettingRequest;
+import com.sorts.notification.dto.ReminderSettingVO;
 import com.sorts.notification.service.NotificationService;
+import com.sorts.notification.service.ReminderSettingService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,6 +31,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class NotificationController {
 
     private final NotificationService notificationService;
+
+    private final ReminderSettingService reminderSettingService;
 
     /** 通知列表（含未读总数） */
     @GetMapping
@@ -51,5 +58,18 @@ public class NotificationController {
     @PutMapping("/read-all")
     public Result<Integer> markAllRead(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId) {
         return Result.success(notificationService.markAllRead(userId));
+    }
+
+    /** 获取提醒设置（未自定义时返回服务端默认值，customized=false） */
+    @GetMapping("/settings")
+    public Result<ReminderSettingVO> getSettings(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId) {
+        return Result.success(reminderSettingService.get(userId));
+    }
+
+    /** 更新提醒设置（仅覆盖传入的非空字段） */
+    @PutMapping("/settings")
+    public Result<ReminderSettingVO> updateSettings(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
+                                                    @Valid @RequestBody ReminderSettingRequest request) {
+        return Result.success(reminderSettingService.update(userId, request));
     }
 }
