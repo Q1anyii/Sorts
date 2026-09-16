@@ -76,6 +76,17 @@ public class ToolRegistry {
     }
 
     /**
+     * 预判某次调用是否会因写权限被拒（不执行工具）。
+     *
+     * <p>对话服务据此向前端追加一条「需要先开启写入」的建议操作——
+     * 让用户知道刚才那句「帮你排一下」为什么没落地，而不是只能看到 AI 的一句道歉。</p>
+     */
+    public boolean isWriteDenied(String toolName, boolean requestAllowWrite) {
+        AiTool tool = tools.get(toolName);
+        return tool != null && tool.level().isWrite() && !writeEnabled(requestAllowWrite);
+    }
+
+    /**
      * 执行模型发起的一次工具调用。
      *
      * @return 回灌给模型的文本；无论成功失败都返回文本，不抛异常

@@ -146,6 +146,25 @@ class ToolRegistryTest {
         assertTrue(error.getMessage().contains("dup"));
     }
 
+    @Test
+    @DisplayName("isWriteDenied：写工具在未授权时为真，读工具永远为假")
+    void writeDeniedPrediction() {
+        ToolRegistry registry = new ToolRegistry(List.of(
+                stub("readTool", ToolLevel.READ, args -> "{}"),
+                stub("createSchedule", ToolLevel.WRITE, args -> "{}")), properties, jsonCodec);
+
+        assertTrue(registry.isWriteDenied("createSchedule", false));
+        assertFalse(registry.isWriteDenied("readTool", false));
+
+        properties.getTool().setAllowWrite(true);
+        assertFalse(registry.isWriteDenied("createSchedule", true));
+        // 仅服务端开关打开、请求未确认：仍然算被拒
+        assertTrue(registry.isWriteDenied("createSchedule", false));
+
+        // 未注册的工具名不应被判定为「被拒」
+        assertFalse(registry.isWriteDenied("unknown", false));
+    }
+
     private List<String> names(List<ToolDefinition> definitions) {
         return definitions.stream().map(definition -> definition.getFunction().getName()).sorted().toList();
     }
