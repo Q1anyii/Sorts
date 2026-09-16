@@ -65,3 +65,18 @@
 - **`ObjectNode` 的正确包名是 `com.fasterxml.jackson.databind.node.ObjectNode`**（不是 `databind.ObjectNode`）
 - **Spring MVC 同一路径 JSON + SSE**：按方法声明返回类型选处理器，声明 `Object` 会让 `SseEmitter` 被 Jackson 序列化 → 用 `params` 条件拆两个方法
 - **`@Async` 必须跨 Bean 调用**：同类内自调用绕过代理会退化成同步 → 把异步逻辑拆成独立 Bean
+
+## 服务约定（M5 起）
+- **内部接口一律放 `/internal/**`**（网关只路由 `/api/v1/**`，外部不可达）并标 `@InternalApi`；
+  出站凭证由 common 的 Feign 拦截器按路径白名单自动加 → 新增内部路径要同步 `sorts.internal.paths`
+- `X-Internal-Token` 各服务必须一致（`INTERNAL_TOKEN`，默认 `sorts-internal-dev-token`）；
+  未配置时内部接口 fail-closed；网关会剥离外部伪造的该请求头
+- **购买链路顺序不可颠倒**：加锁 → 扣积分 → 本地事务落库；事务性落库放独立 Bean；
+  库存扣减必须走条件更新 `UPDATE ... WHERE stock > 0`
+- **网关路由顺序即优先级**：同一路径命中多条路由时取第一条；`/api/v1/users/wardrobe/**` 必须排在 user 之前
+
+## 踩坑记录（续）
+- **`-pl` 单模块构建会从本地仓库解析 `sorts-common`**（可能是旧版，报「程序包 com.sorts.common.internal 不存在」）→ 用 `-pl sorts-common,<目标>` 或 `-am`
+- **`LocalTime.parse("7:00")` 抛异常**（ISO 要求两位小时）→ 宽松解析 HH:mm 要显式 `DateTimeFormatter`
+- **同名重载 + `Collectors.toCollection(...)` 会触发方法引用推断歧义** → 给批量版本改个明确名字（如 `findEffectiveAll`），别在每个调用点加显式类型
+- Git Bash 无 `bc`（统计用 `awk`）；`grep` 中文输出可能被判为二进制，需 `grep -a`
