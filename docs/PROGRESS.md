@@ -141,10 +141,20 @@ MySQL 账号密码通过 `MYSQL_USER` / `MYSQL_PASSWORD` 传入，服务侧用 `
 
 ### Git 与推送
 
-- 远端：`https://github.com/Q1anyii/sorts.git`（origin，已切换为 HTTPS）
-- 凭据：Git Credential Manager 存储的 PAT
-- **注意**：账户 `Q1anyiii`（SSH 密钥所属）已被 GitHub **封停**，不要用 SSH 推送；使用 `Q1anyii` 的 **fine-grained PAT**，且该令牌需把 `sorts` 仓库加入可访问列表（否则 403 `Write access to repository not granted`）。
+- 远端：`https://github.com/Q1anyii/sorts.git`（origin，HTTPS）
+- 凭据：Git Credential Manager（`git config --global credential.helper manager`）
+- **⚠️ 推送失败的已知原因（2026-09-16 诊断）**：
+  1. 账户 `Q1anyiii`（SSH 密钥所属）已被 GitHub **封停** → 不要用 SSH 推送。
+  2. `Q1anyii` 的 fine-grained PAT 当前 **Contents 权限为只读**，推送报
+     `403 Permission to Q1anyii/sorts.git denied to Q1anyii`，
+     API 写文件报 `Resource not accessible by personal access token`。
+     **修复方式**：GitHub → Settings → Developer settings → Fine-grained tokens → 编辑该令牌
+     → Repository access 勾选 `sorts`（或 All repositories）
+     → Permissions → Repository permissions → **Contents: Read and write** → 保存。
+     或改用 classic token（勾选 `repo` 作用域）。
+- 修复凭据后推送命令：`git push -u origin main`（或用内嵌令牌临时推送）
 - 提交规范：Conventional Commits（`feat(scope): subject`），**每完成一个功能点提交一次；每个模块单测通过后推送**。
+- 待推送提交（本地已提交，等令牌权限修复）：M0 三次提交 + M1 两次提交
 
 ---
 
