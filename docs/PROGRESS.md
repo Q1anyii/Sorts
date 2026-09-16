@@ -1,6 +1,6 @@
 # 梭子 SORTS · 项目进度与续接指南
 
-> **用法**：新会话开始前，把本文档 + `docs/theme-design.md` + `docs/dev-setup.md` 丢给 AI，并粘贴文末的「接续 Prompt」，即可无缝继续开发。
+> **用法**：新会话开始前，把本文档 + `docs/theme-design.md` + `docs/dev-setup.md` + `docs/ide-setup.md` 丢给 AI，并粘贴文末的「接续 Prompt」，即可无缝继续开发。
 > 最后更新：2026-09-16 · 当前里程碑：**M0 / M1 / M2 / M3 完成**（构建通过，**105 个单测全绿**：common 6 + gateway 19 + user 16 + schedule 64）
 
 ---
@@ -167,17 +167,35 @@
 
 ## 六、本地环境约定（重要）
 
-### 构建（Maven 已损坏，必须用脚本）
+### 构建
+
+| 场景 | 命令 |
+|---|---|
+| **IDEA 内**（推荐） | 右键 `backend/pom.xml` → Add as Maven Project，之后用 IDEA 的 Maven 面板 |
+| 你自己的终端（Git Bash / PowerShell） | `cd backend && ./mvnw clean install`（或 `mvnw.cmd`） |
+| WSL / Linux / CI | `cd backend && ./mvnw clean install` |
+| **AI 沙箱内** | `bash scripts/mvn.sh`（必须用这个） |
 
 ```bash
 bash scripts/mvn.sh                # clean install（全模块 + 单测）
 bash scripts/mvn.sh clean test     # 只跑测试
 ```
 
-> 原因：PATH 中 `E:\develop\...apache-maven-3.9.15/3.9.16` 安装损坏（报 classworlds 错误）。
-> `scripts/mvn.sh` 直接用 java 启动 Maven Launcher（受管 Maven 位于 `~/.workbuddy/binaries/maven/apache-maven-3.9.16`），并自动：
-> ① 转换 MSYS 路径为 Windows 路径；② 透传 `HTTP_PROXY/HTTPS_PROXY` 给 JVM（代理 `127.0.0.1:8531`，仅加速用，不影响 localhost）。
-> `~/.m2/settings.xml` 已配置阿里云镜像。
+> **⚠️ 2026-09-16 更正：此前「本机 mvn 已损坏」是误诊。**
+> 本机 `mvn -v` 输出 `Apache Maven 3.9.15`，位于 `E:\develop`，**完全正常**。
+> 真实原因是 WorkBuddy 沙箱给 shell 注入了 `MSYS_NO_PATHCONV=1` 与 `MSYS2_ARG_CONV_EXCL=*`，
+> **关闭了 MSYS 路径自动转换**；而 Maven 的 `bin/mvn` 是 POSIX sh 脚本，把
+> `/c/Users/.../plexus-classworlds.jar` 这类 POSIX 路径直接交给原生 `java.exe`，
+> Windows 版 java 解析不了 → 报 `ClassNotFoundException: ...classworlds.launcher.Launcher`。
+> `scripts/mvn.sh` 显式用 `cygpath` 把路径转成 `C:/...` 再交给 java，因此沙箱内始终可用。
+> 对照验证：`mvn -v` 失败，但 `env -u MSYS_NO_PATHCONV -u MSYS2_ARG_CONV_EXCL bash -c 'mvn -v'` 成功。
+>
+> 仓库已内置 **Maven Wrapper**（`backend/mvnw`、`mvnw.cmd`、`.mvn/wrapper/maven-wrapper.properties`，
+> 仅脚本模式 + 阿里云镜像源），IDE / CI / 其他开发者无需预装 Maven。
+> 受管 Maven：`~/.workbuddy/binaries/maven/apache-maven-3.9.16`；`~/.m2/settings.xml` 已配阿里云镜像；
+> `scripts/mvn.sh` 还会透传 `HTTP_PROXY/HTTPS_PROXY` 给 JVM（代理 `127.0.0.1:8531`，仅加速用，不影响 localhost）。
+>
+> **IDE 运行细节（JDK/模块/运行配置/报错速查）见 [`docs/ide-setup.md`](./ide-setup.md)。**
 
 ### 中间件（WSL 内执行）
 
@@ -248,7 +266,8 @@ D:\SORTS(梭子)/
 ├── frontend/                # 单文件演示版（M6 重写为 Vite 工程）
 ├── docs/
 │   ├── theme-design.md      # 主题设计规范
-│   ├── dev-setup.md         # 开发手册
+│   ├── dev-setup.md         # 开发手册（中间件、端口、命令）
+│   ├── ide-setup.md         # IDEA 运行手册（导入 Maven、JDK 17、共享运行配置、报错速查）
 │   └── PROGRESS.md          # 本文档
 ├── scripts/
 │   ├── mvn.sh               # 构建封装（必须用）
@@ -267,13 +286,15 @@ D:\SORTS(梭子)/
 ```
 继续开发「梭子 SORTS」项目（工作区 D:\SORTS(梭子)）。
 
-先读这三份文档恢复上下文：
+先读这四份文档恢复上下文：
 - docs/PROGRESS.md（进度与续接指南）
 - docs/dev-setup.md（开发手册、端口、命令）
+- docs/ide-setup.md（IDE 运行手册：Maven 导入、JDK 17、共享运行配置）
 - docs/theme-design.md（主题规范：光阴似箭，日月如梭）
 
 工程铁律：
-1. 构建必须用 bash scripts/mvn.sh（本机 mvn 已损坏），构建后确认单测全绿。
+1. 构建：在 AI 沙箱内必须用 bash scripts/mvn.sh（沙箱禁用了 MSYS 路径转换，裸 mvn 会报 classworlds 错误）；
+   用户自己的终端 / IDEA / WSL / CI 用 backend/mvnw 即可。构建后确认单测全绿。
 2. 服务名一律 sorts- 前缀，包名 com.sorts.*，跨模块调用用 OpenFeign，禁止跨库直连。
 3. 提交粒度：**按功能分段提交，一个功能一次提交**，不要攒一堆再一起提交
    （Conventional Commits）。GitHub 推送由用户本人执行，AI 只负责本地提交。

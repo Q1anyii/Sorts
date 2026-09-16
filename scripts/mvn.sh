@@ -1,9 +1,19 @@
 #!/usr/bin/env bash
 # =====================================================================
-# 梭子 SORTS · Maven 构建封装（Git Bash / WSL 通用）
+# 梭子 SORTS · Maven 构建封装（供 AI 沙箱内的 Git Bash 使用）
 #
-# 背景：本机 PATH 中存在损坏的 mvn 安装（报 classworlds 错误），
-#       因此这里直接用 java 启动 Maven Launcher，绕过 mvn 脚本。
+# 背景（2026-09-16 更正，此前「本机 mvn 损坏」是误诊）：
+#   本机 mvn 本身是好的（mvn -v → Apache Maven 3.9.15，位于 E:\develop）。
+#   真正的原因是 WorkBuddy 沙箱给 shell 注入了
+#     MSYS_NO_PATHCONV=1
+#     MSYS2_ARG_CONV_EXCL=*
+#   这会关闭 MSYS 的路径自动转换。而 Maven 的 bin/mvn 是 POSIX sh 脚本，
+#   它把 /c/Users/.../plexus-classworlds.jar 这类 POSIX 路径直接交给原生 java.exe，
+#   Windows 版 java 解析不了 → 报：
+#     ClassNotFoundException: org.codehaus.plexus.classworlds.launcher.Launcher
+#
+#   本脚本显式用 cygpath 把路径转成 C:/... 再交给 java，因此在沙箱内始终可用。
+#   在用户自己的终端 / IDEA / WSL / CI 里，直接用 mvn 或 backend/mvnw 即可，无需本脚本。
 #
 # 用法：
 #   bash scripts/mvn.sh                 # 等价于 mvn clean install（作用于 backend 工程）
