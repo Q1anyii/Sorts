@@ -22,12 +22,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <!-- 穿梭过场：out-in 避免新旧页面同屏造成的闪烁 -->
-  <router-view v-slot="{ Component, route }">
-    <transition name="shuttle" mode="out-in">
-      <component :is="Component" :key="route.path" />
-    </transition>
-  </router-view>
+  <!-- 页面出口：登录后的穿梭过场在 AppLayout 内部完成 -->
+  <router-view />
 
   <!-- 全局轻提示 -->
   <div class="toast-stack" aria-live="polite">
