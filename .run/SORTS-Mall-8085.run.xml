@@ -1,0 +1,15 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="SORTS · Mall (8085)" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="false">
+    <module name="sorts-mall" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.sorts.mall.MallApplication" />
+    <option name="VM_PARAMETERS" value="-Dfile.encoding=UTF-8" />
+    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+    <!-- 购买依赖 Redis（Redisson 锁），必须先起中间件：WSL 内 bash scripts/wsl-middleware.sh start -->
+    <envs>
+      <env name="MALL_PURCHASE_NOTIFY" value="true" />
+    </envs>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

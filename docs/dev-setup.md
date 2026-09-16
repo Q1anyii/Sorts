@@ -73,6 +73,32 @@ bash scripts/wsl-middleware.sh sql
 > 仓库内不留任何密钥。本地调试可在 IDEA 的 `SORTS · AI (8083)` 运行配置里填 `DEEPSEEK_API_KEY`（该配置已预置空占位），或设系统环境变量。
 > 第二把钥匙是单次请求的 `allowWrite=true`（前端在用户确认后置位）；两把都到位，写工具才会下发给模型并被执行。
 
+**服务间凭证（全服务通用，M5 起）**：
+
+| 变量 | 默认值 | 说明 |
+|---|---|---|
+| `INTERNAL_TOKEN` | `sorts-internal-dev-token` | 服务间调用凭证，**各服务必须一致**；生产必须用环境变量注入 |
+| `INTERNAL_ENABLED` | `true` | 内部接口校验总开关，仅本地排障时可关 |
+
+**通知服务环境变量**（`sorts-notification`）：
+
+| 变量 | 默认值 | 说明 |
+|---|---|---|
+| `NOTIFY_REMINDER_ENABLED` | `true` | 定时提醒总开关（联调时可关，避免刷屏） |
+| `NOTIFY_REMINDER_CRON` | `0 * * * * ?` | 扫描周期，默认每分钟 |
+| `NOTIFY_REMINDER_LOOKAHEAD` | `60` | 单次扫描向后看的窗口（分钟），需 ≥ 用户可配置的最大提前量 |
+| `NOTIFY_REMINDER_BATCH` | `200` | 单次扫描处理的候选日程上限 |
+| `NOTIFY_REMINDER_RETENTION_DAYS` | `30` | 提醒留痕保留天数 |
+| `NOTIFY_DEFAULT_ADVANCE` / `NOTIFY_DEFAULT_CHANNELS` | `15` / `APP` | 未设置偏好用户的默认提前量与渠道 |
+
+**商城服务环境变量**（`sorts-mall`）：
+
+| 变量 | 默认值 | 说明 |
+|---|---|---|
+| `MALL_LOCK_WAIT` | `3` | 抢商品锁的最长等待秒数 |
+| `MALL_LOCK_LEASE` | `10` | 商品锁持有秒数，必须大于本地事务预期耗时 |
+| `MALL_PURCHASE_NOTIFY` | `true` | 购买成功是否投递站内通知 |
+
 **为什么不用 Spring AI**：`spring-ai-starter-model-openai:1.0.0` 会把 `spring-boot-starter` 锁定在 3.4.5，与本项目的 Boot 3.3.4（Cloud 2023.0.3 / SCA 2023.0.3.2 不支持 Boot 3.4）冲突；1.0.0-M5/M6 在阿里云镜像上取不到。因此按 OpenAI 兼容协议自实现了一个薄客户端，藏在 `ChatModelClient` 接口之后——将来升级 Boot 3.4+ 想换回 Spring AI，只需新增一个实现类，业务代码零改动。
 
 ### 2) Windows：构建后端
@@ -133,3 +159,19 @@ frontend/                # 前端（M6 起工程化重写）
 - 回灌给模型的 JSON 一律用 `ToolJsonCodec`（时间固定 ISO-8601），不要用全局 `ObjectMapper`——全局配置一旦被改成 timestamp，模型会把 `[2026,9,16,9,0]` 当普通数组照抄。
 - 同一路径要同时支持 JSON 与 SSE 时，用 `params` 条件拆成两个处理方法；**不要**把返回类型写成 `Object`（Spring 按声明类型选处理器，`SseEmitter` 会被当普通对象序列化）。
 - SSE 事件约定：`delta`（正文增量）/ `done`（最终结果）/ `error`（`{code,message}`）。
+
+### 服务间调用与内部凭证（M5 起）
+
+- **内部接口一律放在 `/internal/**` 下**：网关只路由 `/api/v1/**`，这个前缀在外部网络根本不存在；再叠加 `@InternalApi` 的凭证校验，构成「不可达 + 需凭证」两道防线。**不要**把内部接口挂到 `/api/v1/**` 上。
+- 被 `@InternalApi` 标注的接口需要请求头 `X-Internal-Token`（值取 `sorts.internal.token`）。**网关会在鉴权分支与白名单分支都剥离外部伪造的该请求头**，因此经网关进来的内部凭证只可能是伪造的。
+- 出站凭证由 `common` 里的 Feign 拦截器按**路径白名单**自动附加（默认 `/internal/`、`/api/v1/users/points/change`）。新增内部路径时，记得同步 `sorts.internal.paths`，否则调用会因缺少凭证被 403。
+- 未配置 `sorts.internal.token` 时内部接口**一律拒绝**（fail-closed）——配置缺失不该退化成「默认敞开」。
+- 跨服务只依赖 JSON 契约：每个服务在 `client/dto/` 内**自成一套副本**并加 `@JsonIgnoreProperties(ignoreUnknown = true)`，不复用对方 VO，避免发布节奏被绑死。
+
+### 购买流程一致性（M5 起）
+
+- 购买顺序固定为 **加锁 → 扣积分 → 本地事务落库**，顺序不可颠倒：积分不足是最常见的失败，先扣可在「未占库存」时快速失败；反过来先落库，失败时就要删订单（账目不该被删）。
+- 事务性落库必须放在**独立 Bean**（`PurchasePersister`）里：`@Transactional` 依赖 Spring 代理，同类内自调用会静默退化成普通方法调用，事务根本不会开。
+- 库存扣减用条件更新 `UPDATE ... WHERE stock > 0`，这是数据库层的最后防线，与 Redis 锁形成双重保护；无限库存（`stock = -1`）跳过扣减，补偿时也必须带 `stock >= 0` 条件，否则会把 `-1` 补成 `0` 变成「售罄」。
+- Redis 不可用时购买**拒绝服务**（fail-closed），不允许库存与积分在没有互斥保护的情况下裸奔。
+- 补偿（退款）失败必须打 ERROR 日志并带上 `userId`/`itemId`/金额，供人工或后续对账任务收敛；**不要**在补偿里吞掉异常却也不记录。

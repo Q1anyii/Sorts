@@ -1,0 +1,15 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="SORTS · Notification (8084)" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="false">
+    <module name="sorts-notification" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.sorts.notification.NotificationApplication" />
+    <option name="VM_PARAMETERS" value="-Dfile.encoding=UTF-8" />
+    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+    <!-- 定时提醒默认每分钟扫描一次；只想调接口时可把 NOTIFY_REMINDER_ENABLED 置 false -->
+    <envs>
+      <env name="NOTIFY_REMINDER_ENABLED" value="true" />
+    </envs>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

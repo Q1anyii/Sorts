@@ -1,7 +1,7 @@
 # 梭子 SORTS · 项目进度与续接指南
 
 > **用法**：新会话开始前，把本文档 + `docs/theme-design.md` + `docs/dev-setup.md` + `docs/ide-setup.md` 丢给 AI，并粘贴文末的「接续 Prompt」，即可无缝继续开发。>   
-> 最后更新：2026-09-16 · 当前里程碑：**M0 / M1 / M2 / M3 / M4 完成**（构建通过，**208 个单测全绿**：common 6 + gateway 19 + user 16 + schedule 64 + ai 103）
+> 最后更新：2026-09-16 · 当前里程碑：**M0 / M1 / M2 / M3 / M4 / M5 完成**（构建通过，**321 个单测全绿**：common 19 + gateway 21 + user 16 + schedule 67 + ai 103 + notification 51 + mall 44）
 
 ---
 
@@ -44,8 +44,8 @@
 | 用户服务  | `backend/sorts-user`         | 8081 | ✅ 完成（注册登录/双令牌/积分）        |
 | 日程服务  | `backend/sorts-schedule`     | 8082 | ✅ 完成（CRUD/计时状态机/日历/统计）   |
 | AI 服务 | `backend/sorts-ai`           | 8083 | ✅ 完成（流式对话/工具集/规划/周期总结）    |
-| 通知服务  | `backend/sorts-notification` | 8084 | ⬜ 待开发                    |
-| 商城服务  | `backend/sorts-mall`         | 8085 | ⬜ 待开发                    |
+| 通知服务  | `backend/sorts-notification` | 8084 | ✅ 完成（通知列表/已读/提醒设置/定时提醒）   |
+| 商城服务  | `backend/sorts-mall`         | 8085 | ✅ 完成（商品/购买防超卖/装扮仓库）      |
 | 公共模块  | `backend/sorts-common`       | —    | ✅ 完成（Result/异常/JWT 自动装配） |
 
 命名规范：模块与 Spring `application.name` 一律 \*\*sorts-`前缀**，Java 包名`com.sorts.*`，路由 `lb://sorts-xxx\`。
@@ -245,6 +245,74 @@ event: error   data: {"code":503,"message":"..."}
 
 > ⚠️ 踩坑记录：① 流式 `tool_calls` 必须按 `index` 归并且参数分片**追加**，否则发给模型的是残缺 JSON；② 工具回灌的 JSON 若依赖环境里的 ObjectMapper，时间格式会随全局配置漂移，必须用专用 mapper 固定 ISO；③ 幂等保护要做在「采纳」上而不是「创建」上，否则用户双击就产生重复日程。
 
+### M5 商城 + 通知（✅ 已完成）
+
+接口（全部对齐 `api-spec.json`）：
+
+| 方法   | 路径                                | 说明                        |
+| ---- | --------------------------------- | ------------------------- |
+| GET  | `/api/v1/notifications`           | 通知列表（附未读总数）               |
+| PUT  | `/api/v1/notifications/{id}/read` | 标记单条已读（幂等）                |
+| PUT  | `/api/v1/notifications/read-all`  | 全部标记已读                    |
+| GET  | `/api/v1/notifications/settings`  | 提醒设置（未自定义时返回默认值）          |
+| PUT  | `/api/v1/notifications/settings`  | 更新提醒设置                    |
+| GET  | `/api/v1/mall/items`              | 商品列表（附光阴砂余额）              |
+| GET  | `/api/v1/mall/items/{id}`         | 商品详情（附是否已拥有 / 购买人次）       |
+| POST | `/api/v1/mall/purchase`           | 购买商品                      |
+| GET  | `/api/v1/users/wardrobe`          | 装扮仓库                      |
+| PUT  | `/api/v1/users/wardrobe/active`   | 切换当前装扮                    |
+
+内部接口（网关不路由，需 `X-Internal-Token`）：
+
+| 方法   | 路径                                          | 提供方            |
+| ---- | ------------------------------------------- | -------------- |
+| GET  | `/internal/schedules/upcoming`              | sorts-schedule |
+| POST | `/internal/notifications`（另有 `/batch`）      | sorts-notification |
+
+拆分提交（每个功能一次提交）：服务间凭证 → 日程内部接口 → 通知骨架与列表 → 提醒设置 → 定时提醒 → 商城骨架与商品查询 → 购买流程 → 装扮仓库。
+
+**一、服务间调用凭证 `X-Internal-Token`（补掉 M0 遗留技术债）**
+
+- `@InternalApi` 注解 + `InternalApiInterceptor` 只拦**标注过的处理器**。为什么不用路径前缀判断：前缀靠约定，改名或新增路径就会静默失去保护；注解长在代码上，编译期可见、评审时看得见。
+- 出站由 `InternalFeignInterceptor` 按**路径白名单**（默认 `/internal/`、`/api/v1/users/points/change`）自动附加凭证 —— 需要人记住的安全约定迟早会漏。
+- **网关在鉴权分支与白名单分支都剥离外部伪造的该请求头**：服务间调用不经过网关，所以经网关进来的内部凭证只可能是伪造的。
+- 未配置 `sorts.internal.token` 时**拒绝放行**（fail-closed）：配置缺失不该退化成「默认敞开」。凭证比较用 `MessageDigest.isEqual` 定长比较，避免逐字节试探。
+- 内部接口一律放 `/internal/**`：网关只路由 `/api/v1/**`，这个前缀在外部网络**根本不存在**，与凭证校验构成两道防线。
+
+**二、通知服务（8084）**
+
+- **列表/已读**：非法类型直接 400（静默忽略筛选会返回全部通知，让调用方误以为筛选生效）；未读角标**独立统计**，否则筛「已读」时角标会莫名归零；已读的属主校验交给 SQL，重复标记幂等。
+- **提醒设置**：用户从未改过时返回默认值并标注 `customized=false`，**不预先写一行空记录**——「没有偏好」与「偏好即默认值」语义不同，后者一旦调默认值就会被历史数据钉死。
+- **免打扰**：跨天区间（23:00–07:00）集中处理一次；`start == end` 视为「未配置」而不是 24 小时静默；启用免打扰却没给时间直接 400（否则用户以为生效、实际不生效）。
+- **定时提醒**：`@Scheduled` 每分钟扫描，业务逻辑收在 `ReminderService.scanOnce()` 里、由 `scanAt(now)` 驱动，因此单测可以直接驱动而不必启动调度器。四类判断——未到点 / 免打扰 / 无渠道 / 重复。
+  - **幂等**：`t_reminder_log` 唯一键 + `INSERT IGNORE` **先占额度再发通知**（at-most-once）。提醒是「过期即无价值」的信息，宁可漏一次也不要重复轰炸；反过来做就会在异常重试时连发多条。
+  - **免打扰不占额度**：安静时段静默，结束后若日程仍在扫描窗口内会自动补上——用户要的是「那个时间段别响」，不是「那条提醒作废」。
+  - **降级**：下游异常或非成功码一律跳过本轮，且不误判成「没有日程」；调度层再兜一层异常（调度任务里抛异常会静默终止后续触发，这是最难排查的一类「定时器不跑了」）。
+  - 渠道只落 **APP（站内信）**，EMAIL/SMS 为预留位：勾了也不会发，故未勾选 APP 时不产生通知。
+
+**三、商城服务（8085）**
+
+- **商品浏览**：仅上架商品、非法类型 400、按权重 + id 排序保证翻页稳定；余额获取失败**降级为 null 而不是整页 500**——商城应该能被浏览。已下架商品仍可查详情（用户需要看到自己已拥有的装扮）。
+- **购买顺序固定为「加锁 → 扣积分 → 本地事务落库」**，顺序不可颠倒：积分不足是购买最常见的失败原因，先扣可在「尚未占用库存」时快速失败；反过来先落库，失败时就要删除已写好的订单（账目不该被删）。
+- **锁**：Redisson 按**商品维度**加锁（`sorts:mall:lock:item:{itemId}`），不同商品互不阻塞、同商品严格串行；抢锁失败返回 429。**Redis 不可用时 fail-closed 拒绝购买**——库存与积分不允许在没有互斥保护的情况下裸奔。
+- **事务**：事务性落库放在独立 Bean `PurchasePersister` 上（与 M4 的 `ReportGenerator` 同一个坑：`@Transactional` 依赖代理，同类自调用会静默退化成普通方法调用）；事务内「扣库存 + 写购买记录 + 发装扮」同生共死。
+- **双重防超卖**：Redisson 锁 + 数据库条件更新 `UPDATE ... WHERE stock > 0`。后者是最后防线——即便锁因租期到期提前释放，也不可能有事务把库存扣成负数。无限库存（`-1`）跳过扣减，补偿也必须带 `stock >= 0`，否则会把 `-1` 补成 `0` 变成「售罄」。
+- **补偿**：本地落库失败即调用退款（`+price`）；补偿本身失败以 ERROR 打出 `userId/itemId/金额` 供对账，**绝不静默**。锁内只做四件事（读商品、查重、扣积分、落库），通知投递移出锁外，避免一次下游抖动就把锁的租期耗光。
+- **快照**：购买记录落商品名与成交价，商品后续改名/调价不改写历史账目。
+- **装扮仓库**：一次 `selectBatchIds` 取全商品避免 N+1；切换装扮时**类型判定以仓库记录为准**，请求里的 `type` 只做一致性校验——否则前端传错类型就能让多个同类装扮同时生效。皮肤/头像/徽章同类互斥（先全置 0 再置 1），贴纸可叠加；未拥有的装扮按「不存在」返回 404，顺带挡掉通过切换接口白嫖。
+
+**四、网关路由顺序（修掉一个真实缺陷）**
+
+`/api/v1/users/wardrobe/**` 同时命中 mall 与 user 两条路由，而 Spring Cloud Gateway **按声明顺序取第一条匹配项**——原配置把 user 排在前面，装扮接口会被转发到用户服务（404）。已把 mall 路由上移并在配置里写明「顺序即优先级」。
+
+**五、数据与建表**
+
+- 建表脚本：`scripts/sql/sorts_notification.sql`（`t_notification`、`t_reminder_setting`、`t_reminder_log`）、`scripts/sql/sorts_mall.sql`（`t_mall_item`、`t_purchase_record`、`t_wardrobe_item` + 7 件种子商品）
+- 种子商品用**显式主键 + `INSERT IGNORE`**：脚本可重复执行且 ID 稳定，前端不必担心商品 ID 漂移。
+- 单测：**145 个**（common 内部凭证 13 + gateway 2 + schedule 3 + notification 51 + mall 44 + 提醒设置 12 等）
+
+> ⚠️ 踩坑记录：① `LocalTime.parse("7:00")` 会抛异常（ISO 要求小时两位），手输/历史数据里的 `H:mm` 必须用显式 `DateTimeFormatter` 宽松解析，否则一次脏数据就会中断整轮提醒扫描；② `ReminderSettingService.findEffective(Long)` 与 `findEffective(Collection)` 构成重载后，调用点传 `Collectors.toCollection(...)` 的结果会触发方法引用的推断歧义——改成命名更明确的 `findEffectiveAll` 一次性消除；③ 用 `-pl` 只构建单个子模块时，`sorts-common` 会从**本地仓库**解析（可能是旧版本），必须 `-pl sorts-common,<目标模块>` 或用 `-am` 才会走 reactor。
+
 ---
 
 ## 五、关键决策记录
@@ -262,12 +330,18 @@ event: error   data: {"code":503,"message":"..."}
 | AI 写数据权限                | **双钥匙**：服务端开关 + 单次请求用户确认                     | 非 AI Native 项目，写操作必须显式授权，避免「AI 擅自改用户数据」   |
 | 同一路径 JSON / SSE 双通道     | `params` 条件拆成两个处理方法                            | Spring MVC 按「方法声明返回类型」选处理器，返回 `Object` 会让 `SseEmitter` 被 Jackson 序列化 |
 | AI 对话上下文                 | **Redis**（不落库，12h TTL）                         | 可丢弃的临时状态；「记不住上文」可接受，「不能聊天」不可接受         |
+| 服务间调用鉴权（M5）             | `X-Internal-Token` + `@InternalApi` **注解**            | 路径前缀靠约定，改名/新增路径就静默失去保护；注解编译期可见、评审时看得见 |
+| 内部接口路径（M5）               | 一律 `/internal/**`（网关**不路由**该前缀）                 | 外部网络根本不可达，与凭证校验构成两道防线                |
+| 购买顺序（M5）                 | **加锁 → 扣积分 → 本地事务落库**（顺序不可颠倒）                 | 积分不足是最常见失败，先扣能在「未占库存」时快速失败；反向则失败时要删订单（账目不该被删） |
+| 防超卖（M5）                  | Redisson 按商品加锁 **+** `UPDATE ... WHERE stock > 0` | 双保险：锁因租期到期失效时，数据库仍能兜住                     |
+| 提醒幂等（M5）                 | `t_reminder_log` 唯一键 + `INSERT IGNORE` 先占额度      | at-most-once：提醒过期即无价值，宁可漏一次也不要重复轰炸         |
+| 提醒渠道（M5）                 | 只落 **APP（站内信）**                            | EMAIL/SMS 未接入，勾了也不会发；不勾 APP 时不产生通知，不做假承诺   |
 
 ### 已知限制 / 待办技术债
 
 1. ~~Redis 端口 / Nacos / RabbitMQ 未就绪~~ → **已解决**（2026-09-16）：全部通过 `scripts/wsl-middleware.sh start` 以 Docker 方式启动，Windows 侧端口探测 6380 / 3307 / 8848 / 5672 / 15672 均可达。
 2. **WSL 内已无 MySQL**：数据库统一由 Docker 容器 `sorts-mysql` 承载（3307）；Windows 宿主上原有的 3306 实例不作为项目数据源。
-3. 内部接口（`/users/points/change`）目前只依赖网关透传的用户头，缺少服务间密钥校验，M5 需补 `X-Internal-Token` 校验。
+3. ~~内部接口（`/users/points/change`）目前只依赖网关透传的用户头，缺少服务间密钥校验，M5 需补 `X-Internal-Token` 校验。~~ → **已完成**（M5）：`@InternalApi` + `InternalApiInterceptor`，网关同时剥离外部伪造的 `X-Internal-Token`。
 4. ~~网关尚未实现限流~~ → **已完成**（M2：Redis 令牌桶 + 429 统一响应）。
 5. `sorts-user` 尚无 `@SpringBootTest` 级别的集成测试（需要真实 DB/Redis，计划 M7 用 Testcontainers 或连 WSL 中间件）。
 6. WSL 命令受沙箱限制，AI 无法直接执行 WSL 内命令，中间件相关操作需用户手动执行脚本。
@@ -277,6 +351,11 @@ event: error   data: {"code":503,"message":"..."}
 10. `sorts-ai` 尚无真实调用模型与真实 DB 的集成测试（单测全部用 Mock，覆盖的是编排逻辑与边界），计划 M7 用 Testcontainers 补齐。
 11. **统一响应体与 api-spec 的已知偏差**（M0 起确立，全项目一致）：api-spec 的 `ApiResponse.code` 示例为 `200`、分页字段名为 `records`；本项目实际用 `code=0` 表示成功、分页用 `PageData.list`。改动会波及全部服务与前端，故保持现状并在此备案。
 12. 月报/年报为异步生成，暂未做「同周期重复生成」的去重：同一用户对同一月份多次点击会生成多条报告（列表按时间倒序展示）。如需收敛，后续可加「同 periodKey 覆盖」策略。
+13. **购买链路存在极小的不一致窗口**（M5，重要）：扣积分成功与本地事务提交之间若进程被杀，补偿代码不会执行，表现为「扣了光阴砂没拿到装扮」。彻底消除需要事务性消息（**M7 的 RabbitMQ outbox + 对账任务**）。当前以 ERROR 级别的结构化日志（含 `userId`/`itemId`/金额）兜底，可用 `t_purchase_record` + `t_wardrobe_item` 对账。
+14. **提醒渠道只实现了 APP（站内信）**（M5）：`EMAIL` / `SMS` 在 `ReminderChannel` 中作为扩展位存在，设置里可勾选但不会真正发出；接入第三方通道后只需在 `ReminderServiceImpl` 的发送环节分支即可。
+15. **定时提醒是单实例语义**（M5）：`@Scheduled` 在多实例部署下每个实例都会扫描。当前靠 `t_reminder_log` 唯一键保证**不会重复推送**（幂等生效），但会产生多余的 Feign 调用。如需多实例，加 ShedLock 或改用 RabbitMQ 延迟队列。
+16. **商城只实现了「买」**（M5）：商品上架/下架/改价暂无后台接口，靠 `scripts/sql/sorts_mall.sql` 的种子数据维护；`PROMOTION` 类型的营销推送也还没有触发入口。
+17. **购买接口的错误码与 api-spec 存在偏差**（M5）：api-spec 对 `/mall/purchase` 只声明 `400 积分不足或商品已售罄`；本项目沿用既有约定——积分不足透传 `sorts-user` 的 409，售罄/已下架/已拥有用 409，抢锁失败用 429。与第 11 条同属「统一响应体与 api-spec 的已知偏差」，前端请以 `Result.code` 为准。
 
 ---
 
@@ -348,9 +427,9 @@ MySQL 账号密码通过 `MYSQL_USER` / `MYSQL_PASSWORD` 传入，服务侧用 `
 | ----------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | ~~**M2 网关增强**~~ ✅ | ~~Redis 限流（令牌桶）、鉴权链路单测、路由单测~~                                                    | 已完成：429 统一响应 + 19 个单测                                                   |
 | ~~**M3 日程服务**~~ ✅ | ~~日程 CRUD、计时状态机、日历聚合视图、统计接口、落梭发积分（Feign 调 user）~~                                | 已完成：非法流转被拒；总时长按片段重算；`time_record` 可回溯每段耗时；64 个单测                        |
-| **M4 AI 服务** ✅    | ~~Spring AI + DeepSeek 流式输出、工具集（Tool Calling）、规划生成、日/月/年总结（异步 + `ai_report` 表）~~ | 已完成：AI 可通过工具查日程/建日程/查统计；总结报告落库可查询；**自实现客户端替代 Spring AI**（版本冲突）；103 个单测 |
-| **M5 商城 + 通知**    | 商品/购买（Redisson 锁防超扣）/装扮仓库；通知列表/已读/定时提醒                                           | 并发购买不超卖；积分与商品发放最终一致                                                     |
-| **M6 前端**         | Vue3+Vite 工程化重写、主题落地（CSS tokens/织锦日历/流光计时/穿梭过场）、AI 流式对话 UI                       | 主题规范 100% 落地；移动端可用                                                      |
+| ~~**M4 AI 服务**~~ ✅    | ~~Spring AI + DeepSeek 流式输出、工具集（Tool Calling）、规划生成、日/月/年总结（异步 + `ai_report` 表）~~ | 已完成：AI 可通过工具查日程/建日程/查统计；总结报告落库可查询；**自实现客户端替代 Spring AI**（版本冲突）；103 个单测 |
+| ~~**M5 商城 + 通知**~~ ✅ | ~~商品/购买（Redisson 锁防超扣）/装扮仓库；通知列表/已读/定时提醒~~                     | 已完成：Redisson 按商品加锁 + 条件更新双保险防超卖；积分不足与售罄路径都有单测；定时提醒按用户提前量与免打扰生成并幂等去重；**顺带补掉服务间凭证技术债**；145 个单测 |
+| **M6 前端**         | Vue3+Vite 工程化重写、主题落地（CSS tokens/织锦日历/流光计时/穿梭过场）、AI 流式对话 UI、商城与装扮页                       | 主题规范 100% 落地；移动端可用                                                      |
 | **M7 CI/CD + 测试** | GitHub Actions（矩阵构建 6 个服务 → ACR 推送）、Testcontainers 集成测试                          | 参考 `E:\工作文件\AgentProject\.github\workflows\acr-cicd.yml`，部署阶段留开关（当前不部署） |
 
 ### AI 工具集设计要点（M4 已落地）
@@ -375,27 +454,31 @@ D:\SORTS(梭子)/
 ├── api-spec.json            # OpenAPI 契约（开发接口前先查它！）
 ├── 需求分析.docx             # 需求源文档（已忽略入库）
 ├── backend/
-│   ├── pom.xml              # 父工程（已注册 5 个模块）
-│   ├── sorts-common/        # ✅ 公共模块（Result/异常/JWT/PageData）
-│   ├── sorts-gateway/       # ✅ 网关（路由 + 鉴权 + 限流）
+│   ├── pom.xml              # 父工程（已注册 7 个模块）
+│   ├── sorts-common/        # ✅ 公共模块（Result/异常/JWT/PageData/服务间凭证）
+│   ├── sorts-gateway/       # ✅ 网关（路由 + 鉴权 + 限流 + 剥离伪造内部凭证）
 │   ├── sorts-user/          # ✅ 用户服务
-│   ├── sorts-schedule/      # ✅ 日程服务（CRUD/计时/日历/统计）
-│   └── sorts-ai/            # ✅ AI 服务（llm 客户端 / tool 工具集 / service 对话·规划·报告 / controller）
+│   ├── sorts-schedule/      # ✅ 日程服务（CRUD/计时/日历/统计 + 内部提醒取数接口）
+│   ├── sorts-ai/            # ✅ AI 服务（llm 客户端 / tool 工具集 / service 对话·规划·报告 / controller）
+│   ├── sorts-notification/  # ✅ 通知服务（通知列表·已读 / 提醒设置 / 定时提醒扫描）
+│   └── sorts-mall/          # ✅ 商城服务（商品 / 购买防超卖 / 装扮仓库）
 ├── frontend/                # 单文件演示版（M6 重写为 Vite 工程）
 ├── docs/
 │   ├── theme-design.md      # 主题设计规范
-│   ├── dev-setup.md         # 开发手册（中间件、端口、命令）
+│   ├── dev-setup.md         # 开发手册（中间件、端口、命令、内部凭证与购买一致性约定）
 │   ├── ide-setup.md         # IDEA 运行手册（导入 Maven、JDK 17、共享运行配置、报错速查）
 │   └── PROGRESS.md          # 本文档
-├── .run/                    # IDEA 共享运行配置（4 个服务 + Compound）
+├── .run/                    # IDEA 共享运行配置（6 个服务 + Compound「全部服务」）
 ├── scripts/
 │   ├── mvn.sh               # 构建封装（必须用）
 │   ├── wsl-middleware.sh    # 中间件一键脚本（start/stop/status/sql/logs）
 │   └── sql/
-│       ├── 00-init-databases.sql   # 建 5 个库（先执行）
-│       ├── sorts_user.sql          # 用户库建表
-│       ├── sorts_schedule.sql      # 日程库建表
-│       └── sorts_ai.sql            # AI 库建表（报告表、规划表）
+│       ├── 00-init-databases.sql     # 建 5 个库（先执行）
+│       ├── sorts_user.sql            # 用户库建表
+│       ├── sorts_schedule.sql        # 日程库建表
+│       ├── sorts_ai.sql              # AI 库建表（报告表、规划表）
+│       ├── sorts_notification.sql    # 通知库建表（通知、提醒设置、提醒留痕）
+│       └── sorts_mall.sql            # 商城库建表（商品、购买记录、装扮仓库 + 种子商品）
 └── .workbuddy/              # 会话数据与构建日志（勿删）
 ```
 
@@ -428,6 +511,15 @@ D:\SORTS(梭子)/
 8. AI 服务：模型走自实现的 OpenAI 兼容客户端（`sorts-ai/.../llm`，藏在 ChatModelClient 接口后）；
    密钥必须走环境变量 DEEPSEEK_API_KEY，未配置时接口返回 503 而非启动失败。
    写工具是「双钥匙」（sorts.ai.tool.allow-write + 请求 allowWrite），不要绕过 ToolRegistry 直连。
+9. 内部接口：一律放 /internal/**（网关不路由该前缀），并标 @InternalApi；出站凭证由 common 的
+   Feign 拦截器按路径白名单自动加，新增内部路径记得同步 sorts.internal.paths。
+   网关会剥离外部伪造的 X-Internal-Token，服务端未配置凭证时 fail-closed。
+10. 购买链路顺序不可颠倒：加锁 → 扣积分 → 本地事务落库；事务性落库必须放在独立 Bean
+    （@Transactional 依赖代理，同类自调用会静默失效）。库存扣减走条件更新 UPDATE ... WHERE stock > 0。
 
-当前请继续：M5 商城 + 通知服务（商品/购买用 Redisson 锁防超扣、装扮仓库；通知列表/已读/定时提醒）。
+当前请继续：M6 前端（Vue3 + Vite 工程化重写；主题「织锦流光」落地为 CSS tokens、织锦日历、
+流光计时、穿梭过场；AI 流式对话 UI；商城与装扮页）。前端注意三点：
+- 流式接口由 query 参数决定传输方式（/ai/chat 默认 SSE，?stream=false 走 JSON；/ai/plan 反之）；
+- 分页字段是 list（PageData.list / MallItemPageVO.list），成功码是 code=0 —— 都不是 api-spec 里写的那个；
+- AI 写操作需用户先确认，再带 allowWrite=true 发起请求。
 ```
