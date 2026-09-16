@@ -19,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -270,5 +271,46 @@ class ScheduleServiceImplTest {
         assertEquals("ORDER BY planned_start_time DESC, id DESC", injection);
         assertFalse(injection.contains("DROP"));
         assertFalse(scheduleService.buildOrderBy(null, null).contains("null"));
+    }
+
+    @Test
+    @DisplayName("提醒候选：时间窗口非法直接拒绝，避免退化成全量扫描")
+    void reminderCandidatesRejectInvalidWindow() {
+        LocalDateTime now = LocalDateTime.now();
+        assertThrows(BizException.class,
+                () -> scheduleService.listReminderCandidates(now, now, 10));
+        assertThrows(BizException.class,
+                () -> scheduleService.listReminderCandidates(now, now.minusMinutes(5), 10));
+        assertThrows(BizException.class,
+                () -> scheduleService.listReminderCandidates(null, now, 10));
+        verify(scheduleMapper, never()).selectList(any());
+    }
+
+    @Test
+    @DisplayName("提醒候选：只带提醒所需字段，标签按逗号拆分为数组")
+    void reminderCandidatesAreMapped() {
+        owned.setTags(" 学习 , Java ");
+        owned.setPlannedStartTime(LocalDateTime.of(2026, 9, 16, 9, 0));
+        when(scheduleMapper.selectList(any())).thenReturn(List.of(owned));
+
+        var candidates = scheduleService.listReminderCandidates(
+                LocalDateTime.of(2026, 9, 16, 8, 0),
+                LocalDateTime.of(2026, 9, 16, 10, 0), 20);
+
+        assertEquals(1, candidates.size());
+        var candidate = candidates.get(0);
+        assertEquals(USER_ID, candidate.getUserId());
+        assertEquals(100L, candidate.getScheduleId());
+        assertEquals("织一段代码", candidate.getTitle());
+        assertEquals(LocalDateTime.of(2026, 9, 16, 9, 0), candidate.getPlannedStartTime());
+        assertEquals(List.of("学习", "Java"), candidate.getTags());
+    }
+
+    @Test
+    @DisplayName("提醒候选：无匹配日程时返回空集合而不是 null")
+    void reminderCandidatesEmptyWhenNone() {
+        when(scheduleMapper.selectList(any())).thenReturn(List.of());
+        assertTrue(scheduleService.listReminderCandidates(
+                LocalDateTime.now(), LocalDateTime.now().plusMinutes(30), 10).isEmpty());
     }
 }

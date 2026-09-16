@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sorts.common.exception.BizException;
 import com.sorts.common.result.ErrorCode;
 import com.sorts.common.result.PageData;
+import com.sorts.schedule.dto.ReminderCandidateVO;
 import com.sorts.schedule.dto.ScheduleQuery;
 import com.sorts.schedule.dto.ScheduleSaveRequest;
 import com.sorts.schedule.dto.ScheduleVO;
@@ -54,6 +55,9 @@ public class ScheduleServiceImpl implements ScheduleService {
     private static final Set<String> VALID_VIEWS = Set.of("day", "week", "month", "all");
 
     private static final int MAX_PAGE_SIZE = 200;
+
+    /** 提醒扫描单次最多返回的候选日程数，防止一次扫描把内存与下游压垮 */
+    private static final int MAX_REMINDER_CANDIDATES = 500;
 
     private final ScheduleMapper scheduleMapper;
 
@@ -195,6 +199,21 @@ public class ScheduleServiceImpl implements ScheduleService {
                 .ge(Schedule::getPlannedStartTime, today.atStartOfDay())
                 .orderByAsc(Schedule::getPlannedStartTime)
                 .last("LIMIT " + size));
+    }
+
+    @Override
+    public List<ReminderCandidateVO> listReminderCandidates(LocalDateTime from, LocalDateTime to, int limit) {
+        if (from == null || to == null || !from.isBefore(to)) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "提醒扫描时间窗口非法");
+        }
+        int size = limit < 1 ? MAX_REMINDER_CANDIDATES : Math.min(limit, MAX_REMINDER_CANDIDATES);
+        List<Schedule> schedules = scheduleMapper.selectList(new LambdaQueryWrapper<Schedule>()
+                .eq(Schedule::getStatus, ScheduleStatus.PENDING.name())
+                .ge(Schedule::getPlannedStartTime, from)
+                .le(Schedule::getPlannedStartTime, to)
+                .orderByAsc(Schedule::getPlannedStartTime)
+                .last("LIMIT " + size));
+        return schedules.stream().map(ReminderCandidateVO::from).toList();
     }
 
     private Schedule buildEntity(Long userId, ScheduleSaveRequest request) {

@@ -45,4 +45,18 @@ public interface ScheduleService {
 
     /** 即将开始的日程（今日 00:00 起的待开始日程，按计划时间升序，最多 limit 条） */
     List<com.sorts.schedule.entity.Schedule> listUpcoming(Long userId, int limit);
+
+    /**
+     * 跨用户查询「计划开始时间落在指定窗口内」的待开始日程（内部接口专用）。
+     *
+     * <p>供通知服务的定时提醒扫描调用：提醒是按用户各自的「提前分钟数」触发的，
+     * 因此通知服务按最大提前量拉一个宽窗口，再自行按用户过滤。</p>
+     *
+     * @param from  窗口起点（含）
+     * @param to    窗口终点（含）
+     * @param limit 最多返回条数，服务端会再夹紧上限
+     */
+    List<com.sorts.schedule.dto.ReminderCandidateVO> listReminderCandidates(java.time.LocalDateTime from,
+                                                                            java.time.LocalDateTime to,
+                                                                            int limit);
 }
