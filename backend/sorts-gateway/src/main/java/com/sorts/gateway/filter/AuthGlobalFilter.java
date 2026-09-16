@@ -7,7 +7,7 @@ import com.sorts.common.exception.BizException;
 import com.sorts.common.jwt.JwtUtil;
 import com.sorts.common.result.ErrorCode;
 import com.sorts.common.result.Result;
-import com.sorts.gateway.config.GatewayProperties;
+import com.sorts.gateway.config.SortsGatewayProperties;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +51,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
     private final JwtUtil jwtUtil;
 
-    private final GatewayProperties gatewayProperties;
+    private final SortsGatewayProperties gatewayProperties;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {

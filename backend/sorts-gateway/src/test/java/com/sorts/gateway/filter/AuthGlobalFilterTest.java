@@ -5,7 +5,7 @@ import com.sorts.common.jwt.JwtProperties;
 import com.sorts.common.jwt.JwtUtil;
 import com.sorts.common.result.ErrorCode;
 import com.sorts.common.result.Result;
-import com.sorts.gateway.config.GatewayProperties;
+import com.sorts.gateway.config.SortsGatewayProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,7 +40,7 @@ class AuthGlobalFilterTest {
 
     private AuthGlobalFilter authGlobalFilter;
 
-    private GatewayProperties gatewayProperties;
+    private SortsGatewayProperties gatewayProperties;
 
     @BeforeEach
     void setUp() {
@@ -48,7 +48,7 @@ class AuthGlobalFilterTest {
         properties.setSecret(SECRET);
         properties.setAccessExpireMinutes(30L);
         jwtUtil = new JwtUtil(properties);
-        gatewayProperties = new GatewayProperties();
+        gatewayProperties = new SortsGatewayProperties();
         authGlobalFilter = new AuthGlobalFilter(jwtUtil, gatewayProperties);
     }
 
