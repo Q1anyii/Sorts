@@ -6,6 +6,14 @@ spring:
     name: sorts-gateway
   main:
     web-application-type: reactive
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      # 约定：Redis 使用默认端口 +1
+      port: ${REDIS_PORT:6380}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      timeout: 3000ms
   cloud:
     nacos:
       # 注册中心地址：本地开发直连 WSL 内 Nacos（localhost 即 WSL 映射）
@@ -21,6 +29,14 @@ spring:
       discovery:
         locator:
           enabled: false
+      # 全局限流：Redis 令牌桶，key 维度由 KeyResolver 决定（登录按用户、未登录按 IP）
+      default-filters:
+        - name: RequestRateLimiter
+          args:
+            key-resolver: "#{@userKeyResolver}"
+            redis-rate-limiter.replenishRate: ${RATE_LIMIT_REPLENISH:20}
+            redis-rate-limiter.burstCapacity: ${RATE_LIMIT_BURST:40}
+            redis-rate-limiter.requestedTokens: 1
       httpclient:
         connect-timeout: 3000
         response-timeout: 15s

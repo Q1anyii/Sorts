@@ -30,6 +30,11 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-loadbalancer</artifactId>
         </dependency>
+        <!-- 响应式 Redis：限流令牌桶（RedisRateLimiter） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis-reactive</artifactId>
+        </dependency>
         <!-- 公共模块：JWT 校验、统一响应 -->
         <dependency>
             <groupId>com.sorts</groupId>
