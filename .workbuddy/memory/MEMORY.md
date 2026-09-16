@@ -6,6 +6,16 @@
 - 架构：微服务，请求 → 网关（鉴权 + 限流）→ 各微服务；跨模块调用用 OpenFeign，禁止跨库直连
 - 契约来源：`api-spec.json`（开发接口前必须先对齐）
 
+## AI 服务约定（M4 起，`sorts-ai`）
+- 模型调用一律走 `ChatModelClient`（`sorts-ai/.../llm`），**不用 Spring AI**（1.0.0 锁 Boot 3.4.5，与本项目 Boot 3.3.4 冲突），也不在业务里裸用 HttpClient
+- 工具（Tool Calling）必须经 `ToolRegistry`：它承担「声明过滤 + 执行前复核 + 异常兜底」
+- **写工具 = 双钥匙**：`sorts.ai.tool.allow-write`（服务端）**且** 请求 `allowWrite=true`（前端用户确认后置位）
+- 回灌给模型的 JSON 一律用 `ToolJsonCodec`（时间固定 ISO-8601），**不要用全局 ObjectMapper**
+- 同一路径要同时支持 JSON 与 SSE：用 `params` 条件拆两个处理方法；**返回类型不能写 `Object`**（Spring 按声明类型选处理器，`SseEmitter` 会被 Jackson 序列化）
+- SSE 事件：`delta` / `done` / `error`（`{code,message}`）
+- 密钥 `DEEPSEEK_API_KEY` 走环境变量；未配置不阻断启动，接口返回 503 可读提示
+- `allowWrite` 是本项目**扩展字段**（api-spec 未定义）
+
 ## 强制规范
 1. **构建**：AI 沙箱内必须用 `bash scripts/mvn.sh`；用户终端 / IDEA / WSL / CI 用 `backend/mvnw`。构建后确认单测全绿
 2. **命名**：模块与 `spring.application.name` 一律 `sorts-` 前缀；包名 `com.sorts.*`
@@ -50,4 +60,8 @@
 - **MyBatis-Plus 分页**：必须显式注册 `PaginationInnerInterceptor`，否则 `selectPage` 不拼 LIMIT，会退化成全表查询
 - **MP wrapper 的 `getSqlSegment()`** 在纯 Mockito 单测（无 MyBatis 上下文）会抛「can not find lambda cache」→ 把 SQL 片段拼装抽成包级可见纯函数当测试接缝
 - **Git 推送**：账户 Q1anyiii 已封停（勿用 SSH）；Q1anyii 的 PAT 需要 **Contents: Read and write** 权限（当前由用户自行推送）
-- **同文件批量 Edit 有丢失风险**：一条消息内对同一文件发多个 Edit，出现过只落最后一条的情况，改完要 grep 校验
+- **同文件批量 Edit 有丢失风险**：一条消息内对同一文件发多个 Edit，出现过只落最后一条的情况，改完要 grep 校验（M4 又复现一次：`AiPrompts.planPrompt` 改动被同批 import 改动覆盖）→ **同一文件的多处编辑必须串行**
+- **OpenAI 兼容流式 tool_calls 必须按 `index` 归并**，`arguments` 是分片，要**追加**而不是覆盖，否则发给模型的是残缺 JSON
+- **`ObjectNode` 的正确包名是 `com.fasterxml.jackson.databind.node.ObjectNode`**（不是 `databind.ObjectNode`）
+- **Spring MVC 同一路径 JSON + SSE**：按方法声明返回类型选处理器，声明 `Object` 会让 `SseEmitter` 被 Jackson 序列化 → 用 `params` 条件拆两个方法
+- **`@Async` 必须跨 Bean 调用**：同类内自调用绕过代理会退化成同步 → 把异步逻辑拆成独立 Bean
