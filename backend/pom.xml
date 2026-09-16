@@ -93,6 +93,11 @@
     </dependencyManagement>
 
     <dependencies>
+        <!-- 健康检查：容器编排（healthcheck / 部署门禁）与被监控都需要 /actuator/health -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
         <!-- 所有模块默认引入测试能力，保证单测随手可写 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -1,0 +1,41 @@
+# =====================================================================
+# 后端服务通用镜像：多阶段构建（Maven 编译 → JRE 运行）
+# 构建时通过 --build-arg MODULE=sorts-user 指定模块；
+# 由于模块间有 sorts-common 依赖，必须带 -am 一起构建。
+# =====================================================================
+# syntax=docker/dockerfile:1
+
+# ---------- 构建阶段 ----------
+FROM maven:3.9-eclipse-temurin-17 AS build
+ARG MODULE
+WORKDIR /build
+
+# 先只复制 pom，让依赖解析这一层可以被缓存（改代码不必重下依赖）
+COPY backend/pom.xml ./pom.xml
+COPY backend/sorts-common/pom.xml ./sorts-common/pom.xml
+COPY backend/sorts-gateway/pom.xml ./sorts-gateway/pom.xml
+COPY backend/sorts-user/pom.xml ./sorts-user/pom.xml
+COPY backend/sorts-schedule/pom.xml ./sorts-schedule/pom.xml
+COPY backend/sorts-ai/pom.xml ./sorts-ai/pom.xml
+COPY backend/sorts-notification/pom.xml ./sorts-notification/pom.xml
+COPY backend/sorts-mall/pom.xml ./sorts-mall/pom.xml
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B -q -pl "${MODULE}" -am dependency:go-offline -DskipTests || true
+
+# 再复制源码并打包（镜像内跳过单测：单测由宿主/CI 负责，构建更快更稳）
+COPY backend/ ./
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B -DskipTests -pl "${MODULE}" -am package
+
+# ---------- 运行阶段 ----------
+FROM eclipse-temurin:17-jre
+ARG MODULE
+ENV TZ=Asia/Shanghai
+WORKDIR /app
+COPY --from=build /build/${MODULE}/target/*.jar /app/app.jar
+
+# 容器一律以非 root 运行（不用 -r：10001 超出系统账号区间，会打 warning）
+RUN useradd -m -u 10001 sorts && chown -R sorts:sorts /app
+USER sorts
+
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=70", "-XX:+UseSerialGC", "-jar", "/app/app.jar"]

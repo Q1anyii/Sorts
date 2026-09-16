@@ -62,7 +62,9 @@ prepare_env() {
 }
 
 dc() { docker compose --project-directory "$DOCKER_DIR" --env-file "$ENV_FILE" -f "$DOCKER_DIR/compose.yml" "$@"; }
-dc_app() { docker compose --project-directory "$DOCKER_DIR" --env-file "$ENV_FILE" -f "$DOCKER_DIR/compose.app.yml" "$@"; }
+# 后端服务与前端站点在同一个 compose 文件里，靠 profile 区分：
+# 不指定 profile = 只起中间件；--profile app = 起 6 个服务；--profile web = 起前端站点
+APP_SERVICES=(gateway user schedule ai notification mall)
 
 env_value() { grep -E "^$1=" "$ENV_FILE" | tail -1 | cut -d= -f2-; }
 
@@ -88,6 +90,17 @@ wait_healthy() {
   return 1
 }
 
+# 业务就绪判定：/actuator/health 返回 UP（只看 HTTP 200 会被统一响应体的 code=500 骗过去）
+wait_http_up() {
+  local url="$1" timeout="${2:-180}" i=0 body
+  while [ "$i" -lt "$timeout" ]; do
+    body="$(curl -s --max-time 3 "$url" 2>/dev/null || true)"
+    echo "$body" | grep -q '"status":"UP"' && return 0
+    sleep 3; i=$((i + 3))
+  done
+  return 1
+}
+
 cmd_up() {
   require_docker; prepare_env
   log "启动中间件（compose.yml）"
@@ -104,7 +117,7 @@ cmd_up() {
 }
 
 cmd_down()      { require_docker; dc down; log "中间件已停止（数据卷保留）"; }
-cmd_app_down()  { require_docker; prepare_env; dc_app down; log "后端服务已停止"; }
+cmd_app_down()  { require_docker; prepare_env; dc --profile app rm -sf "${APP_SERVICES[@]}"; log "后端服务已停止并移除容器（镜像保留）"; }
 
 cmd_status() {
   require_docker
@@ -155,22 +168,26 @@ apply_sql() {
 cmd_app() {
   require_docker; prepare_env
   docker ps --format '{{.Names}}' | grep -qx sorts-mysql || { err "中间件未启动：先执行 bash scripts/docker.sh up"; exit 1; }
-  log "构建并启动后端服务（首次构建需拉取 maven/JRE 基础镜像，约 5~15 分钟）"
-  dc_app up -d --build
-  wait_port 8080 120 && log "网关就绪：http://localhost:8080" || warn "网关未就绪，用 app-logs gateway 查看"
-  dc_app ps
+  log "构建并启动后端服务（首次构建需拉取 maven/JRE 基础镜像并下载依赖，约 5~15 分钟）"
+  dc --profile app up -d --build "${APP_SERVICES[@]}"
+  if wait_http_up "http://localhost:$(env_value GATEWAY_PORT)/actuator/health" 240; then
+    log "网关就绪：http://localhost:$(env_value GATEWAY_PORT)（/actuator/health = UP）"
+  else
+    warn "网关未就绪，用 bash scripts/docker.sh app-logs gateway 查看"
+  fi
+  dc --profile app ps
 }
 
 cmd_build() {
   require_docker; prepare_env
   log "仅构建后端镜像（不启动）"
-  dc_app build
+  dc --profile app build "${APP_SERVICES[@]}"
 }
 
 cmd_web() {
   require_docker; prepare_env
   log "构建并启动前端站点（nginx + /api 反代网关）"
-  dc_app --profile web up -d --build frontend
+  dc --profile web up -d --build frontend
   wait_port "$(env_value FRONTEND_PORT)" 60 && log "前端就绪：http://localhost:$(env_value FRONTEND_PORT)" || warn "前端未就绪，用 logs frontend 查看"
 }
 
@@ -212,16 +229,15 @@ cmd_clean_legacy() {
 
 cmd_clean() {
   require_docker; prepare_env
-  log "删除本项目容器（中间件 + 服务，数据卷保留）"
-  dc_app down --remove-orphans 2>/dev/null || true
+  log "删除本项目容器（服务 + 中间件，数据卷保留）"
+  dc --profile app --profile web rm -sf "${APP_SERVICES[@]}" frontend 2>/dev/null || true
   dc down --remove-orphans
 }
 
 cmd_reset() {
   require_docker; prepare_env
   warn "将删除本项目容器与数据卷（数据库/Redis 数据清空）"
-  dc_app down --remove-orphans 2>/dev/null || true
-  dc down -v --remove-orphans
+  dc --profile app --profile web down -v --remove-orphans
   log "已重置"
 }
 
@@ -230,7 +246,7 @@ cmd_logs() {
   local svc="${1:-mysql}"
   case "$svc" in
     mysql|redis|nacos|rabbitmq) dc logs -f --tail 100 "$svc" ;;
-    *) dc_app logs -f --tail 150 "$svc" ;;
+    *) dc --profile app logs -f --tail 150 "$svc" ;;
   esac
 }
 
@@ -254,7 +270,7 @@ case "${1:-up}" in
   sql)           apply_sql ;;
   app)           cmd_app ;;
   app-down)      cmd_app_down ;;
-  app-logs)      shift; docker compose --project-directory "$DOCKER_DIR" --env-file "$ENV_FILE" -f "$DOCKER_DIR/compose.app.yml" logs -f --tail 150 "${1:-gateway}" ;;
+  app-logs)      shift; docker compose --project-directory "$DOCKER_DIR" --env-file "$ENV_FILE" -f "$DOCKER_DIR/compose.yml" --profile app logs -f --tail 150 "${1:-gateway}" ;;
   build)         cmd_build ;;
   web)           cmd_web ;;
   clean-legacy)  cmd_clean_legacy ;;
