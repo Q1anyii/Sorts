@@ -152,10 +152,33 @@ stop_all() {
   log "已停止（数据保留在 Docker 卷中）"
 }
 
+# 重放建表脚本：MySQL 容器的初始化目录只在「首次创建」时执行，
+# 新增模块的建表脚本需要这个命令手动补执行（脚本内均为 CREATE ... IF NOT EXISTS，可重复执行）
+apply_sql() {
+  require_docker
+  if ! docker ps --format '{{.Names}}' | grep -qx sorts-mysql; then
+    err "sorts-mysql 未运行，请先执行 bash scripts/wsl-middleware.sh start"
+    exit 1
+  fi
+  log "按文件名顺序执行 $SQL_DIR/*.sql"
+  for file in $(ls "$SQL_DIR"/*.sql | sort); do
+    printf "  → %s ... " "$(basename "$file")"
+    if docker exec -i sorts-mysql mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" < "$file" 2>/dev/null; then
+      printf "\033[32mOK\033[0m\n"
+    else
+      printf "\033[31mFAILED\033[0m\n"
+      err "执行失败：$(basename "$file")"
+      exit 1
+    fi
+  done
+  log "建表脚本执行完成"
+}
+
 case "${1:-start}" in
   start)  require_docker; start_redis; start_mysql; start_nacos; start_rabbitmq; init_databases; show_status ;;
   stop)   stop_all ;;
   status) require_docker; show_status ;;
+  sql)    apply_sql ;;
   logs)   docker logs --tail 50 -f "${2:-sorts-mysql}" ;;
-  *)      echo "用法: $0 [start|stop|status|logs [容器名]]"; exit 1 ;;
+  *)      echo "用法: $0 [start|stop|status|sql|logs [容器名]]"; exit 1 ;;
 esac
