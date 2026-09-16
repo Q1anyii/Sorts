@@ -10,7 +10,7 @@
 1. **构建**：必须用 `bash scripts/mvn.sh`（本机 `mvn` 已损坏），构建后确认单测全绿
 2. **命名**：模块与 `spring.application.name` 一律 `sorts-` 前缀；包名 `com.sorts.*`
 3. **提交**：Conventional Commits（`feat(scope): subject`）；**每完成一个功能点提交一次**
-4. **推送**：每个模块单测通过后推送到 `https://github.com/Q1anyii/sorts.git`
+4. **推送**：每个模块单测通过后推送 —— 远端名为 **`sorts`**（不是 origin），命令 `git push -u sorts main`
 5. **测试**：每个模块必须配套单元测试，与业务代码同步交付
 6. **配置**：密钥/地址一律环境变量，禁止硬编码；对外统一返回 `Result<T>` + `ErrorCode`
 7. **分层**：controller → service（接口 + impl）→ mapper；跨服务调用走 `client`（Feign）
@@ -18,11 +18,13 @@
 ## 环境
 | 资源 | 地址 | 备注 |
 |---|---|---|
-| MySQL | localhost:3306 | WSL，库：sorts_user / sorts_schedule / sorts_ai / sorts_notification / sorts_mall |
-| Redis | localhost:**6380** | 约定默认端口+1；实际当前跑在 6379，需迁移 |
-| Nacos | localhost:8848 | 未安装，用 `scripts/wsl-middleware.sh start` |
-| RabbitMQ | localhost:5672 / 15672 | 未安装，同上 |
+| MySQL | localhost:**3307** | WSL Docker（root / sorts_dev）；库：sorts_user / sorts_schedule / sorts_ai / sorts_notification / sorts_mall |
+| Redis | localhost:**6380** | 约定默认端口+1，WSL Docker |
+| Nacos | localhost:8848 | WSL Docker，单机免鉴权 |
+| RabbitMQ | localhost:5672 / 15672 | WSL Docker（sorts / sorts_dev） |
 | 网关 | localhost:8080 | 服务端口 8081-8085 |
+
+- 中间件一键启动（在 WSL 内执行）：`bash scripts/wsl-middleware.sh start`
 
 - WSL 命令被沙箱拦截，中间件相关操作需用户手动执行脚本
 - Maven 受管版本：`~/.workbuddy/binaries/maven/apache-maven-3.9.16`；`~/.m2/settings.xml` 已配阿里云镜像

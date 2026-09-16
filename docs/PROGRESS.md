@@ -1,7 +1,7 @@
 # 梭子 SORTS · 项目进度与续接指南
 
 > **用法**：新会话开始前，把本文档 + `docs/theme-design.md` + `docs/dev-setup.md` 丢给 AI，并粘贴文末的「接续 Prompt」，即可无缝继续开发。
-> 最后更新：2026-09-16 · 当前里程碑：**M0 完成、M1 完成**（构建通过，22 个单测全绿）
+> 最后更新：2026-09-16 · 当前里程碑：**M0 / M1 / M2 完成**（构建通过，**41 个单测全绿**：common 6 + gateway 19 + user 16）
 
 ---
 
@@ -26,9 +26,9 @@
 | Spring AI | 1.0.0（M4 引入） | DeepSeek，OpenAI 协议兼容 |
 | ORM | MyBatis-Plus 3.5.7 | `mybatis-plus-spring-boot3-starter` |
 | 分布式锁 | Redisson 3.36.0（M5 引入） | |
-| 数据库 | MySQL 8 | WSL Ubuntu，localhost:3306 |
-| 缓存 | Redis 7 | **端口 6380（默认端口 +1）** |
-| 消息队列 | RabbitMQ 3.13（M3/M4 引入） | WSL Docker |
+| 数据库 | MySQL 8 | WSL Docker，**localhost:3307**（root / sorts_dev） |
+| 缓存 | Redis 7 | 端口 **6380**（默认端口 +1），WSL Docker |
+| 消息队列 | RabbitMQ 3.13 | WSL Docker，5672 / 15672（sorts / sorts_dev） |
 | 密码加密 | spring-security-crypto | 只引 crypto，不引整套 Security |
 | AI 模型 | **DeepSeek** | 用户已确认 |
 
@@ -40,7 +40,7 @@
 
 | 服务 | 模块目录 | 端口 | 状态 |
 |---|---|---|---|
-| 网关 | `backend/sorts-gateway` | 8080 | ✅ 骨架完成（路由 + 鉴权过滤器） |
+| 网关 | `backend/sorts-gateway` | 8080 | ✅ 完成（路由 + 鉴权 + 限流） |
 | 用户服务 | `backend/sorts-user` | 8081 | ✅ 完成（注册登录/双令牌/积分） |
 | 日程服务 | `backend/sorts-schedule` | 8082 | ⬜ 待开发 |
 | AI 服务 | `backend/sorts-ai` | 8083 | ⬜ 待开发 |
@@ -92,6 +92,19 @@
 - 建表脚本：`scripts/sql/sorts_user.sql`（`t_user`、`t_points_log`）。
 - 单测：`AuthServiceImplTest` 8 个 + `UserServiceImplTest` 8 个。
 
+### M2 网关增强（✅ 已完成）
+
+- **限流**：`RequestRateLimiter` + Redis 令牌桶（`spring-boot-starter-data-redis-reactive`）
+  - 全局限流配置写在 `default-filters`，额度由环境变量控制：`RATE_LIMIT_REPLENISH`（默认 20 令牌/秒）、`RATE_LIMIT_BURST`（默认 40）
+  - `userKeyResolver`：已登录按 **用户** 维度（`rate:user:{id}`），未登录按 **客户端 IP**（`rate:ip:{ip}`，优先 `X-Forwarded-For`）
+  - `RateLimitResponseFilter`（order = HIGHEST+20）：把限流器的空体 429 改写为平台统一响应体，并保留 `X-RateLimit-*` 响应头
+- **单测 19 个**：
+  - `AuthGlobalFilterTest` 10 个：白名单放行、OPTIONS 预检、缺失/非法/过期令牌拒绝、refresh token 冒充 access 被拒、身份透传、**伪造 `X-User-Id` 被剥离且不重复注入**、query 参数传令牌、错误体可反序列化
+  - `RateLimitConfigTest` 5 个：用户/ IP 维度、X-Forwarded-For 优先、unknown 兜底、用户维度优先于 IP
+  - `RateLimitResponseFilterTest` 4 个：空体 429 改写、带体 429 改写、正常响应透传、order 校验
+
+> 说明：限流不依赖本地 Redis 也能编译与跑单测（`RedisRateLimiter` 仅在请求期访问 Redis）。
+
 ---
 
 ## 五、关键决策记录
@@ -108,11 +121,13 @@
 
 ### 已知限制 / 待办技术债
 
-1. **Redis 实际端口为 6379**，与约定（6380 = 默认+1）不一致 —— 配置默认按 6380，需执行 `scripts/wsl-middleware.sh start` 迁移，或用 `REDIS_PORT=6379` 启动服务。
-2. **Nacos / RabbitMQ 尚未安装**（检测 8848 / 5672 均无响应）—— 跑 `scripts/wsl-middleware.sh start` 即装即起。
+1. ~~Redis 端口 / Nacos / RabbitMQ 未就绪~~ → **已解决**（2026-09-16）：全部通过 `scripts/wsl-middleware.sh start` 以 Docker 方式启动，Windows 侧端口探测 6380 / 3307 / 8848 / 5672 / 15672 均可达。
+2. **WSL 内已无 MySQL**：数据库统一由 Docker 容器 `sorts-mysql` 承载（3307）；Windows 宿主上原有的 3306 实例不作为项目数据源。
 3. 内部接口（`/users/points/change`）目前只依赖网关透传的用户头，缺少服务间密钥校验，M5 需补 `X-Internal-Token` 校验。
-4. 网关尚未实现限流（M2 计划：Redis 令牌桶）。
+4. ~~网关尚未实现限流~~ → **已完成**（M2：Redis 令牌桶 + 429 统一响应）。
 5. `sorts-user` 尚无 `@SpringBootTest` 级别的集成测试（需要真实 DB/Redis，计划 M7 用 Testcontainers 或连 WSL 中间件）。
+6. WSL 命令受沙箱限制，AI 无法直接执行 WSL 内命令，中间件相关操作需用户手动执行脚本。
+7. 网关尚无路由级限流差异化配置（当前全局限流），如需对登录接口单独收紧，在对应路由 `filters` 中覆盖 `RequestRateLimiter` 参数即可。
 
 ---
 
@@ -141,7 +156,8 @@ MySQL 账号密码通过 `MYSQL_USER` / `MYSQL_PASSWORD` 传入，服务侧用 `
 
 ### Git 与推送
 
-- 远端：`https://github.com/Q1anyii/sorts.git`（origin，HTTPS）
+- 远端：**`sorts`**（注意：远端名不是 `origin`）→ `https://github.com/Q1anyii/sorts.git`
+  - 推送命令：`git push -u sorts main`
 - 凭据：Git Credential Manager（`git config --global credential.helper manager`）
 - **⚠️ 推送失败的已知原因（2026-09-16 诊断）**：
   1. 账户 `Q1anyiii`（SSH 密钥所属）已被 GitHub **封停** → 不要用 SSH 推送。
@@ -162,7 +178,7 @@ MySQL 账号密码通过 `MYSQL_USER` / `MYSQL_PASSWORD` 传入，服务侧用 `
 
 | 里程碑 | 内容 | 验收标准 |
 |---|---|---|
-| **M2 网关增强** | Redis 限流（令牌桶）、鉴权链路单测、路由单测 | 超过阈值的请求返回 429；过滤器单测覆盖白名单/过期/伪造头 |
+| ~~**M2 网关增强**~~ ✅ | ~~Redis 限流（令牌桶）、鉴权链路单测、路由单测~~ | 已完成：429 统一响应 + 19 个单测 |
 | **M3 日程服务** | 日程 CRUD、计时状态机（start/pause/resume/end/cancel）、日历聚合视图、统计接口、完成后发 MQ 加积分（Feign 调 user） | 状态机非法流转被拒；计时区间累加正确；`time_record` 可回溯每段耗时 |
 | **M4 AI 服务** | Spring AI + DeepSeek 流式输出、**工具集（Tool Calling）**、规划生成、日/月/年总结（异步 + `ai_report` 表） | AI 能通过工具查日程/建日程/查统计；总结报告落库可查询 |
 | **M5 商城 + 通知** | 商品/购买（Redisson 锁防超扣）/装扮仓库；通知列表/已读/定时提醒 | 并发购买不超卖；积分与商品发放最终一致 |
@@ -221,11 +237,13 @@ D:\SORTS(梭子)/
 工程铁律：
 1. 构建必须用 bash scripts/mvn.sh（本机 mvn 已损坏），构建后确认单测全绿。
 2. 服务名一律 sorts- 前缀，包名 com.sorts.*，跨模块调用用 OpenFeign，禁止跨库直连。
-3. 每个功能点完成 → git 提交一次（Conventional Commits）；每个模块单测通过 → 推送到
-   https://github.com/Q1anyii/sorts.git（origin 已配 HTTPS + GCM 凭据）。
+3. 每个功能点完成 → git 提交一次（Conventional Commits）；每个模块单测通过 → 推送：
+   git push -u sorts main（远端名为 sorts，非 origin；凭据已存 GCM）
 4. 每个模块必须配套单元测试，与业务代码同步交付。
-5. Redis 端口 6380（默认+1），MySQL 3306，均在 WSL 内，Windows 侧用 localhost。
+5. 中间件全部跑在 WSL Docker 中，Windows 侧用 localhost 访问：
+   MySQL 3307（root/sorts_dev）、Redis 6380、Nacos 8848、RabbitMQ 5672。
+   一键启动：在 WSL 内执行 bash scripts/wsl-middleware.sh start
 6. 接口开发前先查 api-spec.json 对齐契约。
 
-当前请继续：M2 网关增强（Redis 限流 + 鉴权链路单测）。
+当前请继续：M3 日程服务（日程 CRUD + 计时状态机 + 日历视图 + 统计）。
 ```
