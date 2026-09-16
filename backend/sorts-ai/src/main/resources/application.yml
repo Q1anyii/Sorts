@@ -6,7 +6,7 @@ spring:
     name: sorts-ai
   datasource:
     # 本地开发：MySQL 跑在 WSL Docker 中，端口 3307（避开宿主 3306）
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3307}/sorts_ai?useUnicode=true&characterEncoding=utf8mb4&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3307}/sorts_ai?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: ${MYSQL_USER:root}
     password: ${MYSQL_PASSWORD:sorts_dev}
     driver-class-name: com.mysql.cj.jdbc.Driver
