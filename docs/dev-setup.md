@@ -52,6 +52,31 @@ bash scripts/docker.sh web        # 前端站点 8088（nginx 反代 /api）
 bash scripts/docker.sh clean-legacy   # 清理历史上手动 run 出来的容器
 ```
 
+> **执行位置无关**：脚本会自动挑一条能通的 Docker 通路——先试宿主 Docker Desktop（命名管道），
+> 不通就转发到 WSL 发行版内的 dockerd（本机默认走这条，`DOCKER_MODE=wsl`），并把
+> `--project-directory` / `--env-file` / `-f` 自动转成 `/mnt/d/...` 路径。
+> 想确认当前走哪条：`bash scripts/docker.sh status` 会打印 `通路：wsl（Ubuntu 内的 dockerd）`。
+> 有多个发行版时用 `SORTS_WSL_DISTRO=<名称>` 指定（默认 `Ubuntu`）。
+
+> **WSL 发行版会被空闲回收（实测 2.7.12）**：WSL 在最后一个终端会话结束后回收发行版，dockerd 收到
+> 优雅关停（日志里是 `daemonShuttingDown=true`，容器退出码 143），下次执行任何命令时冷启动，
+> 容器再靠 `restart: unless-stopped` 自动恢复——健康检查因此反复从头跑。
+>
+> 应对：
+>
+> 1. **要容器一直在线** → 另开一个终端窗口执行 `bash scripts/docker.sh keepalive`（占住一个 WSL 会话，
+>    阻塞运行，Ctrl-C 结束）。实测可让 10 个容器连续运行并保持 healthy。
+> 2. **只想缩短冷启动** → 在 `%USERPROFILE%\.wslconfig` 写下面两行，让 WSL 的 **VM** 保持热态
+>    （注意：这只管 VM，**不能**阻止发行版被回收，别指望它替代 keepalive）：
+>
+>    ```ini
+>    [wsl2]
+>    vmIdleTimeout=-1
+>    ```
+>
+>    保存后执行 `wsl --shutdown` 生效。同样地，该文件**不支持注释**——写 `#` 或 `;` 会被当作非法键，
+>    每次 WSL 调用都打印 `中的键名称无效` 告警，污染所有命令输出。
+
 | 中间件 | 端口 | 账号 |
 |---|---|---|
 | Redis（redis-stack：含 RediSearch 等模块） | **6379** | 密码 `sorts_dev` |

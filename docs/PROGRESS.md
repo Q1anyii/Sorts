@@ -1,6 +1,7 @@
 # 梭子 SORTS · 项目进度与续接指南
 
-> **用法**：新会话开始前，把本文档 + `docs/theme-design.md` + `docs/dev-setup.md` + `docs/ide-setup.md` 丢给 AI，并粘贴文末的「接续 Prompt」，即可无缝继续开发。>   
+> **用法**：新会话开始前，把本文档 + `docs/theme-design.md` + `docs/dev-setup.md` + `docs/ide-setup.md` 丢给 AI，并粘贴文末的「接续 Prompt」，即可无缝继续开发。
+>   
 > 最后更新：2026-09-16 · 当前里程碑：**M0 / M1 / M2 / M3 / M4 / M5 完成**（构建通过，**321 个单测全绿**：common 19 + gateway 21 + user 16 + schedule 67 + ai 103 + notification 51 + mall 44）
 
 ---
@@ -342,7 +343,7 @@ event: error   data: {"code":503,"message":"..."}
 **四、界面**
 
 - 布局：织机栏（9 项导航）+ 梭行条（主题切换 / 未读角标 / 登出）+ 移动端底部导航；页面切换用 `mode="out-in"` 的穿梭过场定位，避免新旧页面同屏闪烁。
-- 页面：入梭（登录/注册一体）、今日经纬、织历（月格 + 选中日明细）、日程清单（筛选/分页/CRUD/状态机动作）、穿梭计时（大表盘 + 状态机五连）、纹谱统计（纯 SVG 趋势 + 标签分布）、AI 织师（对话/规划/梭影报告）、锦市、衣橱、飞鸽传书、设置。
+- 页面：入梭（登录/注册一体）、今日经纬、织历（月格 + 选中日明细）、日程清单（筛选/分页/CRUD/状态机动作）、穿梭计时（大表盘 + 状态机五连）、纹谱统计（纯 SVG 趋势 + 标签分布）、梭灵（对话/规划/梭影报告）、锦市、衣橱、飞鸽传书、设置。
 - 原子组件 15 个 + 24 枚内置图标（`SIcon`，currentColor 描边）；状态与优先级映射集中在 `utils/status.ts`，与后端状态机一一对应。
 - AI 写入走**双钥匙**：前端开关需弹窗确认后才置位 `allowWrite=true`。
 
@@ -366,6 +367,8 @@ event: error   data: {"code":503,"message":"..."}
 | 主题方向                    | **「织锦流光」**（吸收流光与时间刻度）                        | 三方案对比见 `docs/theme-design.md`     |
 | 中间件部署                   | **WSL 内 Docker + docker-compose 单文件编排**（`docker/compose.yml`） | 历史上逐个 `docker run` 会漂移（端口、口令、重启策略各写一遍）；compose 一份文件 + healthcheck + 命名卷，`scripts/docker.sh` 统一入口 |
 | Redis 端口（M7 变更）          | 从 **6380** 改为 **6379**（redis-stack 镜像）         | 6380 原本是 WSL 里装的「原生 redis-server」，口令散落在 `/etc/redis/redis.conf`；改用容器后取回标准端口，且 redis-stack 一个端口同时提供 RediSearch/RedisJSON 等模块 |
+| Docker 通路（M7 收尾）         | 脚本**自动识别**宿主 Docker Desktop 或 WSL 内 dockerd | 本机守护进程在 WSL 里，Git Bash 的 `docker` 指向 Docker Desktop 命名管道（未启动时必然报 `Cannot connect to the daemon`）；把通路判断收进 `docker_run` / `dc` 两个函数，业务命令与执行位置解耦 |
+| WSL 发行版回收（M7 收尾）       | 提供 `scripts/docker.sh keepalive` 占住会话；`.wslconfig` 的 `vmIdleTimeout` 只作“热态”加速 | 实测 WSL 2.7.12：最后一个会话结束后发行版即被回收，dockerd 与容器一并停止；`vmIdleTimeout=-1` 与发行版内后台进程均无法阻止（详见已知限制 22） |
 | AI SDK 选型               | **自实现 OpenAI 兼容客户端**（M4）                     | Spring AI 1.0.0 锁定 Boot 3.4.5，与本项目 Boot 3.3.4 冲突；藏在 `ChatModelClient` 接口后，将来可无痛换回 |
 | AI 写数据权限                | **双钥匙**：服务端开关 + 单次请求用户确认                     | 非 AI Native 项目，写操作必须显式授权，避免「AI 擅自改用户数据」   |
 | 同一路径 JSON / SSE 双通道     | `params` 条件拆成两个处理方法                            | Spring MVC 按「方法声明返回类型」选处理器，返回 `Object` 会让 `SseEmitter` 被 Jackson 序列化 |
@@ -375,6 +378,8 @@ event: error   data: {"code":503,"message":"..."}
 | 购买顺序（M5）                 | **加锁 → 扣积分 → 本地事务落库**（顺序不可颠倒）                 | 积分不足是最常见失败，先扣能在「未占库存」时快速失败；反向则失败时要删订单（账目不该被删） |
 | 防超卖（M5）                  | Redisson 按商品加锁 **+** `UPDATE ... WHERE stock > 0` | 双保险：锁因租期到期失效时，数据库仍能兜住                     |
 | 提醒幂等（M5）                 | `t_reminder_log` 唯一键 + `INSERT IGNORE` 先占额度      | at-most-once：提醒过期即无价值，宁可漏一次也不要重复轰炸         |
+| 周期报告同周期幂等（M7）            | 按 `period_key` 命中即复用，失败或 `force=true` 才重生成     | 一份周期报告语义上只需一份；重复点击不该重复烧 token，也不该堆出多条记录  |
+| AI 双通道的默认分支写法（M7）        | 默认分支**不带** `params`，显式分支才带                  | `!stream=false` 在参数缺省时匹配不上（实测 500），改写法后由 Spring 的「表达式更多者更优先」保证确定性 |
 | 提醒渠道（M5）                 | 只落 **APP（站内信）**                            | EMAIL/SMS 未接入，勾了也不会发；不勾 APP 时不产生通知，不做假承诺   |
 
 ### 已知限制 / 待办技术债
@@ -391,16 +396,26 @@ event: error   data: {"code":503,"message":"..."}
 9. **`allowWrite` 是本项目的扩展字段**（api-spec 未定义）：长在 `/ai/chat` 请求体上，用于开启单次对话的写权限；前端需在用户确认后置位。
 10. `sorts-ai` 尚无真实调用模型与真实 DB 的集成测试（单测全部用 Mock，覆盖的是编排逻辑与边界），计划 M7 用 Testcontainers 补齐。
 11. **统一响应体与 api-spec 的已知偏差**（M0 起确立，全项目一致）：api-spec 的 `ApiResponse.code` 示例为 `200`、分页字段名为 `records`；本项目实际用 `code=0` 表示成功、分页用 `PageData.list`。改动会波及全部服务与前端，故保持现状并在此备案。
-12. 月报/年报为异步生成，暂未做「同周期重复生成」的去重：同一用户对同一月份多次点击会生成多条报告（列表按时间倒序展示）。如需收敛，后续可加「同 periodKey 覆盖」策略。
+12. ~~月报/年报为异步生成，暂未做「同周期重复生成」的去重~~ → **已解决（M7 收尾）**：`ReportServiceImpl.submit` 按「用户 + 类型 + `period_key`」查已有报告（走 `idx_user_period` 索引），COMPLETED / GENERATING 直接复用、不再调模型（`AsyncReportResponse.reused=true`），FAILED 或请求体 `force=true` 时先删旧记录再重生成。前端命中复用时直接打开报告并提示，不再空转轮询。
 13. **购买链路存在极小的不一致窗口**（M5，重要）：扣积分成功与本地事务提交之间若进程被杀，补偿代码不会执行，表现为「扣了光阴砂没拿到装扮」。彻底消除需要事务性消息（**M7 的 RabbitMQ outbox + 对账任务**）。当前以 ERROR 级别的结构化日志（含 `userId`/`itemId`/金额）兜底，可用 `t_purchase_record` + `t_wardrobe_item` 对账。
 14. **提醒渠道只实现了 APP（站内信）**（M5）：`EMAIL` / `SMS` 在 `ReminderChannel` 中作为扩展位存在，设置里可勾选但不会真正发出；接入第三方通道后只需在 `ReminderServiceImpl` 的发送环节分支即可。
 15. **定时提醒是单实例语义**（M5）：`@Scheduled` 在多实例部署下每个实例都会扫描。当前靠 `t_reminder_log` 唯一键保证**不会重复推送**（幂等生效），但会产生多余的 Feign 调用。如需多实例，加 ShedLock 或改用 RabbitMQ 延迟队列。
 16. **商城只实现了「买」**（M5）：商品上架/下架/改价暂无后台接口，靠 `scripts/sql/sorts_mall.sql` 的种子数据维护；`PROMOTION` 类型的营销推送也还没有触发入口。
 17. **购买接口的错误码与 api-spec 存在偏差**（M5）：api-spec 对 `/mall/purchase` 只声明 `400 积分不足或商品已售罄`；本项目沿用既有约定——积分不足透传 `sorts-user` 的 409，售罄/已下架/已拥有用 409，抢锁失败用 429。与第 11 条同属「统一响应体与 api-spec 的已知偏差」，前端请以 `Result.code` 为准。
 18. **服务镜像体积约 625 MB/个**（M7）：多阶段构建已剥离 Maven 与源码，但 Spring Boot fat jar + JRE 本身就有这个量级。若要压到 200 MB 级，需改 layered jar + `jarmode=layertools` 分层复制，或换 jlink/AppCDS；当前本地/CI 场景收益有限，暂不做。
-19. **未做 Testcontainers 集成测试**（M7 剩余项）：`sorts-user` / `sorts-ai` 仍缺「真实 DB + Redis」的集成测试，单测全部基于 Mock。路线图原计划在 M7 补齐，本次先交付编排与 CI，集成测试列入下一批。
+19. **Testcontainers 集成测试：sorts-user 已落地，sorts-ai 待补**（M7 收尾）：`backend/sorts-user/src/test/.../integration/UserServiceIT.java` 用真实 MySQL 8 + Redis 7 容器跑注册 / 登录口令校验 / 积分增减与余额不足 / 资料更新四类场景，DDL 直接复用 `scripts/sql/sorts_user.sql`（不另抄一份）。**默认不跑**：`*IT` 只在 `-Pintegration` 下被 surefire 收录，且类上标 `@Testcontainers(disabledWithoutDocker = true)`，无 Docker 时整类跳过（本机实测 4/4 skipped）。CI 的 `backend-test` 已增加 `-Pintegration` 步骤（Runner 自带 Docker）。**注意**：Testcontainers 需要 Windows 侧能连到 Docker 守护进程（Docker Desktop 或 `DOCKER_HOST`）——本机守护进程在 WSL 里且 Windows CLI 够不着，因此该用例在本机**尚未真正执行过**。
 20. **CI 的镜像推送与部署默认关闭**（M7）：`.github/workflows/ci.yml` 里 `push_images` / `deploy` 为 `workflow_dispatch` 开关，需先在仓库 Secrets 配置 `ACR_*` / `ECS_*`；当前只跑「后端全量构建 + 单测」「前端构建 + vitest」「6 个服务的镜像构建」。
-21. **前端容器只做静态托管 + 反代**：`docker/Dockerfile.frontend` 构建产物由 nginx 托管，`/api` 反代到 `gateway:8080` 并关闭缓冲（SSE 必需）。若要给前端做 CDN/多环境注入，需把 `VITE_API_BASE` 参数化到构建期。
+21. ~~前端容器的 `VITE_API_BASE` 未参数化~~ → **已解决（M7 收尾）**：前端代码本就读取该变量，缺的是构建期注入。`Dockerfile.frontend` 增加 `ARG/ENV VITE_API_BASE`（仅构建阶段），`compose.yml` 的 `frontend.build.args` 从 `.env` 透传，留空即保持同源 `/api/v1`（Nginx 反代）。`env.d.ts` 补了 `ImportMetaEnv` 类型声明。
+22. **WSL 发行版空闲被回收，会连带停掉 dockerd 与容器**（M7 收尾，已确认机理并给出对策）：最后一个 `wsl.exe` 会话结束后，WSL 回收发行版 → dockerd 优雅关停（日志 `daemonShuttingDown=true`，容器退出码 143）→ 下次调用冷启动，容器靠 `restart: unless-stopped` 自动恢复，健康检查重跑。**实测排除的方案**：`.wslconfig` 的 `[wsl2] vmIdleTimeout`（`-1` 与 `604800000` 都试过）只控制 **VM** 空闲回收、保持热态，**管不住发行版**；发行版内留后台进程（`setsid sleep 300`）也留不住。**有效对策**：`bash scripts/docker.sh keepalive` 占住一个 WSL 会话，实测 10 容器连续运行 4 分钟并保持 healthy。
+23. **`.wslconfig` 是机器级配置且不支持注释**（M7 收尾）：换机器/重装需手工补 `vmIdleTimeout=-1`（README「快速开始 · 前置」与 `docs/dev-setup.md` 有可复制内容）。写 `#` 或 `;` 会被判为非法键，每次 WSL 调用都打印「中的键名称无效」告警。
+24. **`scripts/docker.sh shell` 在 wsl 通路下依赖 WSL 的 TTY 转发**：Git Bash 里 `docker exec -it` 经由 `wsl.exe` 转发时，个别终端会出现 `the input device is not a TTY`；此时在 WSL 终端内直接跑 `docker exec -it sorts-mysql mysql -uroot -p...` 即可。
+
+25. **AI 双通道映射曾在不带 `stream` 参数时返回 500**（M7 收尾，已修）：`/chat`、`/plan`、`/summary/daily` 的默认分支原先写 `params = "!stream=false"`（`/plan` 为 `!stream=true`），实测该表达式在 `stream` **完全缺省**时匹配不上 → `UnsatisfiedServletRequestParameterException`。即「按 README 说的默认值调用」反而必挂。已改为「默认分支不带 params 作兜底 + 显式分支保留 params」，两者同时匹配时 Spring 按「params 表达式更多者更优先」选中显式分支。新增 `AiControllerMappingTest`（8 例）用 MockMvc standaloneSetup 真实走一遍分派——直接调方法的单测会绕过映射判定，抓不到这类问题。
+26. **AI 命名前后端不一致**（M7 收尾，已修）：后端 `AiPrompts` 的人设一直是「你是『梭灵』」，Java 代码、日志、报错文案全用梭灵；只有 M6 前端把菜单 / 路由标题 / 对话页写成了「AI 织师 / 织师」。已统一回梭灵。
+27. **AI 服务已接入真实 DeepSeek 密钥并完成端到端验证**（M7 收尾）：密钥写入 `docker/.env`（`*.env` 已被 gitignore，不入库）。实测 `/ai/chat?stream=false` 1.9s 返回、`/ai/chat` 不带参返回 92 帧 `event:delta`、`/ai/plan` 1.7s 返回 3 条建议、`/ai/plan?stream=true` 返回 1078 帧。
+28. **采用 MIT 许可证**（M7 收尾）：新增 `LICENSE`（Copyright 2026 谦亦AAA），README 许可证章节同步。
+29. **`api-spec` 与实现的第三处偏差**：积分内部接口 api-spec 写 `/users/points/deduct`，实现路径为 `/api/v1/users/points/change`（内部凭证白名单 `sorts.internal.paths` 里也是后者）。与第 11、17 条同属已知偏差，前端以 `Result.code` 为准。
+
 
 ---
 
@@ -421,18 +436,28 @@ bash scripts/mvn.sh                # clean install（全模块 + 单测）
 bash scripts/mvn.sh clean test     # 只跑测试
 ```
 
-> **⚠️ 2026-09-16 更正：此前「本机 mvn 已损坏」是误诊。**>   
-> 本机 `mvn -v` 输出 `Apache Maven 3.9.15`，位于 `E:\develop`，**完全正常**。>   
-> 真实原因是 WorkBuddy 沙箱给 shell 注入了 `MSYS_NO_PATHCONV=1` 与 `MSYS2_ARG_CONV_EXCL=*`，>   
-> **关闭了 MSYS 路径自动转换**；而 Maven 的 `bin/mvn` 是 POSIX sh 脚本，把>   
-> `/c/Users/.../plexus-classworlds.jar` 这类 POSIX 路径直接交给原生 `java.exe`，>   
-> Windows 版 java 解析不了 → 报 `ClassNotFoundException: ...classworlds.launcher.Launcher`。>   
-> `scripts/mvn.sh` 显式用 `cygpath` 把路径转成 `C:/...` 再交给 java，因此沙箱内始终可用。>   
+> **⚠️ 2026-09-16 更正：此前「本机 mvn 已损坏」是误诊。**
+>   
+> 本机 `mvn -v` 输出 `Apache Maven 3.9.15`，位于 `E:\develop`，**完全正常**。
+>   
+> 真实原因是 WorkBuddy 沙箱给 shell 注入了 `MSYS_NO_PATHCONV=1` 与 `MSYS2_ARG_CONV_EXCL=*`，
+>   
+> **关闭了 MSYS 路径自动转换**；而 Maven 的 `bin/mvn` 是 POSIX sh 脚本，把
+>   
+> `/c/Users/.../plexus-classworlds.jar` 这类 POSIX 路径直接交给原生 `java.exe`，
+>   
+> Windows 版 java 解析不了 → 报 `ClassNotFoundException: ...classworlds.launcher.Launcher`。
+>   
+> `scripts/mvn.sh` 显式用 `cygpath` 把路径转成 `C:/...` 再交给 java，因此沙箱内始终可用。
+>   
 > 对照验证：`mvn -v` 失败，但 `env -u MSYS_NO_PATHCONV -u MSYS2_ARG_CONV_EXCL bash -c 'mvn -v'` 成功。
 >
-> 仓库已内置 **Maven Wrapper**（`backend/mvnw`、`mvnw.cmd`、`.mvn/wrapper/maven-wrapper.properties`，>   
-> 仅脚本模式 + 阿里云镜像源），IDE / CI / 其他开发者无需预装 Maven。>   
-> 受管 Maven：`~/.workbuddy/binaries/maven/apache-maven-3.9.16`；`~/.m2/settings.xml` 已配阿里云镜像；>   
+> 仓库已内置 **Maven Wrapper**（`backend/mvnw`、`mvnw.cmd`、`.mvn/wrapper/maven-wrapper.properties`，
+>   
+> 仅脚本模式 + 阿里云镜像源），IDE / CI / 其他开发者无需预装 Maven。
+>   
+> 受管 Maven：`~/.workbuddy/binaries/maven/apache-maven-3.9.16`；`~/.m2/settings.xml` 已配阿里云镜像；
+>   
 > `scripts/mvn.sh` 还会透传 `HTTP_PROXY/HTTPS_PROXY` 给 JVM（代理 `127.0.0.1:8531`，仅加速用，不影响 localhost）。
 >
 > **IDE 运行细节（JDK/模块/运行配置/报错速查）见 [`docs/ide-setup.md`](./ide-setup.md)。**
@@ -459,12 +484,18 @@ bash scripts/docker.sh clean-legacy  # 清理历史上手动 run 出来的容器
 - 凭据：Git Credential Manager（`git config --global credential.helper manager`）
 - **⚠️ 推送失败的已知原因（2026-09-16 诊断）**：
   1. 账户 `Q1anyiii`（SSH 密钥所属）已被 GitHub **封停** → 不要用 SSH 推送。
-  2. `Q1anyii` 的 fine-grained PAT 当前 **Contents 权限为只读**，推送报       
-     `403 Permission to Q1anyii/sorts.git denied to Q1anyii`，       
-     API 写文件报 `Resource not accessible by personal access token`。       
-     **修复方式**：GitHub → Settings → Developer settings → Fine-grained tokens → 编辑该令牌       
-     → Repository access 勾选 `sorts`（或 All repositories）       
-     → Permissions → Repository permissions → **Contents: Read and write** → 保存。       
+  2. `Q1anyii` 的 fine-grained PAT 当前 **Contents 权限为只读**，推送报
+       
+     `403 Permission to Q1anyii/sorts.git denied to Q1anyii`，
+       
+     API 写文件报 `Resource not accessible by personal access token`。
+       
+     **修复方式**：GitHub → Settings → Developer settings → Fine-grained tokens → 编辑该令牌
+       
+     → Repository access 勾选 `sorts`（或 All repositories）
+       
+     → Permissions → Repository permissions → **Contents: Read and write** → 保存。
+       
      或改用 classic token（勾选 `repo` 作用域）。
 - 修复凭据后推送命令：`git push -u origin main`（或用内嵌令牌临时推送）
 - 提交规范：Conventional Commits（`feat(scope): subject`），**每完成一个功能点提交一次；每个模块单测通过后推送**。
