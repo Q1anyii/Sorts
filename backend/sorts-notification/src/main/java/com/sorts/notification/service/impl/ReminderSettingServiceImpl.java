@@ -101,7 +101,7 @@ public class ReminderSettingServiceImpl implements ReminderSettingService {
     }
 
     @Override
-    public Map<Long, ReminderSetting> findEffective(Collection<Long> userIds) {
+    public Map<Long, ReminderSetting> findEffectiveAll(Collection<Long> userIds) {
         Map<Long, ReminderSetting> result = new LinkedHashMap<>();
         if (userIds == null || userIds.isEmpty()) {
             return result;

@@ -200,7 +200,7 @@ class ReminderSettingServiceImplTest {
     }
 
     @Test
-    @DisplayName("findEffective：批量取设置时为无记录的用户补默认值，避免扫描时 NPE")
+    @DisplayName("findEffectiveAll：批量取设置时为无记录的用户补默认值，避免扫描时 NPE")
     void findEffectiveBatchFillsDefaults() {
         ReminderSetting persisted = new ReminderSetting();
         persisted.setId(2L);
@@ -209,7 +209,7 @@ class ReminderSettingServiceImplTest {
         persisted.setChannels("APP");
         when(reminderSettingMapper.selectList(any())).thenReturn(List.of(persisted));
 
-        Map<Long, ReminderSetting> result = service.findEffective(List.of(USER_ID, 99L));
+        Map<Long, ReminderSetting> result = service.findEffectiveAll(List.of(USER_ID, 99L));
 
         assertEquals(2, result.size());
         assertEquals(60, result.get(USER_ID).getDefaultAdvanceMinutes());
@@ -219,10 +219,10 @@ class ReminderSettingServiceImplTest {
     }
 
     @Test
-    @DisplayName("findEffective：空入参直接返回空 Map，不查库")
+    @DisplayName("findEffectiveAll：空入参直接返回空 Map，不查库")
     void findEffectiveHandlesEmptyInput() {
-        assertTrue(service.findEffective(List.of()).isEmpty());
-        assertTrue(service.findEffective((java.util.Collection<Long>) null).isEmpty());
+        assertTrue(service.findEffectiveAll(List.of()).isEmpty());
+        assertTrue(service.findEffectiveAll(null).isEmpty());
         verify(reminderSettingMapper, never()).selectList(any());
     }
 

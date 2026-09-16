@@ -27,6 +27,12 @@ public interface ReminderSettingService {
      */
     ReminderSetting findEffective(Long userId);
 
-    /** 批量取生效设置，供提醒扫描一次查完，避免按用户逐个查库 */
-    Map<Long, ReminderSetting> findEffective(Collection<Long> userIds);
+    /**
+     * 批量取生效设置，供提醒扫描一次查完，避免按用户逐个查库。
+     *
+     * <p>刻意不叫 {@code findEffective(Collection)}：与单用户版本构成重载后，
+     * 调用点传 {@code Collectors.toCollection(...)} 的结果会触发方法引用的推断歧义，
+     * 一个更明确的命名能省掉每个调用点上的显式类型标注。</p>
+     */
+    Map<Long, ReminderSetting> findEffectiveAll(Collection<Long> userIds);
 }

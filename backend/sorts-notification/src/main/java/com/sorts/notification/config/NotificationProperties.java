@@ -34,6 +34,9 @@ public class NotificationProperties {
         /** 扫描周期（cron） */
         private String cron = "0 * * * * ?";
 
+        /** 过期留痕清理周期（cron），默认每天凌晨 3:30 */
+        private String cleanupCron = "0 30 3 * * ?";
+
         /** 向后看的窗口（分钟），需覆盖用户可配置的最大提前量 */
         private int lookaheadMinutes = 60;
 

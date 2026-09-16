@@ -19,6 +19,13 @@ spring:
         enabled: ${NACOS_ENABLED:true}
         namespace: ${NACOS_NAMESPACE:public}
         group: ${NACOS_GROUP:DEFAULT_GROUP}
+    openfeign:
+      client:
+        config:
+          default:
+            # 提醒扫描跑在调度线程上，下游卡住会拖住整个调度周期，故把超时压短
+            connectTimeout: 2000
+            readTimeout: 5000
 
 mybatis-plus:
   configuration:
@@ -46,6 +53,8 @@ sorts:
       enabled: ${NOTIFY_REMINDER_ENABLED:true}
       # 默认每分钟扫描一次；秒级精度无意义，反而放大 Feign 压力
       cron: ${NOTIFY_REMINDER_CRON:0 * * * * ?}
+      # 过期留痕清理周期
+      cleanup-cron: ${NOTIFY_REMINDER_CLEANUP_CRON:0 30 3 * * ?}
       # 单次扫描向后看的窗口，需 >= 用户可配置的最大提前量
       lookahead-minutes: ${NOTIFY_REMINDER_LOOKAHEAD:60}
       # 单次扫描最多处理多少条候选日程
