@@ -1,0 +1,50 @@
+server:
+  port: ${SCHEDULE_PORT:8082}
+
+spring:
+  application:
+    name: sorts-schedule
+  datasource:
+    # 本地开发：MySQL 跑在 WSL Docker 中，端口 3307（避开宿主 3306）
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3307}/sorts_schedule?useUnicode=true&characterEncoding=utf8mb4&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:sorts_dev}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      # 约定：Redis 使用默认端口 +1
+      port: ${REDIS_PORT:6380}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+  cloud:
+    nacos:
+      server-addr: ${NACOS_ADDR:localhost:8848}
+      username: ${NACOS_USERNAME:nacos}
+      password: ${NACOS_PASSWORD:nacos}
+      discovery:
+        enabled: ${NACOS_ENABLED:true}
+        namespace: ${NACOS_NAMESPACE:public}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# ========== 项目自定义配置 ==========
+sorts:
+  reward:
+    # 落梭（完成日程）发放光阴砂；调为 false 可快速关闭奖励联调
+    enabled: ${REWARD_ENABLED:true}
+    complete-points: ${REWARD_COMPLETE_POINTS:5}
+
+logging:
+  level:
+    com.sorts: debug
