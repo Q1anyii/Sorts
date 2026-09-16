@@ -44,6 +44,10 @@ mybatis-plus:
 
 # ========== 项目自定义配置 ==========
 sorts:
+  internal:
+    # 服务间凭证：各服务取值必须一致，生产环境务必用环境变量注入
+    token: ${INTERNAL_TOKEN:sorts-internal-dev-token}
+    enabled: ${INTERNAL_ENABLED:true}
   ai:
     # OpenAI 兼容入口；换成任意同协议网关即可切换供应商
     base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com/v1}

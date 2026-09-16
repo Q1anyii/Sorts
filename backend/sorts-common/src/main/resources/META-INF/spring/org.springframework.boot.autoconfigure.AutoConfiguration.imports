@@ -1,2 +1,3 @@
 com.sorts.common.jwt.JwtAutoConfiguration
 com.sorts.common.exception.GlobalExceptionHandler
+com.sorts.common.internal.InternalApiAutoConfiguration

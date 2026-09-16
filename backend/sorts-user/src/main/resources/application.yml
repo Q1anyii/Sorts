@@ -40,6 +40,10 @@ mybatis-plus:
 
 # ========== 项目自定义配置 ==========
 sorts:
+  internal:
+    # 服务间凭证：各服务取值必须一致，生产环境务必用环境变量注入
+    token: ${INTERNAL_TOKEN:sorts-internal-dev-token}
+    enabled: ${INTERNAL_ENABLED:true}
   jwt:
     # 必须与网关保持一致，生产环境通过环境变量注入
     secret: ${JWT_SECRET:sorts-dev-secret-please-override-by-env-jwt-secret}

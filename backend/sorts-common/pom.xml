@@ -21,6 +21,23 @@
             <artifactId>spring-web</artifactId>
             <optional>true</optional>
         </dependency>
+        <!-- 内部接口拦截器所需（HandlerInterceptor / WebMvcConfigurer）；optional 不向下游传染 -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <!-- 内部调用凭证的 Feign 出站拦截器所需；optional，各服务按需自带 openfeign -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+            <optional>true</optional>
+        </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>

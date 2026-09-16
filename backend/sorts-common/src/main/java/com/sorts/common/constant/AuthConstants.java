@@ -22,6 +22,14 @@ public final class AuthConstants {
     /** 网关透传的用户名（便于日志追踪） */
     public static final String HEADER_USERNAME = "X-Username";
 
+    /**
+     * 服务间内部凭证请求头。
+     *
+     * <p>网关不会透传该头（外部请求带进来也会被剥离语义），只有服务之间通过
+     * OpenFeign 调用时才由 {@code InternalFeignInterceptor} 自动附加。</p>
+     */
+    public static final String HEADER_INTERNAL_TOKEN = "X-Internal-Token";
+
     /** JWT 载荷：令牌类型 */
     public static final String CLAIM_TYPE = "type";
 

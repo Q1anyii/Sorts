@@ -2,6 +2,7 @@ package com.sorts.user.controller;
 
 import com.sorts.common.constant.AuthConstants;
 import com.sorts.common.exception.BizException;
+import com.sorts.common.internal.InternalApi;
 import com.sorts.common.result.ErrorCode;
 import com.sorts.common.result.Result;
 import com.sorts.user.dto.PointsChangeRequest;
@@ -55,9 +56,10 @@ public class UserController {
     /**
      * 积分变动（内部服务通过 Feign 调用）。
      *
-     * <p>当前依赖网关透传的用户头做归属校验；后续如需严格内网隔离，
-     * 可追加内部服务密钥头校验（见 docs/dev-setup.md 已知限制）。</p>
+     * <p>标注 {@link InternalApi}：除网关鉴权外，还要求携带服务间凭证
+     * {@code X-Internal-Token}，外部请求无法直接触达（网关会剥离伪造凭证）。</p>
      */
+    @InternalApi("积分变动：供日程/AI/商城等服务扣发光阴砂")
     @PostMapping("/points/change")
     public Result<Integer> changePoints(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
                                         @Valid @RequestBody PointsChangeRequest request) {

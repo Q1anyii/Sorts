@@ -40,6 +40,10 @@ mybatis-plus:
 
 # ========== 项目自定义配置 ==========
 sorts:
+  internal:
+    # 服务间凭证：各服务取值必须一致，生产环境务必用环境变量注入
+    token: ${INTERNAL_TOKEN:sorts-internal-dev-token}
+    enabled: ${INTERNAL_ENABLED:true}
   reward:
     # 落梭（完成日程）发放光阴砂；调为 false 可快速关闭奖励联调
     enabled: ${REWARD_ENABLED:true}

@@ -58,9 +58,9 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
 
-        // 跨域预检请求直接放行
+        // 跨域预检请求直接放行；白名单同理，但两者都要剥离外部伪造的内部凭证
         if (HttpMethod.OPTIONS.equals(request.getMethod()) || isWhitelisted(path)) {
-            return chain.filter(exchange);
+            return chain.filter(exchange.mutate().request(stripInternalToken(request)).build());
         }
 
         String token = resolveToken(request);
@@ -83,11 +83,12 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             return writeUnauthorized(exchange, ErrorCode.TOKEN_INVALID);
         }
 
-        // 透传身份前先移除外部可能伪造的身份头
+        // 透传身份前先移除外部可能伪造的身份头与内部凭证
         ServerHttpRequest mutated = request.mutate()
                 .headers(headers -> {
                     headers.remove(AuthConstants.HEADER_USER_ID);
                     headers.remove(AuthConstants.HEADER_USERNAME);
+                    headers.remove(AuthConstants.HEADER_INTERNAL_TOKEN);
                     headers.set(AuthConstants.HEADER_USER_ID, String.valueOf(userId));
                     if (StringUtils.hasText(username)) {
                         headers.set(AuthConstants.HEADER_USERNAME, username);
@@ -95,6 +96,21 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
                 })
                 .build();
         return chain.filter(exchange.mutate().request(mutated).build());
+    }
+
+    /**
+     * 剥离外部请求携带的内部凭证。
+     *
+     * <p>服务间调用不经过网关，因此经网关进来的 {@code X-Internal-Token} 只可能是伪造的。
+     * 若放任其透传，任何用户都能越权调用内部接口。</p>
+     */
+    private ServerHttpRequest stripInternalToken(ServerHttpRequest request) {
+        if (!request.getHeaders().containsKey(AuthConstants.HEADER_INTERNAL_TOKEN)) {
+            return request;
+        }
+        return request.mutate()
+                .headers(headers -> headers.remove(AuthConstants.HEADER_INTERNAL_TOKEN))
+                .build();
     }
 
     /** 优先取 Authorization 头，兼容表单/移动端通过 access_token 参数传递 */

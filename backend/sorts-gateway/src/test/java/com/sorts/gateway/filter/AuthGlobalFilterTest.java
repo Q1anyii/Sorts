@@ -21,13 +21,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * 网关鉴权过滤器单元测试。
  *
  * <p>覆盖：白名单放行、预检放行、缺失/非法/过期令牌拒绝、
- * 令牌类型校验、身份透传与伪造头剥离。</p>
+ * 令牌类型校验、身份透传、伪造身份头与内部凭证剥离。</p>
  *
  * @author sorts
  */
@@ -203,6 +204,41 @@ class AuthGlobalFilterTest {
         assertEquals("1001", downstream.getRequest().getHeaders().getFirst(AuthConstants.HEADER_USER_ID));
         assertEquals(1, downstream.getRequest().getHeaders().get(AuthConstants.HEADER_USER_ID).size());
         assertEquals("weaver", downstream.getRequest().getHeaders().getFirst(AuthConstants.HEADER_USERNAME));
+    }
+
+    @Test
+    @DisplayName("伪造的 X-Internal-Token 被剥离，无法越权调用内部接口")
+    void shouldStripForgedInternalToken() {
+        String accessToken = jwtUtil.generateAccessToken(1001L, "weaver");
+
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/api/v1/users/points/change")
+                        .header(AuthConstants.HEADER_AUTHORIZATION, AuthConstants.TOKEN_PREFIX + accessToken)
+                        // 外部请求不该携带内部凭证，带了就一定是伪造的
+                        .header(AuthConstants.HEADER_INTERNAL_TOKEN, "forged-token")
+                        .build());
+        RecordingChain chain = new RecordingChain();
+
+        authGlobalFilter.filter(exchange, chain).block();
+
+        ServerWebExchange downstream = chain.captured.get();
+        assertNotNull(downstream);
+        assertNull(downstream.getRequest().getHeaders().getFirst(AuthConstants.HEADER_INTERNAL_TOKEN));
+    }
+
+    @Test
+    @DisplayName("白名单路径同样剥离伪造的内部凭证（放行不等于放行一切）")
+    void shouldStripInternalTokenOnWhitelistedPath() {
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.post("/api/v1/auth/login")
+                        .header(AuthConstants.HEADER_INTERNAL_TOKEN, "forged-token")
+                        .build());
+        RecordingChain chain = new RecordingChain();
+
+        authGlobalFilter.filter(exchange, chain).block();
+
+        assertTrue(chain.invoked, "白名单请求应进入下游链路");
+        assertNull(chain.captured.get().getRequest().getHeaders().getFirst(AuthConstants.HEADER_INTERNAL_TOKEN));
     }
 
     @Test
