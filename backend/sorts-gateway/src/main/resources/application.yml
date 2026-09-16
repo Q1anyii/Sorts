@@ -41,6 +41,14 @@ spring:
         connect-timeout: 3000
         response-timeout: 15s
       routes:
+        # ⚠️ 顺序即优先级：网关按声明顺序取第一条匹配的路由。
+        #    /api/v1/users/wardrobe/** 同时命中 mall 与 user 两条路由，
+        #    因此 mall 必须排在 user 之前，否则装扮接口会被转发到用户服务（404）。
+        # ========== 商城服务（含装扮仓库 /users/wardrobe） ==========
+        - id: sorts-mall
+          uri: lb://sorts-mall
+          predicates:
+            - Path=/api/v1/mall/**,/api/v1/users/wardrobe/**
         # ========== 用户服务 ==========
         - id: sorts-user
           uri: lb://sorts-user
@@ -63,11 +71,6 @@ spring:
           uri: lb://sorts-notification
           predicates:
             - Path=/api/v1/notifications/**
-        # ========== 商城服务 ==========
-        - id: sorts-mall
-          uri: lb://sorts-mall
-          predicates:
-            - Path=/api/v1/mall/**,/api/v1/users/wardrobe/**
 
 # ========== 项目自定义配置 ==========
 sorts:
