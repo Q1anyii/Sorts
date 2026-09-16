@@ -42,6 +42,9 @@ bash scripts/wsl-middleware.sh start
 bash scripts/wsl-middleware.sh status
 bash scripts/wsl-middleware.sh logs sorts-mysql
 bash scripts/wsl-middleware.sh stop
+
+# 新增模块的建表脚本后，补执行一次（容器初始化目录只在「首次创建」时执行）
+bash scripts/wsl-middleware.sh sql
 ```
 
 | 中间件 | 端口 | 账号 |
@@ -51,7 +54,8 @@ bash scripts/wsl-middleware.sh stop
 | Nacos | 8848（控制台 `/nacos`） | 免鉴权（单机开发） |
 | RabbitMQ | 5672 / 管理台 15672 | sorts / sorts_dev |
 
-> 首次启动 MySQL 时，`scripts/sql/*.sql` 会被自动执行（建 5 个库 + 建表）。
+> 首次启动 MySQL 时，`scripts/sql/*.sql` 会被自动执行（建 5 个库 + 建表，按文件名排序，`00-init-databases.sql` 在最前）。
+> 容器已存在时不会重跑初始化目录，用 `bash scripts/wsl-middleware.sh sql` 补执行（脚本内均为 `CREATE ... IF NOT EXISTS`，可重复执行）。
 > 账号密码可用环境变量覆盖：`MYSQL_ROOT_PASSWORD=xxx MYSQL_PORT=3307 bash scripts/wsl-middleware.sh start`
 > 服务侧对应环境变量：`MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_USER` / `MYSQL_PASSWORD` / `REDIS_PORT`
 

@@ -1,7 +1,7 @@
 # 梭子 SORTS · 项目进度与续接指南
 
 > **用法**：新会话开始前，把本文档 + `docs/theme-design.md` + `docs/dev-setup.md` 丢给 AI，并粘贴文末的「接续 Prompt」，即可无缝继续开发。
-> 最后更新：2026-09-16 · 当前里程碑：**M0 / M1 / M2 完成**（构建通过，**41 个单测全绿**：common 6 + gateway 19 + user 16）
+> 最后更新：2026-09-16 · 当前里程碑：**M0 / M1 / M2 / M3 完成**（构建通过，**105 个单测全绿**：common 6 + gateway 19 + user 16 + schedule 64）
 
 ---
 
@@ -42,7 +42,7 @@
 |---|---|---|---|
 | 网关 | `backend/sorts-gateway` | 8080 | ✅ 完成（路由 + 鉴权 + 限流） |
 | 用户服务 | `backend/sorts-user` | 8081 | ✅ 完成（注册登录/双令牌/积分） |
-| 日程服务 | `backend/sorts-schedule` | 8082 | ⬜ 待开发 |
+| 日程服务 | `backend/sorts-schedule` | 8082 | ✅ 完成（CRUD/计时状态机/日历/统计） |
 | AI 服务 | `backend/sorts-ai` | 8083 | ⬜ 待开发 |
 | 通知服务 | `backend/sorts-notification` | 8084 | ⬜ 待开发 |
 | 商城服务 | `backend/sorts-mall` | 8085 | ⬜ 待开发 |
@@ -70,7 +70,7 @@
 - 文档：`docs/theme-design.md`（主题规范）、`docs/dev-setup.md`（开发手册）
 - 单测：`JwtUtilTest` 6 个用例全通过
 
-### M1 用户服务（✅ 已完成，待提交）
+### M1 用户服务（✅ 已完成）
 
 接口（均已对齐 `api-spec.json`）：
 
@@ -104,6 +104,40 @@
   - `RateLimitResponseFilterTest` 4 个：空体 429 改写、带体 429 改写、正常响应透传、order 校验
 
 > 说明：限流不依赖本地 Redis 也能编译与跑单测（`RedisRateLimiter` 仅在请求期访问 Redis）。
+
+### M3 日程服务（✅ 已完成）
+
+接口（全部对齐 `api-spec.json`，网关路由 `lb://sorts-schedule` 已就绪）：
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/api/v1/schedules` | 创建日程（状态默认 PENDING、优先级默认 MEDIUM） |
+| GET | `/api/v1/schedules` | 条件分页：view(day/week/month) / date / startDate / endDate / status / priority / tag / keyword / sort / order |
+| POST | `/api/v1/schedules/batch` | 批量创建（AI 规划一键采纳） |
+| GET | `/api/v1/schedules/active` | 当前穿梭中的日程 |
+| GET/PUT/DELETE | `/api/v1/schedules/{id}` | 详情 / 更新（只覆盖非空字段）/ 逻辑删除 |
+| POST | `/api/v1/schedules/{id}/start|pause|resume|end|cancel` | 计时状态机五连 |
+| GET | `/api/v1/calendar` | 月历（`year`/`month` 缺省当月，补齐每一天含空天） |
+| GET | `/api/v1/calendar/week` | 周视图（固定周一 → 周日 7 天） |
+| GET | `/api/v1/calendar/today` | 今日概览：今日分布 + 穿梭中 + 即将开始 |
+| GET | `/api/v1/statistics/summary` | 汇总（period=day/week/month/year） |
+| GET | `/api/v1/statistics/trend` | 最近 N 天趋势（缺省 30，上限 365，空天补零） |
+| GET | `/api/v1/statistics/tags` | 标签分布（按时长降序 + 占比，支持 period=all） |
+
+关键实现：
+
+- **时长单位统一为「秒」**：`t_schedule.actual_duration`、`t_time_record.duration` 与统计口径（`totalFocusTime` / `tagDistribution.totalDuration` / `dailyTrend.totalDuration`）全部是秒；仅 `plannedDuration` 是分钟（用户填写的计划值）。此口径与前端演示版、`api-spec.json` 保持一致（前端自行 `/60` 展示）。
+- **分段计时状态机**（`TimerServiceImpl`）：每次 `start`/`resume` 开一条 `t_time_record` 片段，`pause`/`end`/`cancel` 结算该片段；总时长按**全部片段秒数重新求和**而非累加，彻底避免多次取整误差。`PENDING → IN_PROGRESS → PAUSED ⇄ IN_PROGRESS → COMPLETED`，非法流转一律 409。
+- **并发语义**：同一用户同时只允许一个 `IN_PROGRESS`（`assertNoOtherRunning`，Redis 标记 + DB 状态双重确认）；`COMPLETED/CANCELLED/TIMEOUT` 为终态，不可再改、不可重复落梭（防重复发奖励）。
+- **双重存储**：`t_time_record` 为权威来源，Redis（`sorts:timer:segment:{id}` / `sorts:timer:active:{userId}`，24h TTL）只做「当前片段起点」的高速缓存；Redis 键丢失时仍能按 DB 片段开始时间正确结算，DB 缺片段时用 Redis 兜底补记，保证已投入时间不丢。
+- **落梭奖励**：`end` 成功后经 OpenFeign 调 `sorts-user` 的 `/users/points/change` 发 5 点光阴砂（`sorts.reward.*` 可配）。**失败只告警不回滚**主流程——M5 引入 RabbitMQ 后此处改为投递事件即可，调用方无需改动。
+- **日历/统计聚合策略**：一次 `listInRange` 取回区间内全部日程，内存按自然日分组，避免「每天一条 SQL」的 N+1；个人日程量级下最简且最稳，单测也无需 mock 复杂 SQL。
+- **边界防御**：`view`/`period` 非法直接 400（不静默返回全量）；`pageSize` 上限 200（MyBatis-Plus 分页插件 + `maxLimit` 双保险）；`month` 越界拒绝；日均口径只算「已过去天数」，避免月初看月统计被未来空白天数稀释；趋势点上限 365；脏状态数据（枚举非法）按 PENDING 兜底不让概览崩溃。
+- **越权隔离**：所有读写先 `requireOwned`，他人日程一律按「不存在」返回（不暴露存在性）。
+- 建表脚本：`scripts/sql/sorts_schedule.sql`（`t_schedule`、`t_time_record`）。
+- 单测：**64 个**（`ScheduleServiceImplTest` 17 + `TimerServiceImplTest` 18 + `CalendarServiceImplTest` 10 + `StatisticsServiceImplTest` 11 + `DateRangeTest` 8）。
+
+> ⚠️ 踩坑记录：MyBatis-Plus 配置了 `logic-delete-field: deleted` 后，**不能**自己 `setDeleted(1)` 再 `updateById`（逻辑删除字段会被排除在 SET 之外），必须用 `deleteById` 触发生成的逻辑删除；另外分页插件必须显式注册 `PaginationInnerInterceptor`，否则 `selectPage` 不拼 LIMIT 会退化成全表查询。
 
 ---
 
@@ -179,7 +213,7 @@ MySQL 账号密码通过 `MYSQL_USER` / `MYSQL_PASSWORD` 传入，服务侧用 `
 | 里程碑 | 内容 | 验收标准 |
 |---|---|---|
 | ~~**M2 网关增强**~~ ✅ | ~~Redis 限流（令牌桶）、鉴权链路单测、路由单测~~ | 已完成：429 统一响应 + 19 个单测 |
-| **M3 日程服务** | 日程 CRUD、计时状态机（start/pause/resume/end/cancel）、日历聚合视图、统计接口、完成后发 MQ 加积分（Feign 调 user） | 状态机非法流转被拒；计时区间累加正确；`time_record` 可回溯每段耗时 |
+| ~~**M3 日程服务**~~ ✅ | ~~日程 CRUD、计时状态机、日历聚合视图、统计接口、落梭发积分（Feign 调 user）~~ | 已完成：非法流转被拒；总时长按片段重算；`time_record` 可回溯每段耗时；64 个单测 |
 | **M4 AI 服务** | Spring AI + DeepSeek 流式输出、**工具集（Tool Calling）**、规划生成、日/月/年总结（异步 + `ai_report` 表） | AI 能通过工具查日程/建日程/查统计；总结报告落库可查询 |
 | **M5 商城 + 通知** | 商品/购买（Redisson 锁防超扣）/装扮仓库；通知列表/已读/定时提醒 | 并发购买不超卖；积分与商品发放最终一致 |
 | **M6 前端** | Vue3+Vite 工程化重写、主题落地（CSS tokens/织锦日历/流光计时/穿梭过场）、AI 流式对话 UI | 主题规范 100% 落地；移动端可用 |
@@ -206,10 +240,11 @@ D:\SORTS(梭子)/
 ├── api-spec.json            # OpenAPI 契约（开发接口前先查它！）
 ├── 需求分析.docx             # 需求源文档（已忽略入库）
 ├── backend/
-│   ├── pom.xml              # 父工程
-│   ├── sorts-common/        # ✅ 公共模块
-│   ├── sorts-gateway/       # ✅ 网关骨架
-│   └── sorts-user/          # ✅ 用户服务
+│   ├── pom.xml              # 父工程（已注册 4 个模块）
+│   ├── sorts-common/        # ✅ 公共模块（Result/异常/JWT/PageData）
+│   ├── sorts-gateway/       # ✅ 网关（路由 + 鉴权 + 限流）
+│   ├── sorts-user/          # ✅ 用户服务
+│   └── sorts-schedule/      # ✅ 日程服务（CRUD/计时/日历/统计）
 ├── frontend/                # 单文件演示版（M6 重写为 Vite 工程）
 ├── docs/
 │   ├── theme-design.md      # 主题设计规范
@@ -217,8 +252,11 @@ D:\SORTS(梭子)/
 │   └── PROGRESS.md          # 本文档
 ├── scripts/
 │   ├── mvn.sh               # 构建封装（必须用）
-│   ├── wsl-middleware.sh    # 中间件一键脚本
-│   └── sql/sorts_user.sql   # 用户库建表
+│   ├── wsl-middleware.sh    # 中间件一键脚本（start/stop/status/sql/logs）
+│   └── sql/
+│       ├── 00-init-databases.sql   # 建 5 个库（先执行）
+│       ├── sorts_user.sql          # 用户库建表
+│       └── sorts_schedule.sql      # 日程库建表
 └── .workbuddy/              # 会话数据与构建日志（勿删）
 ```
 
@@ -237,13 +275,15 @@ D:\SORTS(梭子)/
 工程铁律：
 1. 构建必须用 bash scripts/mvn.sh（本机 mvn 已损坏），构建后确认单测全绿。
 2. 服务名一律 sorts- 前缀，包名 com.sorts.*，跨模块调用用 OpenFeign，禁止跨库直连。
-3. 每个功能点完成 → git 提交一次（Conventional Commits）；每个模块单测通过 → 推送：
-   git push -u sorts main（远端名为 sorts，非 origin；凭据已存 GCM）
+3. 提交粒度：**按功能分段提交，一个功能一次提交**，不要攒一堆再一起提交
+   （Conventional Commits）。GitHub 推送由用户本人执行，AI 只负责本地提交。
 4. 每个模块必须配套单元测试，与业务代码同步交付。
 5. 中间件全部跑在 WSL Docker 中，Windows 侧用 localhost 访问：
    MySQL 3307（root/sorts_dev）、Redis 6380、Nacos 8848、RabbitMQ 5672。
    一键启动：在 WSL 内执行 bash scripts/wsl-middleware.sh start
+   新增建表脚本后补执行：bash scripts/wsl-middleware.sh sql
 6. 接口开发前先查 api-spec.json 对齐契约。
+7. 时长口径：日程/统计对外一律「秒」（plannedDuration 例外，是分钟）。
 
-当前请继续：M3 日程服务（日程 CRUD + 计时状态机 + 日历视图 + 统计）。
+当前请继续：M4 AI 服务（Spring AI + DeepSeek 流式输出 + 自实现工具集 Tool Calling + 规划生成 + 日/月/年总结落库 `ai_report`）。
 ```
