@@ -15,7 +15,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'login',
-    component: stub,
+    component: () => import('@/views/login/LoginView.vue'),
     meta: { public: true, title: '入梭 · 登录' }
   },
   {
@@ -23,11 +23,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/layouts/AppLayout.vue'),
     children: [
       { path: '', redirect: '/today' },
-      { path: 'today', name: 'today', component: stub, meta: { title: '今日经纬' } },
-      { path: 'calendar', name: 'calendar', component: stub, meta: { title: '织历' } },
-      { path: 'schedules', name: 'schedules', component: stub, meta: { title: '日程清单' } },
-      { path: 'timer', name: 'timer', component: stub, meta: { title: '穿梭计时' } },
-      { path: 'statistics', name: 'statistics', component: stub, meta: { title: '纹谱统计' } },
+      { path: 'today', name: 'today', component: () => import('@/views/today/TodayView.vue'), meta: { title: '今日经纬' } },
+      { path: 'calendar', name: 'calendar', component: () => import('@/views/calendar/CalendarView.vue'), meta: { title: '织历' } },
+      { path: 'schedules', name: 'schedules', component: () => import('@/views/schedules/ScheduleListView.vue'), meta: { title: '日程清单' } },
+      { path: 'timer', name: 'timer', component: () => import('@/views/timer/TimerView.vue'), meta: { title: '穿梭计时' } },
+      { path: 'statistics', name: 'statistics', component: () => import('@/views/statistics/StatisticsView.vue'), meta: { title: '纹谱统计' } },
       { path: 'ai', name: 'ai', component: stub, meta: { title: 'AI 织师' } },
       { path: 'mall', name: 'mall', component: stub, meta: { title: '锦市' } },
       { path: 'wardrobe', name: 'wardrobe', component: stub, meta: { title: '衣橱' } },
