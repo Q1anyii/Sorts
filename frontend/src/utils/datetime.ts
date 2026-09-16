@@ -78,10 +78,14 @@ const SHICHEN: Array<{ name: string; start: number }> = [
   { name: '酉', start: 17 }, { name: '戌', start: 19 }, { name: '亥', start: 21 }
 ]
 
-/** 当前时辰，如「巳时 · 09:00–11:00」 */
+/** 当前时辰，如「巳时 · 09:00–11:00」；子时（23–01）跨零点需特判 */
 export function shichenLabel(now: Date = new Date()): string {
   const h = now.getHours()
-  const hit = [...SHICHEN].reverse().find((s) => h >= s.start) ?? SHICHEN[0]
+  const hit =
+    SHICHEN.find((s) => {
+      const end = (s.start + 2) % 24
+      return s.start < end ? h >= s.start && h < end : h >= s.start || h < end
+    }) ?? SHICHEN[0]
   const end = (hit.start + 2) % 24
   return `${hit.name}时 · ${pad2(hit.start)}:00–${pad2(end)}:00`
 }
