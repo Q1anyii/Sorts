@@ -4,10 +4,16 @@ import com.sorts.common.constant.AuthConstants;
 import com.sorts.common.result.Result;
 import com.sorts.mall.dto.MallItemDetailVO;
 import com.sorts.mall.dto.MallItemPageVO;
+import com.sorts.mall.dto.PurchaseRequest;
+import com.sorts.mall.dto.PurchaseResultVO;
 import com.sorts.mall.service.MallService;
+import com.sorts.mall.service.PurchaseService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -25,6 +31,8 @@ public class MallController {
 
     private final MallService mallService;
 
+    private final PurchaseService purchaseService;
+
     /** 商品列表（附当前用户光阴砂余额） */
     @GetMapping("/items")
     public Result<MallItemPageVO> items(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
@@ -39,5 +47,12 @@ public class MallController {
     public Result<MallItemDetailVO> item(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
                                         @PathVariable("id") Long id) {
         return Result.success(mallService.detail(userId, id));
+    }
+
+    /** 购买商品：扣减光阴砂并把装扮放入仓库 */
+    @PostMapping("/purchase")
+    public Result<PurchaseResultVO> purchase(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
+                                             @Valid @RequestBody PurchaseRequest request) {
+        return Result.success(purchaseService.purchase(userId, request.getItemId()));
     }
 }
