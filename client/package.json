@@ -1,6 +1,0 @@
-{
-  "type" : "module",
-  "devDependencies": {
-    "express": "^5.2.1"
-  }
-}

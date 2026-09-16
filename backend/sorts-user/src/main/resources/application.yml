@@ -13,9 +13,9 @@ spring:
   data:
     redis:
       host: ${REDIS_HOST:localhost}
-      # 约定：Redis 使用默认端口 +1
-      port: ${REDIS_PORT:6380}
-      password: ${REDIS_PASSWORD:}
+      # Redis 由 docker/compose.yml 提供（redis-stack，默认 6379），密码见 docker/.env
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:sorts_dev}
       database: 0
   cloud:
     nacos:
