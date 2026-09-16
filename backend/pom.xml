@@ -24,6 +24,7 @@
         <module>sorts-gateway</module>
         <module>sorts-user</module>
         <module>sorts-schedule</module>
+        <module>sorts-ai</module>
     </modules>
 
     <properties>
