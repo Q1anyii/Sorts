@@ -1,0 +1,181 @@
+name: CI
+
+# ============================================================
+# 梭子 SORTS · 持续集成
+#   1. backend-test  ：全量构建 + 全部单测（8 个模块）
+#   2. frontend-test ：类型检查产物 + vitest
+#   3. images        ：矩阵构建 6 个服务镜像（每个模块一个镜像）
+#   4. push-images / deploy：默认关闭，需手动触发并勾选开关
+#
+# 为什么默认不推镜像/不部署：仓库当前没有稳定的镜像仓库凭据与目标环境，
+# 打开开关即用 GitHub Secrets（ACR_* / ECS_*）走完整链路。
+# ============================================================
+
+on:
+  push:
+    branches: [main, 'feat/**', 'fix/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      push_images:
+        description: 构建后推送镜像到镜像仓库
+        type: boolean
+        default: false
+      deploy:
+        description: 部署到目标服务器（需配置 ECS_* Secrets）
+        type: boolean
+        default: false
+
+env:
+  JAVA_VERSION: '17'
+  NODE_VERSION: '22'
+
+jobs:
+  backend-test:
+    name: 后端构建与单测
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: 构建 + 全量单测
+        working-directory: backend
+        run: |
+          chmod +x mvnw
+          ./mvnw -B -ntp clean verify
+
+      - name: 归档测试报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: backend/**/target/surefire-reports/*.txt
+          if-no-files-found: ignore
+          retention-days: 7
+
+  frontend-test:
+    name: 前端构建与单测
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 安装依赖
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund
+
+      - name: 单元测试
+        working-directory: frontend
+        run: npm test
+
+      - name: 生产构建
+        working-directory: frontend
+        run: npm run build
+
+      - name: 归档前端产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 7
+
+  images:
+    name: 镜像构建 · ${{ matrix.module }}
+    needs: [backend-test, frontend-test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - sorts-gateway
+          - sorts-user
+          - sorts-schedule
+          - sorts-ai
+          - sorts-notification
+          - sorts-mall
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 登录镜像仓库
+        if: github.event_name == 'workflow_dispatch' && inputs.push_images
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ACR_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: 计算镜像名（去 sorts- 前缀）
+        id: meta
+        run: |
+          IMAGE="${ACR_REGISTRY:-sorts.local}/${ACR_NAMESPACE:-sorts}/$(echo '${{ matrix.module }}' | sed 's/^sorts-//')"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+        env:
+          ACR_REGISTRY: ${{ secrets.ACR_REGISTRY }}
+          ACR_NAMESPACE: ${{ secrets.ACR_NAMESPACE }}
+
+      - name: 构建镜像
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.backend
+          build-args: |
+            MODULE=${{ matrix.module }}
+          push: ${{ github.event_name == 'workflow_dispatch' && inputs.push_images }}
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.sha }}
+            ${{ steps.meta.outputs.image }}:latest
+          cache-from: type=gha,scope=${{ matrix.module }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.module }}
+
+  deploy:
+    name: 部署到目标服务器
+    needs: images
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: SSH 拉取镜像并重建
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.ECS_HOST }}
+          username: ${{ secrets.ECS_USER }}
+          key: ${{ secrets.ECS_SSH_KEY }}
+          command_timeout: 10m
+          script: |
+            set -e
+            cd /opt/sorts
+            docker login ${{ secrets.ACR_REGISTRY }} -u ${{ secrets.ACR_USERNAME }} -p ${{ secrets.ACR_PASSWORD }}
+            docker compose -f docker/compose.yml pull
+            docker compose -f docker/compose.yml up -d
+            docker compose -f docker/compose.yml --profile app pull
+            docker compose -f docker/compose.yml --profile app up -d --no-build
+            sleep 20
+            for i in $(seq 1 24); do
+              BODY=$(curl -s http://localhost:8080/actuator/health || echo '')
+              echo "  第 ${i} 次健康检查: $BODY"
+              echo "$BODY" | grep -q '"status":"UP"' && exit 0
+              sleep 5
+            done
+            echo "健康检查失败，输出网关日志："
+            docker logs sorts-gateway --tail 100
+            exit 1
