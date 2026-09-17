@@ -236,16 +236,16 @@
           </div>
           <div class="timer-actions">
             <!-- 五态流转：开梭 → 暂停 → 续梭 → 落梭 → 取消（按钮可见性由状态机 TIMER_ACTIONS 决定） -->
-            <button v-if="canAct(activeSchedule.status, 'pause')" class="btn btn-sm" @click="pauseSchedule(activeSchedule)">
+            <button v-if="canAct(activeSchedule.status, 'pause')" class="btn btn-sm btn-ghost-warn" @click="pauseSchedule(activeSchedule)">
               ⏸ 暂停
             </button>
-            <button v-if="canAct(activeSchedule.status, 'resume')" class="btn btn-sm" @click="resumeSchedule(activeSchedule)">
+            <button v-if="canAct(activeSchedule.status, 'resume')" class="btn btn-sm btn-ghost-success" @click="resumeSchedule(activeSchedule)">
               ▶ 续梭
             </button>
-            <button v-if="canAct(activeSchedule.status, 'end')" class="btn btn-sm btn-end" @click="endSchedule(activeSchedule)">
+            <button v-if="canAct(activeSchedule.status, 'end')" class="btn btn-sm btn-ghost-brand" @click="endSchedule(activeSchedule)">
               ⏹ 落梭
             </button>
-            <button v-if="canAct(activeSchedule.status, 'cancel')" class="btn btn-sm btn-cancel" @click="cancelSchedule(activeSchedule)">
+            <button v-if="canAct(activeSchedule.status, 'cancel')" class="btn btn-sm btn-ghost-danger" @click="cancelSchedule(activeSchedule)">
               ✕ 取消
             </button>
           </div>
@@ -307,12 +307,12 @@
                 <span class="tag" v-for="t in s.tags" :key="t">{{ t }}</span>
               </div>
               <span class="status-badge" :class="'status-'+s.status">{{ statusLabel(s.status) }}</span>
-              <div class="schedule-actions" @click.stop>
-                <button v-if="canAct(s.status,'start')" class="btn btn-success btn-sm" @click="startSchedule(s)">▶ 开梭</button>
-                <button v-if="canAct(s.status,'pause')" class="btn btn-warning btn-sm" @click="pauseSchedule(s)">⏸ 暂停</button>
-                <button v-if="canAct(s.status,'resume')" class="btn btn-success btn-sm" @click="resumeSchedule(s)">▶ 续梭</button>
-                <button v-if="canAct(s.status,'end')" class="btn btn-primary btn-sm" @click="endSchedule(s)">⏹ 落梭</button>
-                <button v-if="s.status==='PENDING'" class="btn btn-outline btn-sm" @click="editSchedule(s)">✎</button>
+              <div class="schedule-actions" @click.stop style="display:flex; align-items:center; gap:6px;">
+                <button v-if="canAct(s.status,'start')" class="btn btn-sm btn-ghost-success" @click="startSchedule(s)">▶ 开梭</button>
+                <button v-if="canAct(s.status,'pause')" class="btn btn-sm btn-ghost-warn" @click="pauseSchedule(s)">⏸ 暂停</button>
+                <button v-if="canAct(s.status,'resume')" class="btn btn-sm btn-ghost-success" @click="resumeSchedule(s)">▶ 续梭</button>
+                <button v-if="canAct(s.status,'end')" class="btn btn-sm btn-ghost-brand" @click="endSchedule(s)">⏹ 落梭</button>
+                <button v-if="s.status==='PENDING'" class="btn btn-icon-sm" @click="editSchedule(s)" title="编辑">✎</button>
               </div>
             </div>
           </div>
