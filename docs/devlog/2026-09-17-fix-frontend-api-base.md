@@ -45,7 +45,11 @@ const BASE_URL = (import.meta.env.VITE_API_BASE as string | undefined) ?? '/api/
 ## 验证
 
 - 全仓 `VITE_API_BASE` 引用仅 `env.d.ts`（类型声明）与 `http.ts`（本处）两处，无其他隐含假设。
-- 重建前端镜像（`docker.sh web`）后，用 curl 走 nginx 验证 `POST /api/v1/auth/login` 不再 405（见执行记录）。
+- 重建前端镜像（`docker.sh web`）后，走 nginx 8088 实测：
+  - `GET /` → 200（SPA 正常加载）
+  - `POST /api/v1/auth/login`（错误密码）→ `{"code":401,"message":"用户名或密码错误"}`，已穿透 nginx → 网关 → sorts-user，不再 405
+  - `POST /api/v1/auth/register`（新用户）→ `code:0` + 完整令牌，注册链路可用
+- 期间遇到的 `code:500 系统繁忙` 是 PowerShell 5.1 调用 curl 时剥掉请求体双引号导致的 Jackson 解析失败（测试端问题），改用 payload 文件后消失，与本次修复无关。
 - 涉及 SSRF 无；改动只影响 baseURL 拼装，`absoluteApiUrl`（SSE 用）同享该值，一并修复。
 
 ## 备注
