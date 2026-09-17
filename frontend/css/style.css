@@ -1174,6 +1174,12 @@ html[data-skin="blossom"] {
 }
 .ai-panel-toggles .chip-btn:hover { border-color: var(--primary, #4a6cf7); color: var(--primary, #4a6cf7); }
 .ai-panel-toggles .chip-btn.active { background: var(--primary, #4a6cf7); border-color: var(--primary, #4a6cf7); color: #fff; box-shadow: 0 4px 12px rgba(74,108,247,.3); }
+/* 古风变体：织锦主题的墨线按钮（用于「锦卷重展」等收尾动作） */
+.chip-btn.chip-btn-ink {
+  background: transparent; border: 1px dashed rgba(74,108,247,.55); color: var(--primary, #4a6cf7);
+  border-radius: 6px; letter-spacing: .5px;
+}
+.chip-btn.chip-btn-ink:hover { background: rgba(74,108,247,.08); border-color: var(--primary, #4a6cf7); }
 
 /* 面板内嵌折叠/展开按钮（豆包风格线条图标） */
 .icon-btn {

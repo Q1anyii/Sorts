@@ -430,7 +430,7 @@
             <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><path d="M12 3l1.9 5.8 5.8 1.9-5.8 1.9L12 18.4l-1.9-5.8-5.8-1.9 5.8-1.9z"/><path d="M19 3v4M17 5h4"/></svg> 梭灵</h2>
             <p>用自然语言描述你的需求，AI 帮你规划日程 · 会话自动保存，刷新不丢</p>
           </div>
-          <button v-if="!aiPanels.sidebar || !aiPanels.chat || !aiPanels.plans" type="button" class="chip-btn" @click="showAllAiPanels">⟳ 恢复全部面板</button>
+          <button v-if="!aiPanels.sidebar || !aiPanels.chat || !aiPanels.plans" type="button" class="chip-btn chip-btn-ink" @click="showAllAiPanels">❖ 锦卷重展</button>
         </div>
         <div class="ai-layout">
           <!-- 会话列表（后端持久化）：v-if 隐藏；宽度可拖拽 -->

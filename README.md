@@ -16,7 +16,7 @@
 ## 功能特性
 
 - **日程编排**：支持单条与批量创建，含标题、描述、计划时长、优先级、标签、起止时间与提醒提前量；提供待办 / 进行中 / 已完成 / 已取消全生命周期
-- **穿梭计时（状态机）**：`开梭 → 暂停 → 续梭 → 落梭 → 取消` 五态流转，中途暂停不丢时长；落梭时结算实际专注秒数并自动发放「光阴砂」积分；**未到计划开始时间禁止开梭**（前端按钮禁用 + 后端服务端时间双重校验，错误码 41010），状态变更记录操作人
+- **穿梭计时（状态机）**：`开梭 → 暂停 → 续梭 → 落梭 → 取消` 五态流转，中途暂停不丢时长；落梭时结算实际专注秒数并自动发放「光阴砂」；**未到计划开始时间禁止开梭**（前端按钮禁用 + 后端服务端时间双重校验，错误码 41010），状态变更记录操作人
 - **织历视图**：按日 / 周聚合日程与专注记录，**自定义弹层月份选择器**（年份 ◀/▶ 预览、选定月份才跳转，避免随箭头跳动）与今日概览，直接反映「哪一天织得密」；**任务点调色板**——柔和自然色系（紧急度：珊瑚 / 蜜杏 / 淡蓝 / 鼠尾草绿；用户自定义色优先），每个日期格子以**圆形渐变画布**铺满：每种颜色一个随机落点的颜料点（互斥分区不重叠），圆形扩散半径随任务数量占比增大，多层半透明叠加实现颜色渐变过渡；**点击任意日期跳转织程并携带 date 参数**，自动按该日期闭区间筛选；日历读独立**全量日程列表**，不受织程日期筛选影响
 - **纹谱统计**：汇总专注总时长、完成率、标签分布与趋势曲线，日 / 周 / 月多粒度切换，全部以秒为对外口径
 - **梭灵（AI 助手）**：
@@ -27,7 +27,7 @@
   - **今日总结一键入织史**：对话输入「生成今日总结」等意图即命中总结分支，自动生成当日总结（基于真实日程明细与统计）并在输出完成后**自动写入织史**，侧栏织史列表实时刷新，无需手工复制
   - 工具调用（Tool Calling）：`QuerySchedules` / `QueryStatistics` / `QueryPoints` / `GetProfile` / `CreateSchedule` / `CreateSchedules` 六种工具
   - **写操作双钥匙**：服务端开关 `sorts.ai.tool.allow-write` **且** 单次请求 `allowWrite=true`（前端需用户确认后置位），两把都到位才会下发并执行写工具
-- **光阴砂与锦市**：落梭、完成任务获取光阴砂；锦市购买装扮采用「加锁 → 扣光阴砂 → 本地事务落库」顺序，库存扣减走 `UPDATE ... WHERE stock > 0` 条件更新防超卖
+- **光阴砂与锦市**：落梭、完成任务获取光阴砂；锦市购买装扮采用「加锁 → 扣光阴砂 → 本地事务落库」顺序，库存扣减走 `UPDATE ... WHERE stock > 0` 条件更新兜底，保证奖励发放一致性
 - **云裳阁**：已购装扮入仓库，可随时切换当前启用项，装扮数据与用户资料联动
 - **飞鸽传书（通知）**：站内通知列表、已读 / 全部已读；提醒设置支持提前量、渠道与免打扰时段；定时扫描按 `t_reminder_log` 唯一键幂等去重，绝不重复轰炸
 - **双令牌鉴权**：网关统一校验 JWT 并注入 `X-User-Id`，access 30 分钟 + refresh 7 天；前端 401 时单飞续期后自动重放原请求，用户无感
@@ -133,11 +133,11 @@ graph TD
 | 服务                     | 端口          | 独立库                  | 职责                                               |
 | ---------------------- | ----------- | -------------------- | ------------------------------------------------ |
 | **sorts-gateway**      | 8080        | —                    | 统一入口：路由转发、JWT 鉴权、令牌桶限流、剥离伪造内部凭证                  |
-| **sorts-user**         | 8081        | `sorts_user`         | 注册登录、双令牌签发与续期、资料维护、头像、光阴砂积分与流水                   |
+| **sorts-user**         | 8081        | `sorts_user`         | 注册登录、双令牌签发与续期、资料维护、头像、光阴砂与流水                   |
 | **sorts-schedule**     | 8082        | `sorts_schedule`     | 日程 CRUD、计时状态机、日历聚合、纹谱统计、落梭发放积分                   |
 | **sorts-ai**           | 8083        | `sorts_ai`           | 对话（SSE 流式）、日程规划与采纳、日/月/年报告、工具调用编排                |
 | **sorts-notification** | 8084        | `sorts_notification` | 通知列表与已读、提醒设置、定时提醒扫描与幂等去重                         |
-| **sorts-mall**         | 8085        | `sorts_mall`         | 锦市商品、购买（加锁 + 条件更新防超卖）、装扮仓库与启用切换                  |
+| **sorts-mall**         | 8085        | `sorts_mall`         | 锦市商品、购买（加锁 + 条件更新一致性兜底）、云裳阁仓库与启用切换                  |
 | **frontend**           | 8088        | —                    | 主版前端静态页（Vue 3 CDN；Nginx 托管并反代 `/api`）；Vite 工程存档于 frontend/vite-app |
 
 ### 网关路由
@@ -184,7 +184,7 @@ graph TD
 │   ├── sorts-schedule/       # 日程服务（含计时、日历、统计）
 │   ├── sorts-ai/             # AI 服务（llm / tool / service / controller）
 │   ├── sorts-notification/   # 通知服务
-│   └── sorts-mall/           # 商城服务
+│   └── sorts-mall/           # 锦市服务
 ├── frontend/                 # 主版前端：Vue 3（CDN）单页，静态托管免构建
 │   ├── index.html            # 页面结构（登录、今日经纬、织历、织程、梭灵、织史、纹谱、锦市、云裳阁、飞鸽传书、设置）
 │   ├── css/style.css         # 主题样式
@@ -318,7 +318,7 @@ bash scripts/docker.sh app-down  # 停服务
 | GET     | `/api/v1/users/avatar/files/{filename}` | 头像静态读取（网关白名单免鉴权；扩展名映射 Content-Type，Cache-Control 7 天） |
 | PUT     | `/api/v1/users/me/password`   | 修改密码                                               |
 | GET     | `/api/v1/users/points`        | 查询光阴砂余额及流水                                         |
-| POST    | `/api/v1/users/points/change` | 变更积分（**内部调用**；api-spec 写作 `deduct`，实现路径为 `change`） |
+| POST    | `/api/v1/users/points/change` | 变更光阴砂（**内部调用**；api-spec 写作 `deduct`，实现路径为 `change`） |
 
 ### 日程与计时
 
@@ -382,7 +382,7 @@ bash scripts/docker.sh app-down  # 停服务
 | GET  | `/api/v1/mall/items`            | 商品列表           |
 | GET  | `/api/v1/mall/items/{id}`       | 商品详情           |
 | POST | `/api/v1/mall/purchase`         | 购买商品           |
-| GET  | `/api/v1/users/wardrobe`        | 装扮仓库（路由指向商城服务） |
+| GET  | `/api/v1/users/wardrobe`        | 云裳阁装扮仓库（路由指向锦市服务） |
 | PUT  | `/api/v1/users/wardrobe/active` | 切换当前启用装扮       |
 
 ### 接口与数据约定（前后端都要守）
@@ -449,7 +449,7 @@ bash scripts/docker.sh app-down  # 停服务
 2. 调用用户服务扣减光阴砂（最常见失败，放在占库存之前以便快速失败）
 3. 本地事务落库 + 条件更新扣库存 `UPDATE t_mall_item SET stock = stock - 1 WHERE id = ? AND stock > 0`
 
-锁因租期失效时，数据库的条件更新仍能兜住超卖。扣积分成功与本地事务提交之间若进程被杀，会以 ERROR 级别结构化日志（含 `userId` / `itemId` / 金额）留痕，可用 `t_purchase_record` + `t_wardrobe_item` 对账；彻底消除需引入事务性消息（RabbitMQ outbox + 对账任务，已列为技术债）。
+锁因租期失效时，数据库的条件更新仍能兜住并发扣减，保证奖励发放一致性。扣积分成功与本地事务提交之间若进程被杀，会以 ERROR 级别结构化日志（含 `userId` / `itemId` / 金额）留痕，可用 `t_purchase_record` + `t_wardrobe_item` 对账；彻底消除需引入事务性消息（RabbitMQ outbox + 对账任务，已列为技术债）。
 
 ### 提醒幂等
 
@@ -475,7 +475,7 @@ bash scripts/docker.sh app-down  # 停服务
 | sorts-schedule     | 日程 CRUD、计时状态机流转、日历聚合、统计口径、日期区间工具          |
 | sorts-ai           | 对话编排、规划生成与采纳、报告装配、工具注册与六种工具、SSE 帧、JSON 载荷 |
 | sorts-notification | 通知已读、提醒设置、提醒扫描幂等、免打扰时段                    |
-| sorts-mall         | 商品查询、购买加锁与防超卖、事务落库、装扮切换                   |
+| sorts-mall         | 商品查询、购买加锁与一致性兜底、事务落库、装扮切换                   |
 | frontend（存档 Vite 工程） | 时长与时辰节气工具、状态机映射、SSE 帧切分、错误语义 |
 
 **运行方式**
@@ -489,7 +489,7 @@ cd frontend/vite-app && npm run build         # 生产构建冒烟（存档 Vite
 **集成测试（真实 MySQL 8 + Redis 7，Testcontainers）**
 
 `backend/sorts-user/src/test/.../integration/UserServiceIT.java` 覆盖注册落库与 BCrypt 存储、
-登录口令校验、积分增减与「余额不足不可为负」、资料更新只覆盖传入字段。DDL 直接复用
+登录口令校验、光阴砂增减与「砂资不足不可为负」、资料更新只覆盖传入字段。DDL 直接复用
 `scripts/sql/sorts_user.sql`，不另抄一份。
 
 ```bash
