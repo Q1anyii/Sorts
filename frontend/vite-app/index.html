@@ -116,7 +116,7 @@
       </div>
     </aside>
 
-    <!-- 全局穿梭气泡：主计划（上/大）+ 子计划（下/小）跨页面悬浮置顶提醒 -->
+    <!-- 全局穿梭气泡：主计划容器 + 内嵌执行中的子计划（子计划只能执行一个，直接放入主计划气泡内，像主界面盒子一样） -->
     <div class="global-bubbles" v-if="currentPage!=='dashboard' && (activeParentPlan || (activeSchedule && (activeSchedule.status==='IN_PROGRESS' || activeSchedule.status==='PAUSED')))">
       <div class="global-timer-bubble global-parent-bubble" v-if="activeParentPlan"
            :class="{'is-running': activeParentPlan.status==='IN_PROGRESS'}" :style="bubbleStyle(activeParentPlan)"
@@ -132,8 +132,21 @@
             <button v-if="activeParentPlan.status==='IN_PROGRESS'||activeParentPlan.status==='PAUSED'" class="gtb-btn gtb-end" @click.stop="parentPlanAction(activeParentPlan,'complete')" title="完成">✓</button>
           </div>
         </div>
+        <!-- 内嵌执行中的子计划：直接放进主计划气泡（含计时 + 穿梭按钮），点击跳转今日经纬 -->
+        <div v-if="activeSchedule && (activeSchedule.status==='IN_PROGRESS' || activeSchedule.status==='PAUSED')" class="gtb-child-inline"
+             @click.stop="currentPage='dashboard'" title="回到今日经纬">
+          <span class="gtb-child-time">{{ formatTimer(elapsedSeconds) }}</span>
+          <span class="gtb-child-title">{{ activeSchedule.title }}</span>
+          <span class="gtb-actions">
+            <button v-if="canAct(activeSchedule.status,'pause')" class="gtb-btn" @click.stop="pauseSchedule(activeSchedule)" title="暂停">⏸</button>
+            <button v-if="canAct(activeSchedule.status,'resume')" class="gtb-btn gtb-resume" @click.stop="resumeSchedule(activeSchedule)" title="续梭">▶</button>
+            <button v-if="canAct(activeSchedule.status,'end')" class="gtb-btn gtb-end" @click.stop="endSchedule(activeSchedule)" title="落梭">⏹</button>
+            <button v-if="canAct(activeSchedule.status,'cancel')" class="gtb-btn gtb-cancel" @click.stop="cancelSchedule(activeSchedule)" title="取消">✕</button>
+          </span>
+        </div>
       </div>
-      <div class="global-timer-bubble global-child-bubble" v-if="activeSchedule && (activeSchedule.status==='IN_PROGRESS' || activeSchedule.status==='PAUSED')"
+      <!-- 仅执行中的子计划（无活跃主计划）：保持独立气泡 -->
+      <div v-else-if="activeSchedule && (activeSchedule.status==='IN_PROGRESS' || activeSchedule.status==='PAUSED')" class="global-timer-bubble global-child-bubble"
            :class="{'is-running': activeSchedule.status==='IN_PROGRESS'}" :style="bubbleStyle(activeSchedule)"
            @click="currentPage='dashboard'" title="回到今日经纬">
         <div class="gtb-time">{{ formatTimer(elapsedSeconds) }}</div>
@@ -170,24 +183,37 @@
               子计划 {{ activeParentPlan.completedCount }}/{{ activeParentPlan.childCount }} · 进度 {{ activeParentPlan.progress || 0 }}%
             </div>
             <div class="timer-progress"><i :style="{width: (activeParentPlan.progress||0) + '%'}"></i></div>
-            <!-- 盒子：子任务区（≤3 完整行 / ≤8 压缩行 / >8 任务点按颜色区分） -->
+            <!-- 盒子：子任务区（活动子计划置顶可操作；其余 ≤3 完整行 / ≤8 压缩行 / >8 任务点按颜色区分） -->
             <div v-if="activeParentPlan.children && activeParentPlan.children.length" class="parent-children-box">
-              <template v-if="activeParentPlan.children.length <= 3">
-                <div v-for="c in sortedParentChildren" :key="c.id" class="parent-child-row">
+              <!-- 正在执行的子计划：置顶显示计时 + 穿梭按钮（暂停 / 续梭 / 落梭 / 取消） -->
+              <div v-if="activeBoxChild" class="parent-child-row parent-child-active"
+                   @click.stop="currentPage='dashboard'">
+                <span class="parent-child-dot" :style="{background: activeBoxChild.color || '#5B7FFF'}"></span>
+                <span class="parent-child-title">{{ activeBoxChild.title }}</span>
+                <span class="parent-child-time">{{ formatTimer(elapsedSeconds) }} · {{ statusLabel(activeBoxChild.status) }}</span>
+                <span class="parent-child-actions" @click.stop>
+                  <button v-if="canAct(activeBoxChild.status,'pause')" class="btn btn-xs" @click.stop="pauseSchedule(activeBoxChild)" title="暂停">⏸</button>
+                  <button v-if="canAct(activeBoxChild.status,'resume')" class="btn btn-xs" @click.stop="resumeSchedule(activeBoxChild)" title="续梭">▶</button>
+                  <button v-if="canAct(activeBoxChild.status,'end')" class="btn btn-xs btn-end" @click.stop="endSchedule(activeBoxChild)" title="落梭">⏹</button>
+                  <button v-if="canAct(activeBoxChild.status,'cancel')" class="btn btn-xs btn-cancel" @click.stop="cancelSchedule(activeBoxChild)" title="取消">✕</button>
+                </span>
+              </div>
+              <template v-if="nonRunningBoxChildren.length <= 3">
+                <div v-for="c in nonRunningBoxChildren" :key="c.id" class="parent-child-row">
                   <span class="parent-child-dot" :style="{background: c.color || '#5B7FFF'}"></span>
                   <span class="parent-child-title">{{ c.title }}</span>
                   <span class="parent-child-time">{{ c.plannedStartTime ? formatDate(c.plannedStartTime) + ' ' + formatTime(c.plannedStartTime) : '未排期' }} · {{ statusLabel(c.status) }}</span>
                 </div>
               </template>
-              <template v-else-if="activeParentPlan.children.length <= 8">
-                <div v-for="c in sortedParentChildren" :key="c.id" class="parent-child-row parent-child-row-compact">
+              <template v-else-if="nonRunningBoxChildren.length <= 8">
+                <div v-for="c in nonRunningBoxChildren" :key="c.id" class="parent-child-row parent-child-row-compact">
                   <span class="parent-child-dot" :style="{background: c.color || '#5B7FFF'}"></span>
                   <span class="parent-child-title">{{ c.title }}</span>
                   <span class="parent-child-time">{{ c.plannedStartTime ? formatTime(c.plannedStartTime) : '未排期' }} · {{ statusLabel(c.status) }}</span>
                 </div>
               </template>
               <div v-else class="parent-child-dots">
-                <span v-for="c in sortedParentChildren" :key="c.id" class="parent-child-dot-lg" :title="c.title" :style="{background: c.color || '#5B7FFF'}"></span>
+                <span v-for="c in nonRunningBoxChildren" :key="c.id" class="parent-child-dot-lg" :title="c.title" :style="{background: c.color || '#5B7FFF'}"></span>
               </div>
             </div>
             <div v-else class="parent-children-empty">暂无子计划 · 到「主线 · 主计划」挂载日程后可在此聚合</div>

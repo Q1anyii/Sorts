@@ -444,6 +444,31 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .parent-child-dot-lg { width: 10px; height: 10px; border-radius: 50%; cursor: pointer; transition: transform .2s var(--ease); box-shadow: 0 0 4px rgba(255,255,255,.3); }
 .parent-child-dot-lg:hover { transform: scale(1.5); }
 .parent-children-empty { margin-top: 6px; font-size: 11.5px; color: rgba(255,255,255,.55); }
+/* 全局气泡按钮更精致：白边 + 阴影，避免「白色椭圆」观感 */
+.global-timer-bubble .gtb-btn {
+  border: 1px solid rgba(255,255,255,.55);
+  box-shadow: 0 1px 4px rgba(20,40,120,.25);
+}
+/* 全局气泡内嵌执行中的子计划（主计划气泡下方一行：计时 + 标题 + 穿梭按钮） */
+.gtb-child-inline {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 7px; padding: 5px 8px 5px 10px;
+  border-radius: 999px; background: rgba(255,255,255,.14);
+  border: 1px dashed rgba(255,255,255,.35);
+  white-space: nowrap; cursor: pointer;
+}
+.gtb-child-inline:hover { background: rgba(255,255,255,.2); }
+.gtb-child-time { font-family: var(--font-mono, monospace); font-size: 13px; font-weight: 700; letter-spacing: .5px; }
+.gtb-child-title { font-size: 12.5px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+/* 盒子内活动子计划行（置顶，可操作） */
+.parent-child-active { background: rgba(255,255,255,.18); border-radius: 8px; padding: 5px 8px; border: 1px solid rgba(255,255,255,.35); }
+.parent-child-actions { display: flex; align-items: center; gap: 4px; flex: none; }
+.parent-child-actions .btn-xs { width: 22px; height: 22px; padding: 0; border-radius: 50%; font-size: 11px; line-height: 1; }
+/* 更小按钮 */
+.btn-xs { padding: 4px 9px; font-size: 11.5px; border-radius: 7px; }
+/* 主计划气泡内按钮统一（完成按钮去掉纯白大块，改半透明协调风格） */
+.active-timer .btn-end { background: rgba(255,255,255,.88); color: var(--primary); border: none; font-weight: 700; }
+.active-timer .btn-end:hover:not(:disabled) { background: #fff; filter: brightness(.96); }
 /* 主计划表单日期输入统一高度（原生 date 控件与文本输入对齐） */
 .modal input[type="date"] { height: 38px; }
 /* AI 新建日程定位高亮：织程列表短暂闪烁提示 */

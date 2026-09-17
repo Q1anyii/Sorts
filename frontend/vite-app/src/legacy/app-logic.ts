@@ -1966,6 +1966,23 @@ const app = createApp({
       return [...cs].sort((a, b) => String(a.plannedStartTime || '').localeCompare(String(b.plannedStartTime || '')));
     });
 
+    /** 盒子内活动子计划（正在执行/暂停中，属于该主计划）——单独置顶显示计时与穿梭按钮 */
+    const activeBoxChild = computed(() => {
+      const p = activeParentPlan.value;
+      const a = activeSchedule.value;
+      if (!p || !a || !(a.status === 'IN_PROGRESS' || a.status === 'PAUSED')) return null;
+      const cs = p.children || [];
+      return cs.some(c => c.id === a.id) ? a : null;
+    });
+
+    /** 盒子内其余子计划（排除活动项，避免重复展示） */
+    const nonRunningBoxChildren = computed(() => {
+      const p = activeParentPlan.value;
+      const a = activeBoxChild.value;
+      const cs = (p && p.children) || [];
+      return a ? cs.filter(c => c.id !== a.id) : [...cs].sort((x, y) => String(x.plannedStartTime || '').localeCompare(String(y.plannedStartTime || '')));
+    });
+
     async function loadParentPlans(page) {
       try {
         const p = page || parentPlanPage.value;
@@ -2373,7 +2390,7 @@ const app = createApp({
       // Mall
       purchaseItem, confirmPurchase, useItem, deactivateWardrobe, activeAvatar, activeBadge,
       // 主计划（长时间计划容器）
-      parentPlans, parentPlanTotal, parentPlanPage, parentPlanDetail, activeParentPlan, sortedParentChildren,
+      parentPlans, parentPlanTotal, parentPlanPage, parentPlanDetail, activeParentPlan, sortedParentChildren, activeBoxChild, nonRunningBoxChildren,
       parentPlanForm, parentAttachModal, parentAttachCandidates, parentAttachIds,
       loadParentPlans, saveParentPlan, deleteParentPlan, parentPlanAction,
       openParentPlanForm, openParentPlan, closeParentPlan,
