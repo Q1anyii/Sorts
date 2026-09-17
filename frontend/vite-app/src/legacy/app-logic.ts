@@ -104,6 +104,11 @@ function copyNotifyDetail() {
 }
 
 let refreshPromise = null;
+/** 会话彻底失效回调（由 setup 注册 sessionExpired；模块级 apiFetch 不直接引用 setup 内符号） */
+let sessionExpiredHandler = null;
+function onSessionExpired(fn) {
+  sessionExpiredHandler = fn;
+}
 /** 无感续期：并发 401 只刷一次，其余请求挂同一 Promise */
 function refreshTokens() {
   if (refreshPromise) return refreshPromise;
@@ -173,7 +178,7 @@ async function apiFetch(path, opts = {}) {
         await refreshTokens();
         return apiFetch(path, { ...opts, retried: true });
       } catch (e2) {
-        sessionExpired();
+        if (sessionExpiredHandler) sessionExpiredHandler();
         throw e2;
       }
     }
@@ -852,6 +857,7 @@ const app = createApp({
       isLoggedIn.value = false;
       notifyError({ message: '登录状态已失效，请重新登录' });
     }
+    onSessionExpired(sessionExpired);
 
     /* ============================================================
      * 认证（真实接口）
