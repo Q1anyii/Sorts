@@ -1240,17 +1240,27 @@ html[data-skin="blossom"] {
 }
 .global-timer-bubble .gtb-actions { display: flex; align-items: center; gap: 6px; }
 .global-timer-bubble .gtb-btn {
-  width: 26px; height: 26px; border-radius: 50%; border: none; cursor: pointer;
-  background: rgba(255,255,255,.2); color: #fff; font-size: 12px; line-height: 1;
+  width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+  border: 1px solid rgba(255,255,255,.6);
+  color: #fff; font-size: 13px; font-weight: 700; line-height: 1;
   display: inline-flex; align-items: center; justify-content: center;
-  transition: background .15s var(--ease), transform .1s var(--ease);
+  /* 默认 = 暂停（琥珀渐变） */
+  background: linear-gradient(180deg, rgba(251,191,36,.95), rgba(217,119,6,.92));
+  box-shadow: 0 2px 6px rgba(20,40,120,.28), inset 0 1px 0 rgba(255,255,255,.45);
+  text-shadow: 0 1px 2px rgba(20,40,120,.35);
+  transition: transform .12s var(--ease), box-shadow .18s var(--ease), filter .18s var(--ease);
 }
-.global-timer-bubble .gtb-btn:hover { background: rgba(255,255,255,.34); transform: scale(1.08); }
-.global-timer-bubble .gtb-btn.gtb-end { background: rgba(34,197,94,.85); }
-.global-timer-bubble .gtb-btn.gtb-end:hover { background: rgba(34,197,94,1); }
-.global-timer-bubble .gtb-btn.gtb-cancel { background: rgba(239,68,68,.8); }
-.global-timer-bubble .gtb-btn.gtb-cancel:hover { background: rgba(239,68,68,1); }
-.global-timer-bubble .gtb-btn.gtb-resume { background: rgba(74,222,128,.3); }
+.global-timer-bubble .gtb-btn:hover {
+  filter: brightness(1.12);
+  transform: translateY(-1px) scale(1.06);
+  box-shadow: 0 4px 10px rgba(20,40,120,.32), inset 0 1px 0 rgba(255,255,255,.55);
+}
+.global-timer-bubble .gtb-btn:active { transform: scale(.94); }
+/* 续梭 / 落梭（绿系） */
+.global-timer-bubble .gtb-btn.gtb-resume { background: linear-gradient(180deg, rgba(74,222,128,.95), rgba(22,163,74,.92)); }
+.global-timer-bubble .gtb-btn.gtb-end { background: linear-gradient(180deg, rgba(52,211,153,.95), rgba(5,150,105,.94)); }
+/* 取消（红系） */
+.global-timer-bubble .gtb-btn.gtb-cancel { background: linear-gradient(180deg, rgba(248,113,113,.95), rgba(220,38,38,.94)); }
 
 /* 呼吸效果：仅进行中（IN_PROGRESS）时脉动，暂停态静止 */
 @keyframes gtb-breathe {
