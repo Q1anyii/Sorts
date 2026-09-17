@@ -264,7 +264,10 @@ cmd_build() {
 cmd_web() {
   require_docker; prepare_env
   log "构建并启动前端站点（nginx + /api 反代网关）"
-  dc --profile web up -d --build frontend
+  # frontend 的 depends_on: gateway（app profile）——只启用 web profile 时
+  # Compose 会把 gateway 排除出项目，校验报 "depends on undefined service gateway"，
+  # 因此必须同时启用 app profile（gateway 已在跑时只是满足依赖，不会重建）
+  dc --profile app --profile web up -d --build frontend
   wait_port "$(env_value FRONTEND_PORT)" 60 && log "前端就绪：http://localhost:$(env_value FRONTEND_PORT)" || warn "前端未就绪，用 logs frontend 查看"
 }
 
