@@ -813,7 +813,7 @@ const app = createApp({
     const tagStats = ref([]);
 
     const dayHeaders = ['日', '一', '二', '三', '四', '五', '六'];
-    const tagColors = ['#8FB8DE', '#A9D6B8', '#F6C177', '#F49B8B', '#C4B5FD', '#F9A8D4', '#9DB8E8', '#7FD1CC'];
+    const tagColors = ['#8FB8DE', '#A9D6B8', '#C3B091', '#F49B8B', '#C4B5FD', '#F9A8D4', '#9DB8E8', '#7FD1CC'];
 
     // ============ 工具 ============
     function formatTime(dt) { if (!dt) return ''; return dt.slice(11, 16); }
