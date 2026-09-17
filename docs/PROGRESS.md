@@ -417,6 +417,7 @@ event: error   data: {"code":503,"message":"..."}
 28. **采用 MIT 许可证**（M7 收尾）：新增 `LICENSE`（Copyright 2026 谦亦AAA），README 许可证章节同步。
 29. ~~**`api-spec` 与实现的第三处偏差**：积分内部接口 api-spec 写 `/users/points/deduct`，实现路径为 `/api/v1/users/points/change`（内部凭证白名单 `sorts.internal.paths` 里也是后者）。~~ → **已修复**（2026-09-17 审查收尾）：api-spec 对齐为 `/users/points/change`，字段 `amount` → `delta`（正增负减），README / PROGRESS 同步更新。
 30. **前端主版已迁回 Vite 工程**（2026-09-17 M8 收尾）：主版模板（index.html）+ 逻辑（`src/legacy/app-logic.ts`，由 `js/app.js` 迁入）+ 样式迁入 `frontend/vite-app/`，`Dockerfile.frontend` 多阶段构建（node 构建 → nginx 托管 dist）。踩坑两处：① 模板内 `{{ a < b }}` 的 `<` 被 Vite parse5 严格解析视为标签开始 → 改写为反向比较；② npm 默认 `vue` 为 runtime-only（无模板编译器），内联 DOM 模板渲染空白 → 改 import `vue/dist/vue.esm-bundler.js`（完整版）。浏览器验收：登录/续期、今日经纬、织历调色板、梭灵三栏、全局气泡（动态色+呼吸）全部正常；Vitest 19 用例全过。遗留：JS 单 chunk 1.12MB（含 marked/hljs，可 manualChunks 拆分）；legacy 大函数待渐进组件化。
+31. ~~**内部凭证从不附加，所有内部调用 403**（2026-09-17 M5 存量 bug，重要）~~ → **已修复**：`InternalFeignInterceptor.matches()` 原只按 `template.path()` 匹配白名单，而真实 Feign 调用 path 只含方法级路径（`/points/change`），`@FeignClient(path=...)` 前缀在 `Target` 上——导致凭证从不附加，mall→user 扣积分、schedule→user 落梭发积分等全部内部调用从上线起未成功过一次（`t_points_log` 只有种子追加记录可佐证）。修复为「方法路径 / 原始 url / Target.url+方法路径拼接」三路匹配；回归单测 2 例（拆分命中 + 非白名单不附加），`InternalFeignInterceptorTest` 7/7 通过。实测：锦市购买成功（扣 80→装扮入库→余额 4920→积分流水），落梭 +5 奖励入账。详见 `docs/devlog/2026-09-17-fix-internal-token-403.md`。
 
 
 ---
