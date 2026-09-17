@@ -463,6 +463,8 @@ const app = createApp({
 
     // ============ Data Stores ============
     const schedules = ref([]);
+    // 织历专用全量日程（不受织程日期筛选影响，保证日历任务点始终完整）
+    const allSchedules = ref([]);
     const notifications = ref([]);
     const mallItems = ref([]);
     const wardrobe = ref([]);
@@ -651,7 +653,7 @@ const app = createApp({
       const tStr = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
 
       const scheduleMap = {};
-      schedules.value.forEach(s => {
+      allSchedules.value.forEach(s => {
         if (s.plannedStartTime) {
           const d = s.plannedStartTime.slice(0, 10);
           if (!scheduleMap[d]) scheduleMap[d] = [];
@@ -666,22 +668,44 @@ const app = createApp({
         const dm = month - 1; const dy = dm === 0 ? year - 1 : year; const m = dm === 0 ? 12 : dm;
         const ds = `${dy}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const sc = scheduleMap[ds] || [];
-        days.push({ key: 'p' + d, dayOfMonth: d, isToday: false, isCurrentMonth: false, dateStr: ds, totalCount: sc.length, colors: sc.map(s => s.color || '#4A6CF7') });
+        days.push({ key: 'p' + d, dayOfMonth: d, isToday: false, isCurrentMonth: false, dateStr: ds, totalCount: sc.length, colors: sc.map(scheduleDotColor) });
       }
       for (let d = 1; d <= daysInMonth; d++) {
         const ds = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const sc = scheduleMap[ds] || [];
-        days.push({ key: 'c' + d, dayOfMonth: d, isToday: ds === tStr, isCurrentMonth: true, dateStr: ds, totalCount: sc.length, colors: sc.map(s => s.color || '#4A6CF7') });
+        days.push({ key: 'c' + d, dayOfMonth: d, isToday: ds === tStr, isCurrentMonth: true, dateStr: ds, totalCount: sc.length, colors: sc.map(scheduleDotColor) });
       }
       const remaining = 42 - days.length;
       for (let d = 1; d <= remaining; d++) {
         const dm = month + 1; const dy = dm === 13 ? year + 1 : year; const m = dm === 13 ? 1 : dm;
         const ds = `${dy}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const sc = scheduleMap[ds] || [];
-        days.push({ key: 'n' + d, dayOfMonth: d, isToday: false, isCurrentMonth: false, dateStr: ds, totalCount: sc.length, colors: sc.map(s => s.color || '#4A6CF7') });
+        days.push({ key: 'n' + d, dayOfMonth: d, isToday: false, isCurrentMonth: false, dateStr: ds, totalCount: sc.length, colors: sc.map(scheduleDotColor) });
       }
       return days;
     });
+    // 日程任务点分色：用户自定义颜色标记优先，否则按紧急度（URGENT红/HIGH琥珀/MEDIUM蓝/LOW灰绿）
+    const PRIORITY_DOT_COLOR = { URGENT: '#EF4444', HIGH: '#F59E0B', MEDIUM: '#4A6CF7', LOW: '#94A3B8' };
+    function scheduleDotColor(s) {
+      if (s.color) return s.color;
+      return PRIORITY_DOT_COLOR[s.priority] || '#4A6CF7';
+    }
+    // 织历月份下拉：覆盖近 5 年（当前年 ±2）
+    const calendarMonthOptions = computed(() => {
+      const y = new Date().getFullYear();
+      const opts = [];
+      for (let yy = y - 2; yy <= y + 2; yy++) {
+        for (let m = 1; m <= 12; m++) opts.push({ value: yy + '-' + m, label: yy + '年' + m + '月' });
+      }
+      return opts;
+    });
+    function onCalendarMonthChange(e) {
+      const v = e.target && e.target.value;
+      if (!v) return;
+      const parts = v.split('-').map(Number);
+      calYear.value = parts[0];
+      calMonth.value = parts[1] || 1;
+    }
 
     // 7 日完成趋势：来自真实 /statistics/trend（后端返回 0-1 比例）
     const trendData = computed(() => {
@@ -915,7 +939,7 @@ const app = createApp({
     function selectCalendarDay(day) {
       selectedDayLabel.value = day.dateStr;
       selectedDayDate.value = day.dateStr;
-      selectedDaySchedules.value = schedules.value.filter(s => s.plannedStartTime && s.plannedStartTime.startsWith(day.dateStr));
+      selectedDaySchedules.value = allSchedules.value.filter(s => s.plannedStartTime && s.plannedStartTime.startsWith(day.dateStr));
       // 织历 → 织程联动：携带 date 参数跳转（hash 路由，刷新后仍停留该日）
       navigateTo('schedules', { date: day.dateStr });
       // navigateTo 已提前置 currentPage，hashchange 分支不再触发 → 这里直接应用路由参数并同步数据
@@ -1055,7 +1079,7 @@ const app = createApp({
       scheduleForm.plannedDuration = s.plannedDuration || 60;
       scheduleForm.priority = s.priority || 'MEDIUM';
       scheduleForm.tagsStr = (s.tags || []).join(', ');
-      scheduleForm.color = s.color || '#4A6CF7';
+      scheduleForm.color = s.color || '';
       showScheduleModal.value = true;
     }
 
@@ -1095,7 +1119,7 @@ const app = createApp({
       scheduleForm.plannedDuration = 60;
       scheduleForm.priority = 'MEDIUM';
       scheduleForm.tagsStr = '';
-      scheduleForm.color = '#4A6CF7';
+      scheduleForm.color = '';   // 空 = 自动（按优先级分色）；选色后为自定义颜色标记
     }
 
     /* ============================================================
@@ -1600,7 +1624,14 @@ const app = createApp({
      * 数据加载
      * ============================================================ */
     async function loadSchedules() {
-      await syncSchedulesFromFilter();
+      await Promise.all([syncSchedulesFromFilter(), loadAllSchedules()]);
+    }
+    /** 织历专用：拉取全量日程（不受织程日期筛选影响） */
+    async function loadAllSchedules() {
+      try {
+        const page = await apiFetch('/schedules', { params: { view: 'all', pageSize: 500, sort: 'plannedStartTime', order: 'asc' } });
+        allSchedules.value = (page && page.list) || [];
+      } catch (e) { if (!(e && e.code === 40103)) showError(e, '日程加载失败'); }
     }
 
     async function loadNotifications() {
@@ -1887,6 +1918,7 @@ const app = createApp({
       schedules, notifications, mallItems, wardrobe, aiReports,
       // Calendar
       calYear, calMonth, calendarDays, dayHeaders,
+      calendarMonthOptions, onCalendarMonthChange,
       prevMonth, nextMonth, goToToday, selectCalendarDay, openDayInSchedules,
       selectedDaySchedules, selectedDayLabel, selectedDayDate,
       // AI（流式 + Markdown + 双钥匙写权限）

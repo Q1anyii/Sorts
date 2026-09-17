@@ -1032,6 +1032,17 @@ html[data-skin="blossom"] {
   from { opacity: 0; transform: translateX(24px); }
   to { opacity: 1; transform: translateX(0); }
 }
+/* 织历月份下拉 */
+.month-select { width: 132px; font-size: 13.5px; font-weight: 600; color: var(--text); }
+/* 颜色标记「自动（按优先级）」 */
+.color-swatch-auto {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: conic-gradient(#EF4444, #F59E0B, #4A6CF7, #94A3B8, #EF4444);
+  color: #fff; font-size: 10px; font-weight: 700; cursor: pointer; user-select: none;
+  border: 3px solid transparent;
+}
+.color-swatch-auto.active { border-color: var(--text); }
 /* 多日规划建议面板 · 分页栏 */
 .plan-pager {
   display: flex; align-items: center; justify-content: center; gap: 12px;

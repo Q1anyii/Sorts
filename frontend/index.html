@@ -6,7 +6,7 @@
 <title>梭子 - 专注计时与日程规划</title>
 <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
 <script src="https://unpkg.com/vue-router@4.3.0/dist/vue-router.global.prod.js"></script>
-<link rel="stylesheet" href="css/style.css?v=20260917-2">
+<link rel="stylesheet" href="css/style.css?v=20260917-3">
 <link rel="stylesheet" href="css/github.min.css">
 <style>[v-cloak]{display:none}</style>
 </head>
@@ -243,7 +243,9 @@
             <div class="calendar-header">
               <div class="calendar-nav">
                 <button @click="prevMonth">◀</button>
-                <span class="month-label">{{ calYear }}年 {{ calMonth }}月</span>
+                <select class="form-select month-select" :value="calYear + '-' + calMonth" @change="onCalendarMonthChange">
+                <option v-for="o in calendarMonthOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+              </select>
                 <button @click="nextMonth">▶</button>
               </div>
               <button class="btn btn-outline btn-sm" @click="goToToday">回到今天</button>
@@ -873,7 +875,8 @@
         </div>
         <div class="form-group">
           <label>颜色标记</label>
-          <div class="flex gap-2">
+          <div class="flex gap-2" style="align-items:center; flex-wrap:wrap;">
+            <span class="color-swatch-auto" :class="{active: scheduleForm.color===''}" @click="scheduleForm.color=''" title="按紧急度自动分色">自动</span>
             <div v-for="c in tagColors" :key="c" @click="scheduleForm.color=c"
                  :style="{width:'28px', height:'28px', borderRadius:'50%', background:c, cursor:'pointer', border: scheduleForm.color===c ? '3px solid var(--text)' : '3px solid transparent'}"></div>
           </div>
@@ -919,6 +922,6 @@
 
 <script src="js/vendor/marked.min.js"></script>
 <script src="js/vendor/highlight.min.js"></script>
-<script src="js/app.js?v=20260917-2"></script>
+<script src="js/app.js?v=20260917-3"></script>
 </body>
 </html>
