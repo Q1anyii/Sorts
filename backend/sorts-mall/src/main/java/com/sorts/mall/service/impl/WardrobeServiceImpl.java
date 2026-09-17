@@ -99,4 +99,20 @@ public class WardrobeServiceImpl implements WardrobeService {
         wardrobeItemMapper.activate(userId, itemId);
         log.info("切换装扮：userId={}, itemId={}, type={}", userId, itemId, itemType);
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deactivate(Long userId, String type) {
+        if (StringUtils.hasText(type)) {
+            ItemType parsed = ItemType.from(type.trim());
+            if (parsed == null) {
+                throw new BizException(ErrorCode.PARAM_ERROR, "装扮类型不合法");
+            }
+            wardrobeItemMapper.deactivateByType(userId, parsed.name());
+            log.info("卸下装扮：userId={}, type={}", userId, parsed.name());
+        } else {
+            wardrobeItemMapper.deactivateAll(userId);
+            log.info("卸下全部装扮：userId={}", userId);
+        }
+    }
 }

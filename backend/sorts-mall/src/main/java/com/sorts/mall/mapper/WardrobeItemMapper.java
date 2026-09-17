@@ -34,4 +34,9 @@ public interface WardrobeItemMapper extends BaseMapper<WardrobeItem> {
     @Update("UPDATE t_wardrobe_item SET is_active = 1 "
             + "WHERE user_id = #{userId} AND item_id = #{itemId} AND deleted = 0")
     int activate(@Param("userId") Long userId, @Param("itemId") Long itemId);
+
+    /** 卸下该用户全部类型的装扮（恢复默认外观） */
+    @Update("UPDATE t_wardrobe_item SET is_active = 0 "
+            + "WHERE user_id = #{userId} AND is_active = 1 AND deleted = 0")
+    int deactivateAll(@Param("userId") Long userId);
 }

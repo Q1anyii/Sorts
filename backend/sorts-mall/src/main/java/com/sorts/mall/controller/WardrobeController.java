@@ -3,6 +3,7 @@ package com.sorts.mall.controller;
 import com.sorts.common.constant.AuthConstants;
 import com.sorts.common.result.Result;
 import com.sorts.mall.dto.ActivateRequest;
+import com.sorts.mall.dto.DeactivateRequest;
 import com.sorts.mall.dto.WardrobeItemVO;
 import com.sorts.mall.service.WardrobeService;
 import jakarta.validation.Valid;
@@ -42,6 +43,14 @@ public class WardrobeController {
     public Result<Void> activate(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
                                  @Valid @RequestBody ActivateRequest request) {
         wardrobeService.activate(userId, request.getItemId(), request.getType());
+        return Result.success();
+    }
+
+    /** 卸下装扮：恢复该类型默认外观（type 为空则全部卸下，含恢复默认皮肤） */
+    @PutMapping("/deactivate")
+    public Result<Void> deactivate(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
+                                   @RequestBody(required = false) DeactivateRequest request) {
+        wardrobeService.deactivate(userId, request == null ? null : request.getType());
         return Result.success();
     }
 }

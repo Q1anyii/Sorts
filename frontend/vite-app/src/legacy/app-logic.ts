@@ -482,6 +482,9 @@ const app = createApp({
     const notifications = ref([]);
     const mallItems = ref([]);
     const wardrobe = ref([]);
+    /** 正在使用的头像框 / 徽章（锦市 AVATAR / BADGE 装扮的实际运用：头像渲染 + 昵称角标） */
+    const activeAvatar = computed(() => wardrobe.value.find(w => w.isActive && w.item && w.item.type === 'AVATAR') || null);
+    const activeBadge = computed(() => wardrobe.value.find(w => w.isActive && w.item && w.item.type === 'BADGE') || null);
     const aiReports = ref([]);
 
     // ============ Calendar State ============
@@ -1722,6 +1725,16 @@ const app = createApp({
       } catch (e) { showError(e, '切换装扮失败'); }
     }
 
+    /** 卸下装扮（type 为空 = 全部卸下，含恢复默认皮肤） */
+    async function deactivateWardrobe(type = '') {
+      try {
+        await apiFetch('/users/wardrobe/deactivate', { method: 'PUT', body: type ? { type } : {} });
+        await loadMallData();
+        applySkinFromWardrobe(wardrobe.value);
+        notifySuccess(type ? '已恢复该类型默认外观' : '已恢复默认外观');
+      } catch (e) { showError(e, '卸下装扮失败'); }
+    }
+
     /* ============================================================
      * 通知（真实接口）
      * ============================================================ */
@@ -2134,7 +2147,7 @@ const app = createApp({
       // Forms
       scheduleForm, reminderSettings, profileSaved,
       // Mall
-      purchaseItem, confirmPurchase, useItem,
+      purchaseItem, confirmPurchase, useItem, deactivateWardrobe, activeAvatar, activeBadge,
       // Notifications
       unreadNotifCount, readNotif, markAllRead,
       // Schedule CRUD
