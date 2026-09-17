@@ -584,7 +584,7 @@ const app = createApp({
       try {
         if (!currentPlanId) throw { message: '规划已失效，请重新让 AI 规划' };
         const created = await apiFetch(`/ai/plan/${encodeURIComponent(currentPlanId)}/adopt`, {
-          method: 'POST', body: { selectedIndices: [index] }
+          method: 'POST', body: { planId: currentPlanId, selectedIndices: [index] }
         });
         aiSuggestions.value.splice(index, 1);
         aiMessages.value.push({ role: 'bot', content: `✅ 已采纳并创建日程：**${sg.title}**` });
@@ -598,7 +598,7 @@ const app = createApp({
       try {
         if (!currentPlanId) throw { message: '规划已失效，请重新让 AI 规划' };
         await apiFetch(`/ai/plan/${encodeURIComponent(currentPlanId)}/adopt`, {
-          method: 'POST', body: { selectedIndices: aiSuggestions.value.map((_, i) => i) }
+          method: 'POST', body: { planId: currentPlanId, selectedIndices: aiSuggestions.value.map((_, i) => i) }
         });
         aiSuggestions.value = [];
         aiMessages.value.push({ role: 'bot', content: `✅ 已全部采纳！成功创建了 ${count} 个日程。` });
