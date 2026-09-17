@@ -27,6 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -142,7 +143,9 @@ class AuthServiceImplTest {
 
         TokenVO token = authService.login(request);
         assertEquals("weaver", token.getUser().getUsername());
-        assertTrue(token.getAccessToken().startsWith("Bearer "));
+        // 契约（api-spec.json）：accessToken 为裸 JWT，不携带 Bearer 前缀（由调用方添加）
+        assertTrue(token.getAccessToken().startsWith("eyJ"));
+        assertFalse(token.getAccessToken().startsWith("Bearer "));
     }
 
     @Test

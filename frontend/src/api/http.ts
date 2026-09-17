@@ -43,7 +43,9 @@ http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const access = tokenStore.access
   const url = config.url ?? ''
   if (access && !AUTH_PATHS.some((p) => url.includes(p))) {
-    config.headers.Authorization = `Bearer ${access}`
+    // 后端按契约返回裸 JWT；存量令牌（旧版本后端签发）可能已带 "Bearer " 前缀，
+    // 二次拼接会变成 "Bearer Bearer ..." 被网关按 40102 拒绝，这里做幂等保护
+    config.headers.Authorization = access.startsWith('Bearer ') ? access : `Bearer ${access}`
   }
   return config
 })

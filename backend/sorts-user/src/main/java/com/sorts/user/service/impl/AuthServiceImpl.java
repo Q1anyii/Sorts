@@ -1,7 +1,6 @@
 package com.sorts.user.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.sorts.common.constant.AuthConstants;
 import com.sorts.common.exception.BizException;
 import com.sorts.common.jwt.JwtUtil;
 import com.sorts.common.result.ErrorCode;
@@ -114,7 +113,9 @@ public class AuthServiceImpl implements AuthService {
         refreshTokenStore.save(user.getId(), refreshToken, jwtUtil.getProperties().getRefreshExpireDays());
 
         return TokenVO.builder()
-                .accessToken(AuthConstants.TOKEN_PREFIX + accessToken)
+                // 契约（api-spec.json）：accessToken 为裸 JWT，Bearer 前缀由调用方添加，
+                // 若在此拼前缀，前端会二次拼接 "Bearer Bearer ..." 被网关按 40102 拒绝
+                .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .expiresIn(jwtUtil.getProperties().getAccessExpireMinutes() * 60)
                 .user(UserVO.from(user))
