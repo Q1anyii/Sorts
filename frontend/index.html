@@ -7,12 +7,14 @@
 <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
 <script src="https://unpkg.com/vue-router@4.3.0/dist/vue-router.global.prod.js"></script>
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/github.min.css">
+<style>[v-cloak]{display:none}</style>
 </head>
 <body>
 
-<div id="app">
+<div id="app" v-cloak>
   <!-- Login View -->
-  <div v-if="!isLoggedIn" class="login-page">
+  <div v-if="!isLoggedIn" class="login-page page-view">
     <div class="login-card">
       <div class="login-logo">
         <div class="icon">🚀</div>
@@ -112,28 +114,32 @@
     <main class="main-content">
 
       <!-- ============ DASHBOARD ============ -->
-      <div v-if="currentPage==='dashboard'">
+      <div v-if="currentPage==='dashboard'" class="page-view">
         <div class="page-header">
           <h2>👋 你好，{{ userInfo.nickname || userInfo.username }}</h2>
           <p>{{ todayStr }} · 今天也要高效哦！</p>
         </div>
 
         <!-- Active Timer -->
-        <div class="active-timer" v-if="activeSchedule" style="margin-bottom:16px;">
+        <div class="active-timer" v-if="activeSchedule" style="margin-bottom:16px;" :class="{'is-running': activeSchedule.status==='IN_PROGRESS'}">
           <div class="timer-display">{{ formatTimer(elapsedSeconds) }}</div>
           <div class="timer-info">
-            <div class="timer-title">🔴 进行中：{{ activeSchedule.title }}</div>
-            <div class="timer-meta">计划开始 {{ formatTime(activeSchedule.plannedStartTime) }} · 预计 {{ activeSchedule.plannedDuration }}分钟</div>
+            <div class="timer-title" :class="{'is-running': activeSchedule.status==='IN_PROGRESS'}">{{ activeSchedule.title }}</div>
+            <div class="timer-meta">计划开始 {{ formatTime(activeSchedule.plannedStartTime) }} · 预计 {{ activeSchedule.plannedDuration }}分钟 · {{ statusLabel(activeSchedule.status) }}</div>
           </div>
           <div class="timer-actions">
-            <button v-if="activeSchedule.status==='IN_PROGRESS'" class="btn btn-sm" @click="pauseSchedule(activeSchedule)">
+            <!-- 五态流转：开梭 → 暂停 → 续梭 → 落梭 → 取消（按钮可见性由状态机 TIMER_ACTIONS 决定） -->
+            <button v-if="canAct(activeSchedule.status, 'pause')" class="btn btn-sm" @click="pauseSchedule(activeSchedule)">
               ⏸ 暂停
             </button>
-            <button v-if="activeSchedule.status==='PAUSED'" class="btn btn-sm" @click="resumeSchedule(activeSchedule)">
-              ▶ 继续
+            <button v-if="canAct(activeSchedule.status, 'resume')" class="btn btn-sm" @click="resumeSchedule(activeSchedule)">
+              ▶ 续梭
             </button>
-            <button class="btn btn-sm btn-end" @click="endSchedule(activeSchedule)">
-              ⏹ 结束
+            <button v-if="canAct(activeSchedule.status, 'end')" class="btn btn-sm btn-end" @click="endSchedule(activeSchedule)">
+              ⏹ 落梭
+            </button>
+            <button v-if="canAct(activeSchedule.status, 'cancel')" class="btn btn-sm btn-cancel" @click="cancelSchedule(activeSchedule)">
+              ✕ 取消
             </button>
           </div>
         </div>
@@ -195,7 +201,10 @@
               </div>
               <span class="status-badge" :class="'status-'+s.status">{{ statusLabel(s.status) }}</span>
               <div class="schedule-actions" @click.stop>
-                <button v-if="s.status==='PENDING'" class="btn btn-success btn-sm" @click="startSchedule(s)">▶ 开始</button>
+                <button v-if="canAct(s.status,'start')" class="btn btn-success btn-sm" @click="startSchedule(s)">▶ 开梭</button>
+                <button v-if="canAct(s.status,'pause')" class="btn btn-warning btn-sm" @click="pauseSchedule(s)">⏸ 暂停</button>
+                <button v-if="canAct(s.status,'resume')" class="btn btn-success btn-sm" @click="resumeSchedule(s)">▶ 续梭</button>
+                <button v-if="canAct(s.status,'end')" class="btn btn-primary btn-sm" @click="endSchedule(s)">⏹ 落梭</button>
                 <button v-if="s.status==='PENDING'" class="btn btn-outline btn-sm" @click="editSchedule(s)">✎</button>
               </div>
             </div>
@@ -224,7 +233,7 @@
       </div>
 
       <!-- ============ CALENDAR ============ -->
-      <div v-if="currentPage==='calendar'">
+      <div v-if="currentPage==='calendar'" class="page-view">
         <div class="page-header">
           <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> 织历视图</h2>
           <p>查看和管理你的日程安排</p>
@@ -289,7 +298,7 @@
       </div>
 
       <!-- ============ SCHEDULE LIST ============ -->
-      <div v-if="currentPage==='schedules'">
+      <div v-if="currentPage==='schedules'" class="page-view">
         <div class="page-header">
           <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg> 织程</h2>
           <p>管理你的所有日程</p>
@@ -335,7 +344,10 @@
             </div>
             <span class="status-badge" :class="'status-'+s.status">{{ statusLabel(s.status) }}</span>
             <div class="schedule-actions" @click.stop>
-              <button v-if="s.status==='PENDING'" class="btn btn-success btn-sm" @click="startSchedule(s)">▶</button>
+              <button v-if="canAct(s.status,'start')" class="btn btn-success btn-sm" @click="startSchedule(s)">▶ 开梭</button>
+              <button v-if="canAct(s.status,'pause')" class="btn btn-warning btn-sm" @click="pauseSchedule(s)">⏸ 暂停</button>
+              <button v-if="canAct(s.status,'resume')" class="btn btn-success btn-sm" @click="resumeSchedule(s)">▶ 续梭</button>
+              <button v-if="canAct(s.status,'end')" class="btn btn-primary btn-sm" @click="endSchedule(s)">⏹ 落梭</button>
               <button class="btn btn-outline btn-sm" @click="editSchedule(s)">✎</button>
               <button class="btn btn-danger btn-sm" @click="deleteSchedule(s)">✕</button>
             </div>
@@ -348,7 +360,7 @@
       </div>
 
       <!-- ============ AI ASSISTANT ============ -->
-      <div v-if="currentPage==='ai'">
+      <div v-if="currentPage==='ai'" class="page-view">
         <div class="page-header">
           <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><path d="M12 3l1.9 5.8 5.8 1.9-5.8 1.9L12 18.4l-1.9-5.8-5.8-1.9 5.8-1.9z"/><path d="M19 3v4M17 5h4"/></svg> 梭灵</h2>
           <p>用自然语言描述你的需求，AI 帮你规划日程</p>
@@ -360,11 +372,23 @@
               <div class="ai-chat-messages" ref="aiChatMessages">
                 <div class="ai-message" v-for="(msg, i) in aiMessages" :key="i" :class="msg.role">
                   <div class="ai-avatar" :class="msg.role">{{ msg.role === 'user' ? '👤' : '🤖' }}</div>
-                  <div class="ai-bubble">{{ msg.content }}</div>
+                  <div class="ai-bubble">
+                    <!-- AI 回复：Markdown 渲染；流式期间末条追加打字光标 ▍ -->
+                    <div v-if="msg.role==='bot'" class="markdown-body"
+                         v-html="renderMarkdown(msg.content + (aiStreaming && i === aiMessages.length - 1 ? ' ▍' : ''))"></div>
+                    <div v-else>{{ msg.content }}</div>
+                    <!-- 建议操作：done 事件 suggestedActions 渲染为气泡内快捷按钮 -->
+                    <div v-if="msg.role==='bot' && msg.suggestedActions && msg.suggestedActions.length" class="mt-2">
+                      <button v-for="(act, j) in msg.suggestedActions" :key="j" class="ai-suggestion-action" @click="runSuggestedAction(act)">{{ act.label || act.type }}</button>
+                    </div>
+                  </div>
                 </div>
-                <div v-if="aiLoading" class="ai-message">
+                <!-- 思考中 / 等待首帧：三点弹跳指示器（流式期间由真实气泡取代） -->
+                <div v-if="aiLoading && !aiStreaming" class="ai-message">
                   <div class="ai-avatar bot">🤖</div>
-                  <div class="ai-bubble">思考中...</div>
+                  <div class="ai-bubble">
+                    <span class="thinking-dots"><span></span><span></span><span></span></span>
+                  </div>
                 </div>
               </div>
               <div class="ai-suggestions">
@@ -374,8 +398,13 @@
                 <button class="ai-suggestion" @click="aiQuickPrompt('给我一些时间管理建议')">💡 管理建议</button>
               </div>
               <div class="ai-input-row">
-                <input v-model="aiInput" @keyup.enter="sendAiMessage" placeholder="输入你的需求，例如：明天上午学习2小时Java...">
-                <button class="btn btn-primary btn-sm" @click="sendAiMessage" :disabled="aiLoading">发送</button>
+                <input v-model="aiInput" @keyup.enter="sendAiMessage" placeholder="输入你的需求，例如：明天上午学习2小时Java..." :disabled="aiStreaming">
+                <!-- 双钥匙第二把：用户确认后 AI 才可写日程 -->
+                <label class="ai-write-toggle" title="开启后，AI 可依据你的对话内容直接创建日程">
+                  <input type="checkbox" v-model="aiWriteEnabled"> 允许写日程
+                </label>
+                <button v-if="aiStreaming" class="ai-stop-btn" @click="stopAiReply">⏹ 停止</button>
+                <button v-else class="btn btn-primary btn-sm" @click="sendAiMessage" :disabled="aiLoading">发送</button>
               </div>
             </div>
           </div>
@@ -406,7 +435,7 @@
       </div>
 
       <!-- ============ AI REPORTS ============ -->
-      <div v-if="currentPage==='reports'">
+      <div v-if="currentPage==='reports'" class="page-view">
         <div class="page-header">
           <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><path d="M6 2.5h8.5L19 7v14.5H6z"/><path d="M14.5 2.5V7H19M9.5 12.5h5.5M9.5 16.5h5.5"/></svg> 织史</h2>
           <p>AI 生成的智能总结与效率分析</p>
@@ -438,13 +467,13 @@
               <h3>{{ viewingReport.title }}</h3>
               <button class="btn btn-outline btn-sm" @click="viewingReport=null">✕</button>
             </div>
-            <div class="modal-body" style="white-space:pre-wrap; line-height:1.8;">{{ viewingReport.content }}</div>
+            <div class="modal-body markdown-body" v-html="renderMarkdown(viewingReport.content)"></div>
           </div>
         </div>
       </div>
 
       <!-- ============ STATISTICS ============ -->
-      <div v-if="currentPage==='stats'">
+      <div v-if="currentPage==='stats'" class="page-view">
         <div class="page-header">
           <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg> 纹谱统计</h2>
           <p>深入了解你的时间使用情况</p>
@@ -506,7 +535,7 @@
       </div>
 
       <!-- ============ MALL ============ -->
-      <div v-if="currentPage==='mall'">
+      <div v-if="currentPage==='mall'" class="page-view">
         <div class="page-header">
           <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V9"/><path d="M3 9h18M9 21v-8h6v8"/></svg> 锦市</h2>
           <p>用光阴砂兑换个性化装扮 · 当前光阴砂：<strong>⭐ {{ userInfo.points }}</strong></p>
@@ -519,9 +548,9 @@
         </div>
         <div class="mall-grid">
           <div v-for="item in filteredMallItems" :key="item.id" class="mall-item">
-            <div class="mall-item-preview" :class="'skin-'+item.color">{{ item.type==='SKIN'?'🎨': item.type==='AVATAR'?'🖼':'🏅' }}</div>
+            <div class="mall-item-preview" :class="item.preview">{{ item.type==='SKIN'?'🎨': item.type==='AVATAR'?'🖼':'🏅' }}</div>
             <div class="mall-item-body">
-              <div class="item-name">{{ item.name }}</div>
+              <div class="item-name">{{ item.name }} <span v-if="item.isActive" class="skin-badge">● 使用中</span></div>
               <div class="item-desc">{{ item.description }}</div>
               <div class="item-footer">
                 <span class="item-price">⭐ {{ item.price }}</span>
@@ -555,7 +584,7 @@
       </div>
 
       <!-- ============ NOTIFICATIONS ============ -->
-      <div v-if="currentPage==='notifications'">
+      <div v-if="currentPage==='notifications'" class="page-view">
         <div class="page-header">
           <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg> 飞鸽传书</h2>
           <button class="btn btn-outline btn-sm" @click="markAllRead" v-if="unreadNotifCount > 0">全部标记已读</button>
@@ -581,7 +610,7 @@
       </div>
 
       <!-- ============ PROFILE ============ -->
-      <div v-if="currentPage==='profile'">
+      <div v-if="currentPage==='profile'" class="page-view">
         <div class="page-header"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg> 设置</h2></div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
           <div class="card">
@@ -685,11 +714,11 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button v-if="scheduleDetail.status==='PENDING'" class="btn btn-success" @click="startSchedule(scheduleDetail); scheduleDetail=null">▶ 开始</button>
-        <button v-if="scheduleDetail.status==='IN_PROGRESS'" class="btn btn-warning" @click="pauseSchedule(scheduleDetail); loadScheduleDetail(scheduleDetail.id)">⏸ 暂停</button>
-        <button v-if="scheduleDetail.status==='PAUSED'" class="btn btn-success" @click="resumeSchedule(scheduleDetail); loadScheduleDetail(scheduleDetail.id)">▶ 继续</button>
-        <button v-if="scheduleDetail.status==='IN_PROGRESS' || scheduleDetail.status==='PAUSED'" class="btn btn-primary" @click="endSchedule(scheduleDetail); scheduleDetail=null">⏹ 结束</button>
-        <button v-if="scheduleDetail.status==='PENDING'" class="btn btn-danger" @click="cancelSchedule(scheduleDetail); scheduleDetail=null">取消日程</button>
+        <button v-if="canAct(scheduleDetail.status,'start')" class="btn btn-success" @click="startSchedule(scheduleDetail); scheduleDetail=null">▶ 开梭</button>
+        <button v-if="canAct(scheduleDetail.status,'pause')" class="btn btn-warning" @click="pauseSchedule(scheduleDetail); loadScheduleDetail(scheduleDetail.id)">⏸ 暂停</button>
+        <button v-if="canAct(scheduleDetail.status,'resume')" class="btn btn-success" @click="resumeSchedule(scheduleDetail); loadScheduleDetail(scheduleDetail.id)">▶ 续梭</button>
+        <button v-if="canAct(scheduleDetail.status,'end')" class="btn btn-primary" @click="endSchedule(scheduleDetail); scheduleDetail=null">⏹ 落梭</button>
+        <button v-if="canAct(scheduleDetail.status,'cancel')" class="btn btn-danger" @click="cancelSchedule(scheduleDetail); scheduleDetail=null">✕ 取消</button>
         <button class="btn btn-outline" @click="editSchedule(scheduleDetail); scheduleDetail=null">✎ 编辑</button>
       </div>
     </div>
@@ -752,6 +781,8 @@
   </div>
 </div>
 
+<script src="js/vendor/marked.min.js"></script>
+<script src="js/vendor/highlight.min.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

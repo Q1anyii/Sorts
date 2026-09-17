@@ -66,4 +66,9 @@ INSERT IGNORE INTO t_mall_item (id, name, type, description, image_url, preview_
   (4, '鎏金梭·头像框', 'AVATAR', '鎏金质感的限定头像框。',                   '/assets/mall/frame-gold.png',    '/assets/mall/frame-gold-preview.png',    150, 50, 'ON_SALE',  70),
   (5, '掌灯人徽章',    'BADGE',  '在深夜仍坚持落梭的人。',                   '/assets/mall/badge-lamp.png',    '/assets/mall/badge-lamp-preview.png',     50, -1, 'ON_SALE',  60),
   (6, '织造大师徽章',  'BADGE',  '累计专注时长达标后佩戴的荣誉徽章。',        '/assets/mall/badge-master.png',  '/assets/mall/badge-master-preview.png',  120, -1, 'ON_SALE',  50),
-  (7, '落梭贴纸包',    'STICKER','一组日程状态贴纸，可直接用于日程标记。',    '/assets/mall/sticker-pack.png',  '/assets/mall/sticker-pack-preview.png',   30, -1, 'ON_SALE',  40);
+  (7, '落梭贴纸包',    'STICKER','一组日程状态贴纸，可直接用于日程标记。',    '/assets/mall/sticker-pack.png',  '/assets/mall/sticker-pack-preview.png',   30, -1, 'ON_SALE',  40),
+  (8, '沧浪青岚·皮肤', 'SKIN',   '海风与青岚的蓝绿配色，专注时心绪如潮平。',     '/assets/mall/skin-ocean.png',    '/assets/mall/skin-ocean-preview.png',    250, -1, 'ON_SALE',  88),
+  (9, '霞光织锦·皮肤', 'SKIN',   '落日熔金的暖橘配色，为晚间的梭程添一抹霞光。',   '/assets/mall/skin-sunset.png',   '/assets/mall/skin-sunset-preview.png',   250, -1, 'ON_SALE',  86),
+  (10, '竹影幽篁·皮肤', 'SKIN',  '竹林清幽的绿调配色，安静陪伴每一次专注。',     '/assets/mall/skin-forest.png',   '/assets/mall/skin-forest-preview.png',   250, -1, 'ON_SALE',  84),
+  (11, '墨韵流年·皮肤', 'SKIN',  '水墨夜调与鎏金点缀，适合伏案深耕的时辰。',     '/assets/mall/skin-ink.png',      '/assets/mall/skin-ink-preview.png',      350, -1, 'ON_SALE',  82),
+  (12, '樱色入梦·皮肤', 'SKIN',  '樱花粉调的温柔配色，让日程多一分轻盈。',       '/assets/mall/skin-blossom.png',  '/assets/mall/skin-blossom-preview.png',  300, -1, 'ON_SALE',  80);

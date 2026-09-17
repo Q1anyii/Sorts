@@ -96,6 +96,228 @@ async function apiFetch(path, opts = {}) {
   return parsed;
 }
 
+/* ================================================================
+ * 基础设施：SSE 客户端（fetch + ReadableStream 手写解析）
+ * ----------------------------------------------------------------
+ * 契约（README §AI 流式）：/ai/chat 默认 SSE（?stream=false 走 JSON），事件为
+ *   delta（正文增量 {"content":"..."}）/ done（最终结果）/ error（{"code","message"}）。
+ * EventSource 不支持 POST 与自定义鉴权头，故用 fetch 手写解析；
+ * splitFrames 兼容「一包多帧 / 跨包半帧 / \r\n」三种情况（与 Vite 存档版 sse.ts 同源）。
+ * ================================================================ */
+function splitFrames(buffer) {
+  const frames = [];
+  let rest = buffer;
+  for (;;) {
+    const idx = rest.search(/\r?\n\r?\n/);
+    if (idx === -1) break;
+    const raw = rest.slice(0, idx);
+    const sepLen = rest.slice(idx).match(/^\r?\n\r?\n/)[0].length;
+    rest = rest.slice(idx + sepLen);
+    let event = 'message';
+    const dataLines = [];
+    for (const line of raw.split(/\r?\n/)) {
+      if (line.startsWith('event:')) event = line.slice(6).trim();
+      else if (line.startsWith('data:')) dataLines.push(line.slice(5).replace(/^ /, ''));
+    }
+    if (dataLines.length > 0) frames.push({ event, data: dataLines.join('\n') });
+  }
+  return { frames, rest };
+}
+
+function dispatchSseFrame(frame, handlers) {
+  if (!frame || frame.data === undefined) return;
+  let payload;
+  try { payload = JSON.parse(frame.data); } catch (e) { return; } // 坏帧跳过，不中断整个流
+  if (frame.event === 'delta' && payload.content != null) {
+    if (handlers.onDelta) handlers.onDelta(payload.content);
+  } else if (frame.event === 'done') {
+    if (handlers.onDone) handlers.onDone(payload);
+  } else if (frame.event === 'error') {
+    if (handlers.onError) handlers.onError({ code: payload.code, message: payload.message || 'AI 服务异常' });
+  }
+}
+
+/**
+ * POST + SSE 流式对话（带 401 无感续期重放，与 apiFetch 同一套令牌策略）
+ * @param {string} path API 路径（不含 /api/v1 前缀）
+ * @param {object} body 请求体
+ * @param {{onDelta?:Function, onDone?:Function, onError?:Function, onAuthExpired?:Function}} handlers 事件回调
+ * @param {AbortSignal} [signal] 用户主动停止生成
+ */
+async function sseChat(path, body, handlers, signal) {
+  const url = API_BASE + path;
+  const doFetch = (token) => fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
+      // 幂等：存量令牌可能已带 "Bearer " 前缀（旧版后端签发），二次拼接会被网关按 40102 拒绝
+      ...(token ? { Authorization: token.startsWith('Bearer ') ? token : 'Bearer ' + token } : {})
+    },
+    body: JSON.stringify(body),
+    signal
+  });
+  let resp;
+  try { resp = await doFetch(getTokens().access); }
+  catch (e) {
+    if (e.name !== 'AbortError' && handlers.onError) handlers.onError({ message: '网络异常，请检查连接后重试' });
+    return;
+  }
+  // 令牌失效：单飞续期后重放一次；续期失败交由调用方处理（回登录页）
+  if (resp.status === 401 && getTokens().refresh) {
+    try {
+      await refreshTokens();
+      resp = await doFetch(getTokens().access);
+    } catch (e) {
+      if (handlers.onAuthExpired) handlers.onAuthExpired();
+      return;
+    }
+  }
+  if (!resp.ok || !resp.body) {
+    let message = '请求失败，请稍后再试';
+    try { const j = await resp.json(); if (j && j.message) message = j.message; } catch (e) { /* 非 JSON 保留兜底文案 */ }
+    if (handlers.onError) handlers.onError({ message, code: resp.status });
+    return;
+  }
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const { frames, rest } = splitFrames(buffer);
+      buffer = rest;
+      for (const frame of frames) dispatchSseFrame(frame, handlers);
+    }
+    // 流末尾可能有没有空行结尾的残帧，兜底冲一次
+    if (buffer.trim()) {
+      const { frames } = splitFrames(buffer + '\n\n');
+      for (const frame of frames) dispatchSseFrame(frame, handlers);
+    }
+  } catch (e) {
+    if (e.name !== 'AbortError' && handlers.onError) handlers.onError({ message: '连接中断，请重试' });
+  }
+}
+
+/* ================================================================
+ * 基础设施：Markdown 渲染（marked + highlight.js 本地化，无 CDN 依赖）
+ * ----------------------------------------------------------------
+ * 安全约束：AI 输出不可信——
+ *   1. 原始 HTML 一律转义（renderer.html 兜底），防止模型输出注入脚本；
+ *   2. 链接/图片仅放行 http/https/mailto/tel/#，拦截 javascript: / data: 等伪协议；
+ *   3. 代码块经 escapeHtml 转义后进入 <pre>，highlight.js 只做语法着色。
+ * ================================================================ */
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text == null ? '' : String(text);
+  return div.innerHTML;
+}
+function sanitizeLink(url) {
+  const u = String(url || '').trim().replace(/[\u0000-\u001F\u007F]/g, '');
+  if (/^(javascript|data|vbscript):/i.test(u)) return '#';
+  return u;
+}
+function renderMarkdown(text) {
+  if (!text) return '';
+  if (typeof marked === 'undefined') return escapeHtml(text); // 依赖加载失败：退化为纯文本
+  // 预处理：压缩连续空行（3 个以上换行→2 个）、去除行尾空格，避免 AI 输出大量空行
+  const cleaned = text
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n');
+  const renderer = new marked.Renderer();
+  // 原始 HTML 一律转义（防 XSS）
+  renderer.html = function (html) { return escapeHtml(html); };
+  renderer.link = function (href, title, content) {
+    const safe = sanitizeLink(href);
+    const t = title ? ' title="' + escapeHtml(title) + '"' : '';
+    return '<a href="' + safe + '" target="_blank" rel="noopener noreferrer"' + t + '>' + content + '</a>';
+  };
+  renderer.image = function (href, title, text2) {
+    const safe = sanitizeLink(href);
+    const t = title ? ' title="' + escapeHtml(title) + '"' : '';
+    return '<img src="' + safe + '" alt="' + escapeHtml(text2) + '"' + t + ' loading="lazy">';
+  };
+  // 自定义代码块：带语言标题栏 + 复制按钮的窗口（类名与 style.css 严格对齐）
+  renderer.code = function (codeOrObj, langOrUndef) {
+    // 兼容 marked v12 新版对象形态（{text, lang}）与旧式三参数形态
+    let codeText, lang;
+    if (codeOrObj !== null && typeof codeOrObj === 'object') { codeText = codeOrObj.text || ''; lang = codeOrObj.lang; }
+    else { codeText = codeOrObj || ''; lang = langOrUndef; }
+    const language = lang || 'code';
+    return '<div class="code-block-wrapper">' +
+      '<div class="code-block-header">' +
+      '<span class="code-block-lang">' + escapeHtml(language) + '</span>' +
+      '<button type="button" class="code-block-copy" data-copy-code title="复制代码">' +
+      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>' +
+      '</button></div>' +
+      '<pre><code class="language-' + escapeHtml(language) + '">' + escapeHtml(codeText) + '</code></pre>' +
+      '</div>';
+  };
+  marked.setOptions({ gfm: true, breaks: false, renderer: renderer });
+  let html = marked.parse(cleaned);
+  // highlight.js 代码高亮（渲染后处理；单块失败不影响正文）
+  if (typeof hljs !== 'undefined') {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    tmp.querySelectorAll('pre code').forEach(block => { try { hljs.highlightElement(block); } catch (e) { /* 忽略 */ } });
+    html = tmp.innerHTML;
+  }
+  return html;
+}
+// 代码块复制：全局事件委托（不依赖内联 onclick 全局函数，与 Mitta 参考同思路但更稳）
+document.addEventListener('click', function (e) {
+  const btn = e.target && e.target.closest ? e.target.closest('[data-copy-code]') : null;
+  if (!btn) return;
+  const wrapper = btn.closest('.code-block-wrapper');
+  const code = wrapper && wrapper.querySelector('code');
+  if (!code) return;
+  navigator.clipboard.writeText(code.innerText).then(() => {
+    const original = btn.innerHTML;
+    btn.innerHTML = '✓ 已复制';
+    setTimeout(() => { btn.innerHTML = original; }, 1500);
+  }).catch(() => { /* 剪贴板不可用时静默失败 */ });
+});
+
+/* ================================================================
+ * 基础设施：主题皮肤（锦市 SKIN 商品 → 前端换肤）
+ * ----------------------------------------------------------------
+ * 键与 scripts/sql/sorts_mall.sql 种子商品 ID 一一对应（种子用显式主键
+ * + INSERT IGNORE，ID 稳定可依赖）；CSS 侧由 html[data-skin] 驱动变量覆盖。
+ * 皮肤清单：brocade 织锦流光 / night 星夜梭影 / ocean 沧浪青岚 /
+ *           sunset 霞光织锦 / forest 竹影幽篁 / ink 墨韵流年 / blossom 樱色入梦
+ * ================================================================ */
+const SKIN_THEME_MAP = { 1: 'brocade', 2: 'night', 8: 'ocean', 9: 'sunset', 10: 'forest', 11: 'ink', 12: 'blossom' };
+const SKIN_KEYS = Object.keys(SKIN_THEME_MAP).map(k => SKIN_THEME_MAP[k]);
+const SKIN_STORAGE_KEY = 'sorts.skin';
+
+/** 应用皮肤：html[data-skin="key"] 驱动 CSS 变量覆盖；非内置 key 一律回退默认皮肤 */
+function applySkin(key) {
+  const safe = SKIN_KEYS.indexOf(key) >= 0 ? key : '';
+  if (safe) {
+    localStorage.setItem(SKIN_STORAGE_KEY, safe);
+    document.documentElement.setAttribute('data-skin', safe);
+  } else {
+    localStorage.removeItem(SKIN_STORAGE_KEY);
+    document.documentElement.removeAttribute('data-skin');
+  }
+}
+
+/** 从云裳阁找到「使用中」的皮肤商品并应用（云裳阁 = 服务端真源） */
+function applySkinFromWardrobe(wardrobe) {
+  const list = wardrobe || [];
+  let key = '';
+  for (const w of list) {
+    if (!w || !w.isActive || !w.item || w.item.type !== 'SKIN') continue;
+    key = SKIN_THEME_MAP[w.item.id] || '';
+    break;
+  }
+  applySkin(key);
+  return key;
+}
+
 const app = createApp({
   setup() {
     /* ============================================================
@@ -114,9 +336,8 @@ const app = createApp({
     const currentPage = ref('dashboard');
 
     // ============ Timer State ============
+    // 注意：elapsedSeconds / timerInterval 定义在下方「计时状态机」段（自愈秒表）
     const activeSchedule = ref(null);
-    const elapsedSeconds = ref(0);
-    let timerInterval = null;
 
     // ============ Data Stores ============
     const schedules = ref([]);
@@ -140,6 +361,14 @@ const app = createApp({
     const aiLoading = ref(false);
     const aiSuggestions = ref([]);
     let currentPlanId = null; // /ai/plan 返回的 planId，采纳时回传
+
+    // ============ AI 流式状态（v2：SSE 打字机 + Markdown） ============
+    const aiStreaming = ref(false);        // SSE 流进行中（驱动停止按钮与光标）
+    const aiConversationId = ref('');      // 多轮上下文：done 事件回传，下轮请求带上（Redis 12h）
+    const aiWriteEnabled = ref(false);     // 双钥匙第二把：用户确认后才置位 allowWrite=true
+    let aiAbortController = null;          // 用户主动停止生成（abort 静默结束）
+    let aiRenderTimer = null;              // 流式渲染节流器（~90ms 合并一次 Markdown 渲染）
+    let aiLatestText = '';                 // 流式累计文本（与 botMsg.content 分离，节流写入）
 
     // ============ Stats ============
     const stats = reactive({
@@ -344,28 +573,56 @@ const app = createApp({
       notifications.value = [];
       aiMessages.value = [{ role: 'bot', content: '你好！我是梭灵 🤖 我可以帮你：\n\n📅 **规划日程**：告诉我你的需求，我会生成结构化的日程安排\n📊 **效率分析**：分析你的时间使用情况\n📝 **生成总结**：每日/月度/年度智能总结\n\n试试对我说："明天上午学习Java 2小时，下午运动1小时"' }];
       aiSuggestions.value = [];
+      aiConversationId.value = '';
+      aiWriteEnabled.value = false;
       currentPlanId = null;
       activeSchedule.value = null;
     }
 
     /* ============================================================
-     * 计时（真实状态机 + 本地秒表显示）
+     * 计时（穿梭）状态机 + 自愈秒表
+     * ------------------------------------------------------------
+     * 状态机与后端 sorts-schedule TimerService 合法流转一一对应（非法跃迁 409）：
+     *   PENDING       --开梭(start)--> IN_PROGRESS
+     *   IN_PROGRESS   --暂停(pause)--> PAUSED
+     *   PAUSED        --续梭(resume)--> IN_PROGRESS
+     *   IN_PROGRESS   --落梭(end)-----> COMPLETED（事务内结算秒数 + 原子发放光阴砂）
+     *   PAUSED        --落梭(end)-----> COMPLETED
+     *   PENDING / IN_PROGRESS / PAUSED --取消(cancel)--> CANCELLED
+     * 秒数自愈：elapsedSeconds = actualDuration（历史累计）+ (now - actualStartTime)，
+     * 全部以服务端时间为准；页面刷新后按同一公式自动恢复，不依赖本地计数（README §核心设计）。
      * ============================================================ */
-    function startTimer() {
-      stopTimer();
-      timerInterval = setInterval(() => { elapsedSeconds.value++; }, 1000);
+    const TIMER_ACTIONS = {
+      PENDING: ['start', 'cancel'],
+      IN_PROGRESS: ['pause', 'end', 'cancel'],
+      PAUSED: ['resume', 'end', 'cancel'],
+      COMPLETED: [], CANCELLED: [], TIMEOUT: []
+    };
+    /** 当前状态是否允许该状态机动作（模板据此渲染操作按钮） */
+    function canAct(status, action) {
+      return (TIMER_ACTIONS[status] || []).indexOf(action) >= 0;
     }
 
+    const timerNow = ref(Date.now()); // 每秒刷新一次基准时间戳，驱动 elapsedSeconds 重算
+    let timerInterval = null;
+    function startTimer() {
+      stopTimer();
+      timerNow.value = Date.now();
+      timerInterval = setInterval(() => { timerNow.value = Date.now(); }, 1000);
+    }
     function stopTimer() {
       if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
     }
-
-    /** 依据服务端 actualStartTime 重算已流逝秒数 */
-    function syncElapsed(s) {
-      if (s && s.actualStartTime) {
-        elapsedSeconds.value = Math.max(0, Math.floor((Date.now() - new Date(s.actualStartTime).getTime()) / 1000));
-      }
-    }
+    // 已流逝秒数（computed 自愈）：
+    //   IN_PROGRESS = 历史累计 actualDuration + 本次片段 actualStartTime → now
+    //   PAUSED/其他 = actualDuration（暂停期间不计时）
+    const elapsedSeconds = computed(() => {
+      const s = activeSchedule.value;
+      if (!s) return 0;
+      const base = s.actualDuration || 0;
+      if (s.status !== 'IN_PROGRESS' || !s.actualStartTime) return base;
+      return base + Math.max(0, Math.floor((timerNow.value - new Date(s.actualStartTime).getTime()) / 1000));
+    });
 
     async function startSchedule(s) {
       if (activeSchedule.value && activeSchedule.value.id !== s.id) {
@@ -376,15 +633,14 @@ const app = createApp({
         const updated = await apiFetch(`/schedules/${s.id}/start`, { method: 'POST' });
         Object.assign(s, updated);
         activeSchedule.value = updated;
-        syncElapsed(updated);
-        startTimer();
+        startTimer(); // elapsedSeconds 由 computed 依服务端时间自愈
       } catch (e) { showError(e); }
     }
 
     async function pauseSchedule(s) {
       try {
         const updated = await apiFetch(`/schedules/${s.id}/pause`, { method: 'POST' });
-        stopTimer();
+        stopTimer(); // 暂停期间不计时；actualDuration 已由服务端结算
         Object.assign(s, updated);
         activeSchedule.value = { ...updated };
       } catch (e) { showError(e); }
@@ -395,8 +651,7 @@ const app = createApp({
         const updated = await apiFetch(`/schedules/${s.id}/resume`, { method: 'POST' });
         Object.assign(s, updated);
         activeSchedule.value = { ...updated };
-        syncElapsed(updated);
-        startTimer();
+        startTimer(); // 服务端已重置 actualStartTime 并保留累计秒数
       } catch (e) { showError(e); }
     }
 
@@ -413,8 +668,8 @@ const app = createApp({
           applyUser(me);
           earned = userInfo.points - before;
         } catch (e) { /* 积分拉取失败不阻塞主流程 */ }
-        activeSchedule.value = null;
-        elapsedSeconds.value = 0;
+        activeSchedule.value = null; // computed 自动归零
+        await loadSchedules(); // 落梭后刷新列表状态与光阴砂余额
         alert(earned > 0 ? `✅ 日程完成！获得 ${earned} 光阴砂` : '✅ 日程已完成');
       } catch (e) {
         showError(e, '结束日程失败');
@@ -429,8 +684,8 @@ const app = createApp({
         if (activeSchedule.value && activeSchedule.value.id === s.id) {
           stopTimer();
           activeSchedule.value = null;
-          elapsedSeconds.value = 0;
         }
+        await loadSchedules();
       } catch (e) { showError(e); }
     }
 
@@ -535,6 +790,25 @@ const app = createApp({
       });
     }
 
+    /** 统一 AI 错误文案（503 = 服务未配置模型密钥） */
+    function aiErrorMessage(e) {
+      if (e && e.code === 503) return 'AI 服务暂不可用（未配置模型密钥或服务未就绪），请稍后再试。';
+      return (e && e.message) || 'AI 服务异常，请稍后再试。';
+    }
+
+    /** 用户主动停止生成：abort 静默结束（不抛错），保留已生成内容 */
+    function stopAiReply() {
+      if (aiAbortController) { aiAbortController.abort(); aiAbortController = null; }
+    }
+
+    /** 执行 AI 建议操作（done 事件 suggestedActions，如 CREATE_SCHEDULE/VIEW_STATS） */
+    function runSuggestedAction(action) {
+      if (!action || !action.type) return;
+      if (action.type === 'CREATE_SCHEDULE') { showScheduleModal.value = true; editingSchedule.value = null; }
+      else if (action.type === 'VIEW_STATS') { currentPage.value = 'stats'; }
+      else if (action.type === 'GENERATE_SUMMARY') { currentPage.value = 'reports'; }
+    }
+
     async function sendAiMessage() {
       const msg = aiInput.value.trim();
       if (!msg || aiLoading.value) return;
@@ -543,9 +817,10 @@ const app = createApp({
       aiLoading.value = true;
       aiScrollToBottom();
 
-      try {
-        const isPlanning = /规划|安排|计划|日程/.test(msg);
-        if (isPlanning) {
+      // 规划意图：走 /ai/plan JSON 通道（右侧结构化建议面板），保持原行为
+      const isPlanning = /规划|安排|计划|日程/.test(msg);
+      if (isPlanning) {
+        try {
           const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
           const targetDate = tomorrow.toISOString().slice(0, 10);
           const plan = await apiFetch('/ai/plan', { method: 'POST', body: { userPrompt: msg, targetDate } });
@@ -557,18 +832,55 @@ const app = createApp({
               ? `好的！我已经分析了你的需求，生成了 ${aiSuggestions.value.length} 条规划建议 👇\n\n你可以查看右侧面板，选择合适的建议一键采纳创建日程。`
               : '我没有生成到可用的规划建议，换一种说法再试试？'
           });
-        } else {
-          const chat = await apiFetch('/ai/chat?stream=false', { method: 'POST', body: { message: msg } });
-          aiMessages.value.push({ role: 'bot', content: chat.reply || '（没有收到回复）' });
+        } catch (e) {
+          aiMessages.value.push({ role: 'bot', content: aiErrorMessage(e) });
+        } finally {
+          aiLoading.value = false;
+          aiScrollToBottom();
         }
+        return;
+      }
+
+      // 普通对话：SSE 流式（/ai/chat 默认流式），Markdown 打字机渲染
+      aiAbortController = new AbortController();
+      aiStreaming.value = true;
+      aiLatestText = '';
+      aiMessages.value.push({ role: 'bot', content: '', suggestedActions: [] });
+      const botMsg = aiMessages.value[aiMessages.value.length - 1];
+      // 节流渲染：SSE delta 高频到达，90ms 合并一次，避免逐字重解析 Markdown 造成闪烁
+      const scheduleRender = () => {
+        if (aiRenderTimer) return;
+        aiRenderTimer = setTimeout(() => {
+          aiRenderTimer = null;
+          if (!aiStreaming.value) return;
+          botMsg.content = aiLatestText;
+          aiScrollToBottom();
+        }, 90);
+      };
+      try {
+        const body = { message: msg };
+        if (aiConversationId.value) body.conversationId = aiConversationId.value; // 多轮上下文（Redis 12h）
+        if (aiWriteEnabled.value) body.allowWrite = true; // 双钥匙第二把（用户已确认）
+        await sseChat('/ai/chat', body, {
+          onDelta: (delta) => { aiLatestText += delta; scheduleRender(); },
+          onDone: (payload) => {
+            aiLatestText = payload && payload.reply ? payload.reply : aiLatestText;
+            botMsg.content = aiLatestText;
+            if (payload && payload.conversationId) aiConversationId.value = payload.conversationId;
+            // 建议操作：挂在当前消息上，渲染为气泡内快捷按钮
+            botMsg.suggestedActions = (payload && Array.isArray(payload.suggestedActions)) ? payload.suggestedActions : [];
+          },
+          onError: (e) => { botMsg.content = aiErrorMessage(e); },
+          onAuthExpired: () => { sessionExpired(); }
+        }, aiAbortController.signal);
+        if (!botMsg.content) botMsg.content = '（没有收到回复）';
       } catch (e) {
-        if (e && e.code === 503) {
-          aiMessages.value.push({ role: 'bot', content: 'AI 服务暂不可用（未配置模型密钥或服务未就绪），请稍后再试。' });
-        } else {
-          aiMessages.value.push({ role: 'bot', content: (e && e.message) || 'AI 服务异常，请稍后再试。' });
-        }
+        botMsg.content = aiErrorMessage(e);
       } finally {
+        if (aiRenderTimer) { clearTimeout(aiRenderTimer); aiRenderTimer = null; }
+        aiStreaming.value = false;
         aiLoading.value = false;
+        aiAbortController = null;
         aiScrollToBottom();
       }
     }
@@ -668,6 +980,8 @@ const app = createApp({
       try {
         await apiFetch('/users/wardrobe/active', { method: 'PUT', body: { itemId: item.id, type: item.type } });
         await loadMallData();
+        // 皮肤即时生效：服务端已置为使用中，从最新云裳阁同步整站皮肤
+        applySkinFromWardrobe(wardrobe.value);
       } catch (e) { showError(e, '切换装扮失败'); }
     }
 
@@ -745,13 +1059,22 @@ const app = createApp({
           ownedMap[w.item.id] = true;
           if (w.isActive) activeMap[w.item.id] = true;
         });
-        mallItems.value = ((mallPage && mallPage.list) || []).map(i => ({
-          ...i,
-          color: MALL_COLOR[i.type] || 'blue',
-          owned: !!ownedMap[i.id],
-          isActive: !!activeMap[i.id]
-        }));
+        mallItems.value = ((mallPage && mallPage.list) || []).map(i => {
+          const isSkin = i.type === 'SKIN';
+          const skinKey = isSkin ? (SKIN_THEME_MAP[i.id] || '') : '';
+          return {
+            ...i,
+            color: MALL_COLOR[i.type] || 'blue',
+            skinKey,
+            // 预览底：皮肤商品按主题键取色（所见即所得），其余按类型取色
+            preview: isSkin ? ('skin-' + (skinKey || 'blue')) : ('skin-' + (MALL_COLOR[i.type] || 'blue')),
+            owned: !!ownedMap[i.id],
+            isActive: !!activeMap[i.id]
+          };
+        });
         wardrobe.value = wardrobeList || [];
+        // 皮肤真源同步：云裳阁「使用中」的 SKIN 商品驱动整站换肤
+        applySkinFromWardrobe(wardrobe.value);
       } catch (e) { /* 商城加载失败保留空态 */ }
     }
 
@@ -809,7 +1132,7 @@ const app = createApp({
         const s = await apiFetch('/schedules/active');
         if (s) {
           activeSchedule.value = s;
-          if (s.status === 'IN_PROGRESS') { syncElapsed(s); startTimer(); }
+          if (s.status === 'IN_PROGRESS') startTimer(); // 秒数由 computed 依服务端时间自愈
         }
       } catch (e) { /* 无进行中日程时服务端返回 data=null */ }
     }
@@ -831,6 +1154,9 @@ const app = createApp({
      * ============================================================ */
     onMounted(async () => {
       resetScheduleForm();
+      // 皮肤：优先本地缓存即时生效（避免闪白），登录后由云裳阁服务端真源校准
+      const cachedSkin = localStorage.getItem(SKIN_STORAGE_KEY);
+      if (cachedSkin && SKIN_KEYS.indexOf(cachedSkin) >= 0) applySkin(cachedSkin);
       // 清理旧版演示计时残留
       localStorage.removeItem('shuttle_timer_schedule');
       localStorage.removeItem('shuttle_timer_start');
@@ -879,8 +1205,8 @@ const app = createApp({
       handleAuth, logout,
       // Nav
       currentPage,
-      // Timer
-      activeSchedule, elapsedSeconds,
+      // Timer（状态机动作合法性 + 自愈秒表）
+      activeSchedule, elapsedSeconds, canAct,
       startSchedule, pauseSchedule, resumeSchedule, endSchedule, cancelSchedule,
       formatTimer,
       // Data
@@ -889,9 +1215,11 @@ const app = createApp({
       calYear, calMonth, calendarDays, dayHeaders,
       prevMonth, nextMonth, goToToday, selectCalendarDay,
       selectedDaySchedules, selectedDayLabel, selectedDayDate,
-      // AI
+      // AI（流式 + Markdown + 双钥匙写权限）
       aiInput, aiMessages, aiLoading, aiSuggestions,
-      sendAiMessage, aiQuickPrompt, adoptSuggestion, adoptAllSuggestions,
+      aiStreaming, aiConversationId, aiWriteEnabled,
+      sendAiMessage, aiQuickPrompt, stopAiReply, runSuggestedAction,
+      adoptSuggestion, adoptAllSuggestions,
       // Stats
       stats, todayStats, todaySchedules, upcomingSchedules,
       filteredSchedules, filteredMallItems,
@@ -916,7 +1244,7 @@ const app = createApp({
       saveProfile, saveReminderSettings,
       // Utils
       formatTime, formatDate, formatDateTime, formatSeconds, formatMinutes,
-      statusLabel, todayStr, tagColors, getTodayStr,
+      statusLabel, todayStr, tagColors, getTodayStr, renderMarkdown,
     };
   }
 });
