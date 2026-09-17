@@ -1145,6 +1145,7 @@ const app = createApp({
           aiSuggestions.value = (plan.suggestions || []).map(sg => ({ ...sg, suggestedStart: sg.suggestedStart || '09:00' }));
           aiSelectedIndices.value = aiSuggestions.value.map((_, i) => i); // 默认全选，用户可取消
           aiPlanRange.value = plan.range || null;
+          planPage.value = 1; // 新规划生成后回到第一页
           aiMessages.value.push({
             role: 'bot',
             content: aiSuggestions.value.length
@@ -1224,6 +1225,17 @@ const app = createApp({
       });
       return [...map.entries()].map(([date, items]) => ({ date, items }));
     });
+    // 多日规划面板分页（按天分组分页：每页 2 天，避免长列表无限延长；勾选为全局索引不受分页影响）
+    const PLAN_DAY_PAGE_SIZE = 2;
+    const planPage = ref(1);
+    const planTotalPages = computed(() => Math.max(1, Math.ceil(aiGroupedSuggestions.value.length / PLAN_DAY_PAGE_SIZE)));
+    const pagedPlanGroups = computed(() => {
+      const start = (planPage.value - 1) * PLAN_DAY_PAGE_SIZE;
+      return aiGroupedSuggestions.value.slice(start, start + PLAN_DAY_PAGE_SIZE);
+    });
+    function prevPlanPage() { if (planPage.value > 1) planPage.value--; }
+    function nextPlanPage() { if (planPage.value < planTotalPages.value) planPage.value++; }
+    watch(planTotalPages, (t) => { if (planPage.value > t) planPage.value = t; });
     function toggleSuggestion(index) {
       const i = aiSelectedIndices.value.indexOf(index);
       if (i >= 0) aiSelectedIndices.value.splice(i, 1);
@@ -1341,6 +1353,7 @@ const app = createApp({
       aiSuggestions.value = [];
       aiSelectedIndices.value = [];
       aiPlanRange.value = null;
+      planPage.value = 1;
       currentPlanId = null;
       aiInput.value = '';
       aiEditIndex.value = -1;
@@ -1365,6 +1378,7 @@ const app = createApp({
         aiSuggestions.value = [];
       }
       aiPlanRange.value = conv.lastGeneratedRange || null;
+      planPage.value = 1; // 恢复会话后从第一页展示
       currentPlanId = conv.planId || null;
       aiEditIndex.value = -1;
       aiConversationId.value = '';
@@ -1466,7 +1480,7 @@ const app = createApp({
       } catch (e) { /* 已统一弹窗 */ }
     }
     async function clearCurrentConversation() {
-      const ok = await notifyConfirm({ title: '清空当前会话', message: '确定清空当前会话的消息记录吗？（会话本身保留）', confirmText: '清空' });
+      const ok = await notifyConfirm({ title: '清空当前会话', message: '确定清空当前会话的消息记录与规划建议吗？（会话本身保留）', confirmText: '清空' });
       if (!ok) return;
       resetAiChatState();
       await saveConversation(true);
@@ -1879,8 +1893,9 @@ const app = createApp({
       aiInput, aiMessages, aiLoading, aiSuggestions,
       aiStreaming, aiConversationId, aiWriteEnabled,
       sendAiMessage, aiQuickPrompt, stopAiReply, runSuggestedAction,
-      // AI 多日规划（勾选 / 编辑 / 批量采纳）
+      // AI 多日规划（勾选 / 编辑 / 批量采纳 / 分页）
       aiGroupedSuggestions, aiPlanRange, aiSelectedIndices, aiEditIndex, aiEditForm,
+      pagedPlanGroups, planPage, planTotalPages, prevPlanPage, nextPlanPage,
       toggleSuggestion, toggleDaySuggestions, toggleAllSuggestions, clearAiSelection,
       adoptSuggestion, adoptAllSuggestions, adoptSelectedSuggestions,
       startEditSuggestion, saveSuggestionEdit, cancelSuggestionEdit,

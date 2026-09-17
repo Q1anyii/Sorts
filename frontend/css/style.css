@@ -1032,6 +1032,14 @@ html[data-skin="blossom"] {
   from { opacity: 0; transform: translateX(24px); }
   to { opacity: 1; transform: translateX(0); }
 }
+/* 多日规划建议面板 · 分页栏 */
+.plan-pager {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border);
+}
+.plan-pager-info {
+  font-size: 12px; color: var(--text-secondary); white-space: nowrap;
+}
 @media (prefers-reduced-motion: reduce) {
   .notify-mask, .notify-box, .toast-item { animation: none !important; }
 }

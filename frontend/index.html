@@ -6,7 +6,7 @@
 <title>梭子 - 专注计时与日程规划</title>
 <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
 <script src="https://unpkg.com/vue-router@4.3.0/dist/vue-router.global.prod.js"></script>
-<link rel="stylesheet" href="css/style.css?v=20260917-1">
+<link rel="stylesheet" href="css/style.css?v=20260917-2">
 <link rel="stylesheet" href="css/github.min.css">
 <style>[v-cloak]{display:none}</style>
 </head>
@@ -479,7 +479,7 @@
                 <div class="empty-icon">🤖</div>
                 <p>在左侧输入需求，AI 会按时间范围生成每天的计划</p>
               </div>
-              <div v-for="g in aiGroupedSuggestions" :key="g.date" class="plan-day-group">
+              <div v-for="g in pagedPlanGroups" :key="g.date" class="plan-day-group">
                 <div class="plan-day-head">
                   <label class="plan-day-check">
                     <input type="checkbox"
@@ -517,6 +517,11 @@
                     <button class="btn btn-success btn-sm" @click="adoptSuggestion(item.index)">采纳</button>
                   </div>
                 </div>
+              </div>
+              <div v-if="aiSuggestions.length && planTotalPages > 1" class="plan-pager">
+                <button class="btn btn-outline btn-sm" :disabled="planPage<=1" @click="prevPlanPage">上一页</button>
+                <span class="plan-pager-info">第 {{ planPage }} / {{ planTotalPages }} 页 · 共 {{ aiSuggestions.length }} 条</span>
+                <button class="btn btn-outline btn-sm" :disabled="planPage>=planTotalPages" @click="nextPlanPage">下一页</button>
               </div>
             </div>
           </div>
@@ -914,6 +919,6 @@
 
 <script src="js/vendor/marked.min.js"></script>
 <script src="js/vendor/highlight.min.js"></script>
-<script src="js/app.js?v=20260917-1"></script>
+<script src="js/app.js?v=20260917-2"></script>
 </body>
 </html>
