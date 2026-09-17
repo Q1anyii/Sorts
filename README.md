@@ -32,7 +32,7 @@
 - **飞鸽传书（通知）**：站内通知列表、已读 / 全部已读；提醒设置支持提前量、渠道与免打扰时段；定时扫描按 `t_reminder_log` 唯一键幂等去重，绝不重复轰炸
 - **双令牌鉴权**：网关统一校验 JWT 并注入 `X-User-Id`，access 30 分钟 + refresh 7 天；前端 401 时单飞续期后自动重放原请求，用户无感
 - **网关限流**：Redis 令牌桶（默认 20/秒、突发 40），登录态按用户、未登录按 IP 计数；网关同时剥离外部伪造的内部凭证头
-- **现代化前端**：Vue 3（CDN）单页主版前端，Nginx 静态托管免构建，直连 `/api/v1` 真实接口，覆盖全部功能域：
+- **现代化前端**：Vue 3 + Vite 构建主版前端（模板保留在 `index.html`，逻辑在 `src/legacy/app-logic.ts`，marked + highlight.js 已本地化），Nginx 托管构建产物，直连 `/api/v1` 真实接口，覆盖全部功能域：
   - 品牌与 favicon：左上角「织梭」SVG 品牌图标（渐变底），16/32/64 三档 PNG favicon
   - 织程：单条创建 / 编辑 / **单条与批量删除（事务 + 软删除 + 删除前确认）**，状态 / 优先级 / 关键词筛选，**日期范围查询**（今天 / 明天 / 本周 / 本月 / 自定义预设，起止日期闭区间，结果按日分组展示）
   - 织史：日 / 月 / 年总结报告，异步轮询查看（同周期幂等），**支持单条 / 批量删除**
@@ -63,7 +63,7 @@
 | 消息中间件   | RabbitMQ 3.13（当前提醒走 `@Scheduled`，MQ 为事务性消息 / outbox 技术债预留）                  |
 | AI 模型   | DeepSeek（OpenAI 兼容协议），自实现薄客户端封装在 `ChatModelClient` 接口后                      |
 | 认证      | JWT（access 30 分钟 / refresh 7 天）+ BCrypt 密码哈希                                |
-| 前端      | 主版：Vue 3（CDN 单页）+ 原生 JS，Nginx 静态托管；存档：Vite 6 + TypeScript + Pinia + Vue Router 4（frontend/vite-app/） |
+| 前端      | Vue 3.5 + Vite 6 构建主版（`frontend/vite-app/`：模板 index.html + 逻辑 src/legacy/），Nginx 托管 dist；TypeScript + Pinia 组件化源码保留于 src/（后续渐进替换 legacy） |
 | 测试      | JUnit 5 + Mockito（后端）、Vitest（前端）                                            |
 | 构建与运维   | Maven Wrapper、Docker Compose 多阶段镜像、GitHub Actions、Nginx（前端静态托管 + `/api` 反代） |
 
@@ -138,7 +138,7 @@ graph TD
 | **sorts-ai**           | 8083        | `sorts_ai`           | 对话（SSE 流式）、日程规划与采纳、日/月/年报告、工具调用编排                |
 | **sorts-notification** | 8084        | `sorts_notification` | 通知列表与已读、提醒设置、定时提醒扫描与幂等去重                         |
 | **sorts-mall**         | 8085        | `sorts_mall`         | 锦市商品、购买（加锁 + 条件更新一致性兜底）、云裳阁仓库与启用切换                  |
-| **frontend**           | 8088        | —                    | 主版前端静态页（Vue 3 CDN；Nginx 托管并反代 `/api`）；Vite 工程存档于 frontend/vite-app |
+| **frontend**           | 8088        | —                    | 主版前端（Vite 构建产物；Nginx 托管并反代 `/api`；多阶段镜像内构建） |
 
 ### 网关路由
 
@@ -185,11 +185,10 @@ graph TD
 │   ├── sorts-ai/             # AI 服务（llm / tool / service / controller）
 │   ├── sorts-notification/   # 通知服务
 │   └── sorts-mall/           # 锦市服务
-├── frontend/                 # 主版前端：Vue 3（CDN）单页，静态托管免构建
-│   ├── index.html            # 页面结构（登录、今日经纬、织历、织程、梭灵、织史、纹谱、锦市、云裳阁、飞鸽传书、设置）
-│   ├── css/style.css         # 主题样式
-│   ├── js/app.js             # 数据层：/api/v1 真实接口 + 双令牌续期
-│   └── vite-app/             # Vite 工程存档（原 Vue3+TS 前端，不再参与构建）
+├── frontend/                 # 前端工程（Vue 3 + Vite 构建，主版）
+│   └── vite-app/             # Vite 6 工程：index.html（页面模板）+ src/legacy/（主版逻辑与样式）+ 组件化源码存档
+│       ├── src/legacy/       # 主版数据层 app-logic.ts + style.css + github.min.css（由 js/app.js 迁入）
+│       └── src/views|components|stores|api  # 组件化重构源码存档（渐进替换 legacy 用）
 ├── docs/
 │   ├── PROGRESS.md           # 里程碑进度、关键决策、已知限制与技术债
 │   ├── dev-setup.md          # 开发手册（端口、命令、环境变量、约定）
@@ -264,14 +263,18 @@ cd backend && ./mvnw -pl sorts-gateway spring-boot:run
 
 ### 4. 启动前端
 
-主版前端为静态单页（Vue 3 CDN），**无需构建**：
+主版前端为 **Vite 工程**（`frontend/vite-app/`），容器镜像内多阶段构建，宿主无需 Node：
 
 ```bash
-bash scripts/docker.sh web        # 容器方式：http://localhost:8088（Nginx 已反代 /api 到网关）
-cd frontend && python -m http.server 8088   # 仅静态页；/api 需自行反代（推荐直接用容器）
+bash scripts/docker.sh web        # 容器方式：http://localhost:8088（Nginx 已反代 /api 到网关，镜像内 npm run build）
 ```
 
-存档的 Vite 工程（`frontend/vite-app/`）仅供历史参考：`cd frontend/vite-app && npm install && npm run dev`。
+本地开发调试：
+
+```bash
+cd frontend/vite-app && npm install && npm run dev   # http://localhost:5173（vite proxy /api → 网关 8080）
+cd frontend/vite-app && npm run build                # 生产构建到 dist/（Dockerfile 多阶段复用）
+```
 
 ### 5. 全容器化运行（宿主不装 JDK / Node 也能跑）
 
@@ -462,7 +465,7 @@ bash scripts/docker.sh app-down  # 停服务
 | 层    | 命令                                        | 规模                       |
 | ---- | ----------------------------------------- | ------------------------ |
 | 后端单测 | `cd backend && ./mvnw test`               | 39 个测试类 / 334 个用例        |
-| 前端单测（存档 Vite 工程） | `cd frontend/vite-app && npm test` | 4 个测试文件 / 19 个用例；⚠️ 仅覆盖存档工程，主版 CDN 前端（`frontend/index.html + js/ + css/`）无自动化测试，属已知覆盖盲区 |
+| 前端单测 | `cd frontend/vite-app && npm test` | 4 个测试文件 / 19 个用例（时长工具 / 状态机映射 / SSE 帧 / 错误语义；与主版共用同一仓库，覆盖盲区从「非线上代码」收窄为「legacy 大函数未拆解」） |
 | 集成测试 | `cd backend && ./mvnw -Pintegration test` | Testcontainers（需 Docker） |
 
 **覆盖范围**
@@ -476,14 +479,14 @@ bash scripts/docker.sh app-down  # 停服务
 | sorts-ai           | 对话编排、规划生成与采纳、报告装配、工具注册与六种工具、SSE 帧、JSON 载荷 |
 | sorts-notification | 通知已读、提醒设置、提醒扫描幂等、免打扰时段                    |
 | sorts-mall         | 商品查询、购买加锁与一致性兜底、事务落库、装扮切换                   |
-| frontend（存档 Vite 工程） | 时长与时辰节气工具、状态机映射、SSE 帧切分、错误语义 |
+| frontend | 时长与时辰节气工具、状态机映射、SSE 帧切分、错误语义 |
 
 **运行方式**
 
 ```bash
 cd backend && ./mvnw clean install   # 构建即跑单测，全绿才可提交
-cd frontend/vite-app && npm test              # Vitest run（存档 Vite 工程）
-cd frontend/vite-app && npm run build         # 生产构建冒烟（存档 Vite 工程）
+cd frontend/vite-app && npm test              # Vitest run
+cd frontend/vite-app && npm run build         # 生产构建冒烟
 ```
 
 **集成测试（真实 MySQL 8 + Redis 7，Testcontainers）**

@@ -1,16 +1,21 @@
 # =====================================================================
-# 前端镜像：主版前端（frontend/ 静态页：index.html + css/ + js/）
-# 纯静态托管，无需 Node 构建；/api 由 nginx.conf 反代到网关
+# 前端镜像：主版前端（Vite 工程构建产物）
+# 多阶段：Node 构建 frontend/vite-app → nginx 托管 dist
+# 主版源码 = vite-app/index.html(模板) + src/legacy/(app-logic.ts + css)
+# /api 由 nginx.conf 反代到网关
 # =====================================================================
 # syntax=docker/dockerfile:1
+
+FROM node:20-alpine AS build
+WORKDIR /build
+COPY frontend/vite-app/package.json frontend/vite-app/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY frontend/vite-app/ ./
+RUN npm run build
 
 FROM nginx:1.27-alpine
 ENV TZ=Asia/Shanghai
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
-# 只复制主版前端文件；vite-app/（Vite 工程存档）不参与镜像构建
-# 注意：COPY 目录只拷贝其「内容」，必须逐目录指定目标，保持 css/ js/ 结构
-COPY frontend/index.html /usr/share/nginx/html/
-COPY frontend/css /usr/share/nginx/html/css/
-COPY frontend/js /usr/share/nginx/html/js/
+COPY --from=build /build/dist/ /usr/share/nginx/html/
 COPY frontend/favicon-*.png /usr/share/nginx/html/
 EXPOSE 80

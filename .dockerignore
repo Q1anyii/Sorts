@@ -8,7 +8,6 @@
 **/target
 **/node_modules
 frontend/dist
-frontend/vite-app
 docs
 archive
 *.md
