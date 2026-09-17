@@ -580,9 +580,11 @@ const app = createApp({
      * ============================================================ */
     const todayStr = computed(() => new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }));
 
+    // 今日经纬依赖「全量列表」而非织程筛选列表：织程/织历联动设置非今日筛选后，
+    // 落梭等刷新若按筛选拉取会导致今日日程被清空（需手动刷新才恢复）——读 allSchedules 解耦
     const todaySchedules = computed(() => {
       const today = getTodayStr();
-      return schedules.value.filter(s => s.plannedStartTime && s.plannedStartTime.startsWith(today));
+      return allSchedules.value.filter(s => s.plannedStartTime && s.plannedStartTime.startsWith(today));
     });
 
     const todayStats = computed(() => {
@@ -596,7 +598,7 @@ const app = createApp({
 
     const upcomingSchedules = computed(() => {
       const today = getTodayStr();
-      return schedules.value
+      return allSchedules.value
         .filter(s => s.plannedStartTime > today + 'T23:59' && s.status === 'PENDING')
         .slice(0, 5);
     });
