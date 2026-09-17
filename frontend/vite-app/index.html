@@ -421,7 +421,7 @@
       <div v-if="currentPage==='plans'" class="page-view">
         <div class="page-header">
           <h2>📌 主线 · 主计划</h2>
-          <p>长时间计划容器：一个主计划可挂载多个子计划（现有日程），进度随子计划完成自动聚合。</p>
+          <p>主线 · 织机：把长期目标织成主计划，将每日日程挂载为子计划；每一次落梭，进度都在织机上自动聚合。</p>
         </div>
 
         <!-- 详情视图 -->
@@ -471,7 +471,7 @@
         <!-- 列表 -->
         <div v-if="parentPlans.length===0" class="empty-state" style="padding:48px 20px;">
           <div class="empty-icon">📌</div>
-          <p>还没有主计划。把长期目标（如备考、项目、健身计划）建成主计划，再把每日日程挂载为子计划。</p>
+          <p>还没有织上主线。把长期目标（如秋招备战、项目攻坚）织成主计划，再将每日日程挂载为子计划，让每一天都有迹可循。</p>
         </div>
         <div v-else class="plans-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px;">
           <div v-for="p in parentPlans" :key="p.id" class="card plan-card" :style="p.color ? {borderTop:'3px solid ' + p.color} : {}">
@@ -486,13 +486,13 @@
             <div class="plan-card-stats" style="font-size:12px; color:var(--text-secondary);">
               子计划 {{ p.completedCount }}/{{ p.childCount }} · 进度 {{ p.progress || 0 }}%<template v-if="p.status==='IN_PROGRESS'||p.status==='PAUSED'"> · 第{{ p.daysRunning || 1 }}天</template>
             </div>
-            <div class="plan-card-actions" style="display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;">
-              <button class="btn btn-sm" @click="openParentPlan(p)">详情</button>
-              <button v-if="p.status==='PENDING'||p.status==='PAUSED'" class="btn btn-sm" @click="parentPlanAction(p,'start')">▶ 开始</button>
-              <button v-if="p.status==='IN_PROGRESS'" class="btn btn-sm" @click="parentPlanAction(p,'pause')">⏸ 暂停</button>
-              <button v-if="p.status==='IN_PROGRESS'||p.status==='PAUSED'" class="btn btn-sm btn-end" @click="parentPlanAction(p,'complete')">✓ 完成</button>
-              <button class="btn btn-sm btn-outline" @click="openParentPlanForm(p)">编辑</button>
-              <button class="btn btn-sm btn-cancel" @click="deleteParentPlan(p)">删除</button>
+            <div class="plan-card-actions" style="display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; align-items:center;">
+              <button class="btn btn-sm btn-ghost" @click="openParentPlan(p)">◈ 详情</button>
+              <button v-if="p.status==='PENDING'||p.status==='PAUSED'" class="btn btn-sm btn-ghost-success" @click="parentPlanAction(p,'start')">▶ 开梭</button>
+              <button v-if="p.status==='IN_PROGRESS'" class="btn btn-sm btn-ghost-warn" @click="parentPlanAction(p,'pause')">⏸ 暂停</button>
+              <button v-if="p.status==='IN_PROGRESS'||p.status==='PAUSED'" class="btn btn-sm btn-ghost-brand" @click="parentPlanAction(p,'complete')">✓ 完成</button>
+              <button class="btn btn-icon-sm" @click="openParentPlanForm(p)" title="编辑">✎</button>
+              <button class="btn btn-icon-sm danger" @click="deleteParentPlan(p)" title="删除">🗑</button>
             </div>
           </div>
         </div>
@@ -636,13 +636,13 @@
                 <span class="tag" v-for="t in s.tags" :key="t">{{ t }}</span>
               </div>
               <span class="status-badge" :class="'status-'+s.status">{{ statusLabel(s.status) }}</span>
-              <div class="schedule-actions" @click.stop>
-                <button v-if="canAct(s.status,'start')" class="btn btn-success btn-sm" :disabled="!canStartNow(s)" :title="canStartNow(s) ? '开梭' : '未到计划开始时间，暂不可开启'" @click="startSchedule(s)">▶ 开梭</button>
-                <button v-if="canAct(s.status,'pause')" class="btn btn-warning btn-sm" @click="pauseSchedule(s)">⏸ 暂停</button>
-                <button v-if="canAct(s.status,'resume')" class="btn btn-success btn-sm" @click="resumeSchedule(s)">▶ 续梭</button>
-                <button v-if="canAct(s.status,'end')" class="btn btn-primary btn-sm" @click="endSchedule(s)">⏹ 落梭</button>
-                <button class="btn btn-outline btn-sm" @click="editSchedule(s)">✎</button>
-                <button class="btn btn-danger btn-sm" @click="deleteSchedule(s)">✕</button>
+              <div class="schedule-actions" @click.stop style="display:flex; align-items:center; gap:6px;">
+                <button v-if="canAct(s.status,'start')" class="btn btn-sm btn-ghost-success" :disabled="!canStartNow(s)" :title="canStartNow(s) ? '开梭' : '未到计划开始时间，暂不可开启'" @click="startSchedule(s)">▶ 开梭</button>
+                <button v-if="canAct(s.status,'pause')" class="btn btn-sm btn-ghost-warn" @click="pauseSchedule(s)">⏸ 暂停</button>
+                <button v-if="canAct(s.status,'resume')" class="btn btn-sm btn-ghost-success" @click="resumeSchedule(s)">▶ 续梭</button>
+                <button v-if="canAct(s.status,'end')" class="btn btn-sm btn-ghost-brand" @click="endSchedule(s)">⏹ 落梭</button>
+                <button class="btn btn-icon-sm" @click="editSchedule(s)" title="编辑">✎</button>
+                <button class="btn btn-icon-sm danger" @click="deleteSchedule(s)" title="删除">🗑</button>
               </div>
             </div>
           </template>

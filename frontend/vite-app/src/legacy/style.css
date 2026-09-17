@@ -452,7 +452,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 /* 全局气泡内嵌执行中的子计划（主计划气泡下方一行：计时 + 标题 + 穿梭按钮） */
 .gtb-child-inline {
   display: flex; align-items: center; gap: 8px;
-  margin-top: 7px; padding: 5px 8px 5px 10px;
+  align-self: center; margin-top: 0; padding: 4px 8px 4px 10px;
   border-radius: 999px; background: rgba(255,255,255,.14);
   border: 1px dashed rgba(255,255,255,.35);
   white-space: nowrap; cursor: pointer;
@@ -464,6 +464,30 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .parent-child-active { background: rgba(255,255,255,.18); border-radius: 8px; padding: 5px 8px; border: 1px solid rgba(255,255,255,.35); }
 .parent-child-actions { display: flex; align-items: center; gap: 4px; flex: none; }
 .parent-child-actions .btn-xs { width: 22px; height: 22px; padding: 0; border-radius: 50%; font-size: 11px; line-height: 1; }
+/* 现代化操作按钮：柔和胶囊 + 细描边 + hover 填充（贴合织锦流光主题） */
+.btn-ghost {
+  background: rgba(255,255,255,.55); color: var(--text);
+  border: 1px solid var(--border-strong); font-weight: 500;
+  backdrop-filter: blur(4px);
+  transition: all .18s var(--ease);
+}
+.btn-ghost:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); background: var(--primary-light); transform: translateY(-1px); }
+.btn-ghost-success { background: rgba(16,185,129,.1); color: #047857; border: 1px solid rgba(16,185,129,.35); }
+.btn-ghost-success:hover:not(:disabled) { background: rgba(16,185,129,.16); border-color: rgba(16,185,129,.6); transform: translateY(-1px); }
+.btn-ghost-warn { background: rgba(245,158,11,.1); color: #B45309; border: 1px solid rgba(245,158,11,.35); }
+.btn-ghost-warn:hover:not(:disabled) { background: rgba(245,158,11,.16); border-color: rgba(245,158,11,.6); transform: translateY(-1px); }
+.btn-ghost-brand { background: rgba(74,108,247,.08); color: var(--primary); border: 1px solid rgba(74,108,247,.35); }
+.btn-ghost-brand:hover:not(:disabled) { background: rgba(74,108,247,.14); border-color: rgba(74,108,247,.6); transform: translateY(-1px); }
+.btn-icon-sm {
+  width: 30px; height: 30px; padding: 0; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.6); color: var(--text-secondary);
+  border: 1px solid var(--border-strong); font-size: 13px;
+  transition: all .18s var(--ease);
+}
+.btn-icon-sm:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); background: var(--primary-light); transform: translateY(-1px) scale(1.05); }
+.btn-icon-sm.danger { color: #DC2626; }
+.btn-icon-sm.danger:hover:not(:disabled) { border-color: #EF4444; color: #EF4444; background: rgba(239,68,68,.1); }
 /* 更小按钮 */
 .btn-xs { padding: 4px 9px; font-size: 11.5px; border-radius: 7px; }
 /* 主计划气泡内按钮统一（完成按钮去掉纯白大块，改半透明协调风格） */
@@ -1181,7 +1205,7 @@ html[data-skin="blossom"] {
 .global-timer-bubble {
   position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
   z-index: 999;
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 12px;
   padding: 10px 16px 10px 12px;
   border-radius: 999px;
   background: var(--grad-brand);
