@@ -17,7 +17,9 @@ import { ErrorCode, TokenVO, ApiResult } from '@/types'
  * - 续期失败：清空令牌，触发 onSessionExpired（由 router 注册，跳登录页）
  */
 
-const BASE_URL = (import.meta.env.VITE_API_BASE as string | undefined) ?? '/api/v1'
+// 注意：必须用 `||` 而非 `??`——Docker 构建时 VITE_API_BASE 为空字符串，
+// `??` 对 "" 不兜底会得到空 baseURL，所有请求丢掉 /api/v1 前缀被 nginx 当静态路径返回 405
+const BASE_URL = import.meta.env.VITE_API_BASE || '/api/v1'
 
 /** 白名单：这些路径不附加令牌，也不参与 401 续期重放 */
 const AUTH_PATHS = ['/auth/login', '/auth/register', '/auth/refresh']
