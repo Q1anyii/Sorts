@@ -159,7 +159,7 @@
           <p>{{ todayStr }} · 今天也要高效哦！</p>
         </div>
 
-        <!-- 主计划气泡（大，在上）：长时间计划 + 子计划聚合进度 -->
+        <!-- 主计划气泡（大，在上）：盒子模型——主计划头部 + 内部子任务（按时间排序；数量多时压缩/变任务点） -->
         <div class="active-timer parent-active-timer" v-if="activeParentPlan" style="margin-bottom:12px;"
              :class="{'is-running': activeParentPlan.status==='IN_PROGRESS'}" :style="bubbleStyle(activeParentPlan)">
           <div class="timer-display">{{ statusLabel(activeParentPlan.status) }} · 第{{ activeParentPlan.daysRunning || 1 }}天</div>
@@ -170,6 +170,27 @@
               子计划 {{ activeParentPlan.completedCount }}/{{ activeParentPlan.childCount }} · 进度 {{ activeParentPlan.progress || 0 }}%
             </div>
             <div class="timer-progress"><i :style="{width: (activeParentPlan.progress||0) + '%'}"></i></div>
+            <!-- 盒子：子任务区（≤3 完整行 / ≤8 压缩行 / >8 任务点按颜色区分） -->
+            <div v-if="activeParentPlan.children && activeParentPlan.children.length" class="parent-children-box">
+              <template v-if="activeParentPlan.children.length <= 3">
+                <div v-for="c in sortedParentChildren" :key="c.id" class="parent-child-row">
+                  <span class="parent-child-dot" :style="{background: c.color || '#5B7FFF'}"></span>
+                  <span class="parent-child-title">{{ c.title }}</span>
+                  <span class="parent-child-time">{{ c.plannedStartTime ? formatDate(c.plannedStartTime) + ' ' + formatTime(c.plannedStartTime) : '未排期' }} · {{ statusLabel(c.status) }}</span>
+                </div>
+              </template>
+              <template v-else-if="activeParentPlan.children.length <= 8">
+                <div v-for="c in sortedParentChildren" :key="c.id" class="parent-child-row parent-child-row-compact">
+                  <span class="parent-child-dot" :style="{background: c.color || '#5B7FFF'}"></span>
+                  <span class="parent-child-title">{{ c.title }}</span>
+                  <span class="parent-child-time">{{ c.plannedStartTime ? formatTime(c.plannedStartTime) : '未排期' }} · {{ statusLabel(c.status) }}</span>
+                </div>
+              </template>
+              <div v-else class="parent-child-dots">
+                <span v-for="c in sortedParentChildren" :key="c.id" class="parent-child-dot-lg" :title="c.title" :style="{background: c.color || '#5B7FFF'}"></span>
+              </div>
+            </div>
+            <div v-else class="parent-children-empty">暂无子计划 · 到「主线 · 主计划」挂载日程后可在此聚合</div>
           </div>
           <div class="timer-actions">
             <button v-if="activeParentPlan.status==='PENDING'||activeParentPlan.status==='PAUSED'" class="btn btn-sm" @click="parentPlanAction(activeParentPlan,'start')">▶ 开始</button>

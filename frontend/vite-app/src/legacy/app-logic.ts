@@ -1960,13 +1960,29 @@ const app = createApp({
       return list.find(p => p.status === 'IN_PROGRESS' || p.status === 'PAUSED') || null;
     });
 
+    /** 主计划内部子任务：按计划开始时间正序（主页盒子模型渲染用） */
+    const sortedParentChildren = computed(() => {
+      const cs = (activeParentPlan.value && activeParentPlan.value.children) || [];
+      return [...cs].sort((a, b) => String(a.plannedStartTime || '').localeCompare(String(b.plannedStartTime || '')));
+    });
+
     async function loadParentPlans(page) {
       try {
         const p = page || parentPlanPage.value;
         const data = await apiFetch('/parent-plans', { params: { page: p, pageSize: 20 } });
-        parentPlans.value = (data && data.list) || [];
+        const list = (data && data.list) || [];
+        parentPlans.value = list;
         parentPlanTotal.value = (data && data.total) || 0;
         parentPlanPage.value = p;
+        // 活跃主计划补子计划明细（主页「盒子模型」需要展示其内的子任务；列表接口不带 children）
+        // 注意：必须从响应式代理 parentPlans.value 中 find，直接改 raw 数组元素不会触发视图更新
+        const active = parentPlans.value.find(x => x.status === 'IN_PROGRESS' || x.status === 'PAUSED');
+        if (active) {
+          try {
+            const detail = await apiFetch('/parent-plans/' + active.id);
+            active.children = (detail && detail.children) || [];
+          } catch (e) { active.children = []; }
+        }
       } catch (e) { showError(e, '主计划加载失败'); }
     }
 
@@ -2357,7 +2373,7 @@ const app = createApp({
       // Mall
       purchaseItem, confirmPurchase, useItem, deactivateWardrobe, activeAvatar, activeBadge,
       // 主计划（长时间计划容器）
-      parentPlans, parentPlanTotal, parentPlanPage, parentPlanDetail, activeParentPlan,
+      parentPlans, parentPlanTotal, parentPlanPage, parentPlanDetail, activeParentPlan, sortedParentChildren,
       parentPlanForm, parentAttachModal, parentAttachCandidates, parentAttachIds,
       loadParentPlans, saveParentPlan, deleteParentPlan, parentPlanAction,
       openParentPlanForm, openParentPlan, closeParentPlan,
