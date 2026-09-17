@@ -2030,7 +2030,7 @@ const app = createApp({
       parentPlanForm.editingId = plan ? plan.id : null;
       parentPlanForm.title = plan ? plan.title : '';
       parentPlanForm.description = plan ? (plan.description || '') : '';
-      parentPlanForm.color = plan && plan.color ? plan.color : '#5B7FFF';
+      parentPlanForm.color = plan && plan.color ? plan.color : '';
       parentPlanForm.priority = plan ? (plan.priority || 'MEDIUM') : 'MEDIUM';
       parentPlanForm.startDate = plan && plan.startDate ? plan.startDate : '';
       parentPlanForm.endDate = plan && plan.endDate ? plan.endDate : '';
@@ -2040,7 +2040,7 @@ const app = createApp({
       const body = {
         title: parentPlanForm.title,
         description: parentPlanForm.description,
-        color: parentPlanForm.color,
+        color: parentPlanForm.color || null,
         priority: parentPlanForm.priority,
         startDate: parentPlanForm.startDate || null,
         endDate: parentPlanForm.endDate || null

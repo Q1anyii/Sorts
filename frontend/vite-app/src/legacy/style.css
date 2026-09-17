@@ -312,10 +312,10 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .calendar-day .day-num {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   font-size: 26px; font-size: 30cqw; font-weight: 800; line-height: 1;
-  margin: 0; padding: 2px .32em; border-radius: 999px;
+  margin: 0; padding: 2px .32em; border-radius: 8px;
   display: block; text-align: center;
   color: rgba(255,255,255,.95); text-shadow: 0 1px 3px rgba(0,0,0,.4);
-  background: rgba(255,255,255,.2); /* 20% 透明度底：数字更清晰且不挡调色板 */
+  background: rgba(255,255,255,.2); /* 20% 透明度底：圆角方框，不挡调色板 */
 }
 .calendar-day.today .day-num { color: #fff; }
 
@@ -684,11 +684,12 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   align-items: center; justify-content: center; z-index: 1000; padding: 20px;
   backdrop-filter: blur(4px); animation: fade-in .2s ease both;
 }
-.modal-box {
+.modal-box, .modal {
   background: var(--bg-card); border-radius: var(--radius); width: 90%; max-width: 520px;
   max-height: 85vh; overflow-y: auto; box-shadow: var(--shadow-lg);
   animation: modal-in .32s var(--ease-pop) both;
 }
+.modal { padding: 22px 24px; }
 .modal-header {
   padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex;
   align-items: center; justify-content: space-between; position: sticky; top: 0;

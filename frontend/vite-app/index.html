@@ -498,6 +498,7 @@
         </div>
 
         <!-- 新建 / 编辑主计划弹窗 -->
+        <teleport to="body">
         <div class="modal-mask" v-if="parentPlanForm.show" @click.self="parentPlanForm.show=false">
           <div class="modal">
             <h3>{{ parentPlanForm.editingId ? '编辑主计划' : '新建主计划' }}</h3>
@@ -520,9 +521,13 @@
               </div>
             </div>
             <div class="form-row" style="display:flex; gap:12px; flex-wrap:wrap;">
-              <div class="form-group" style="flex:1; min-width:120px;">
+              <div class="form-group" style="flex:1; min-width:180px;">
                 <label>主题色</label>
-                <input type="color" v-model="parentPlanForm.color" style="height:38px; padding:2px; width:80px; cursor:pointer;" />
+                <div class="flex gap-2" style="align-items:center; flex-wrap:wrap; padding-top:2px;">
+                  <span class="color-swatch-auto" :class="{active: parentPlanForm.color===''}" @click="parentPlanForm.color=''" title="自动取主题色">自动</span>
+                  <div v-for="c in tagColors" :key="'pp'+c" @click="parentPlanForm.color=c"
+                       :style="{width:'26px', height:'26px', borderRadius:'50%', background:c, cursor:'pointer', border: parentPlanForm.color===c ? '3px solid var(--text)' : '3px solid transparent'}"></div>
+                </div>
               </div>
               <div class="form-group" style="flex:1; min-width:150px;">
                 <label>优先级</label>
@@ -540,8 +545,10 @@
             </div>
           </div>
         </div>
+        </teleport>
 
         <!-- 添加子计划弹窗 -->
+        <teleport to="body">
         <div class="modal-mask" v-if="parentAttachModal" @click.self="parentAttachModal=false">
           <div class="modal">
             <h3>添加子计划</h3>
@@ -549,6 +556,7 @@
             <div class="attach-list" style="max-height:320px; overflow-y:auto;">
               <label v-for="c in parentAttachCandidates" :key="c.id" class="attach-item" style="display:flex; align-items:center; gap:8px; padding:8px 6px; cursor:pointer; border-bottom:1px solid var(--border,#f2f2f2);">
                 <input type="checkbox" :value="c.id" v-model="parentAttachIds" />
+                <span style="flex:none; width:10px; height:10px; border-radius:50%;" :style="{background: c.color || '#8FB8DE'}"></span>
                 <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ c.title }}</span>
                 <span style="font-size:12px; color:var(--text-secondary); flex:none;">{{ c.plannedStartTime ? formatDate(c.plannedStartTime) : '未排期' }}</span>
               </label>
@@ -560,6 +568,7 @@
             </div>
           </div>
         </div>
+        </teleport>
       </div>
 
       <div v-if="currentPage==='schedules'" class="page-view">
