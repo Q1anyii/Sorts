@@ -1171,28 +1171,32 @@ html[data-skin="blossom"] {
 }
 .profile-avatar-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
 /* ============ 锦市装扮实际运用：头像框（AVATAR）+ 徽章角标（BADGE） ============ */
-/* 头像框：启用 AVATAR 后头像外层渐变环；overflow 放开以显示光环 */
-.user-avatar.has-frame, .profile-avatar-box.has-frame { overflow: visible; position: relative; }
+/* 头像框：启用 AVATAR 后头像外层渐变环；overflow 放开以显示光环。
+   ::before 用 radial mask 抠成「中空圆环」，只显示外圈渐变，不遮挡内部头像 */
+.user-avatar.has-frame, .profile-avatar-box.has-frame, .ai-avatar.has-frame { overflow: visible; position: relative; }
 .user-avatar.has-frame img, .profile-avatar-box.has-frame img,
-.user-avatar.has-frame > span:not(.avatar-badge), .profile-avatar-box.has-frame > span:not(.avatar-badge) {
+.user-avatar.has-frame > span:not(.avatar-badge), .profile-avatar-box.has-frame > span:not(.avatar-badge),
+.ai-avatar.has-frame img, .ai-avatar.has-frame > span {
   border-radius: 50%;
 }
-.user-avatar.has-frame::before, .profile-avatar-box.has-frame::before {
+.user-avatar.has-frame::before, .profile-avatar-box.has-frame::before, .ai-avatar.has-frame::before {
   content: '';
   position: absolute; inset: -5px; border-radius: 50%; z-index: 1;
   pointer-events: none;
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px));
 }
-.user-avatar.has-frame.frame-3::before, .profile-avatar-box.has-frame.frame-3::before {
+.user-avatar.has-frame.frame-3::before, .profile-avatar-box.has-frame.frame-3::before, .ai-avatar.has-frame.frame-3::before {
   /* 梭影·头像框：织梭线条蓝 */
   background: linear-gradient(135deg, #4A6CF7, #6EE7F9, #4A6CF7);
   box-shadow: 0 0 10px rgba(74,108,247,.55);
 }
-.user-avatar.has-frame.frame-4::before, .profile-avatar-box.has-frame.frame-4::before {
+.user-avatar.has-frame.frame-4::before, .profile-avatar-box.has-frame.frame-4::before, .ai-avatar.has-frame.frame-4::before {
   /* 鎏金梭·头像框：鎏金限定 */
   background: linear-gradient(135deg, #F5C26B, #E8A33D, #F5D9A0, #E8A33D);
   box-shadow: 0 0 10px rgba(232,163,61,.55);
 }
-.user-avatar.has-frame::after, .profile-avatar-box.has-frame::after {
+.user-avatar.has-frame::after, .profile-avatar-box.has-frame::after, .ai-avatar.has-frame::after {
   content: '';
   position: absolute; inset: 0; border-radius: 50%; z-index: 2;
   box-shadow: inset 0 0 0 2px rgba(255,255,255,.85);
