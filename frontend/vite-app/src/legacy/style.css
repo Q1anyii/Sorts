@@ -458,6 +458,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   border-radius: 999px; background: rgba(255,255,255,.14);
   border: 1px dashed rgba(255,255,255,.35);
   white-space: nowrap; cursor: pointer;
+  flex-shrink: 1; min-width: 0;
 }
 .gtb-child-inline:hover { background: rgba(255,255,255,.2); }
 .gtb-child-time { font-family: var(--font-mono, monospace); font-size: 13px; font-weight: 700; letter-spacing: .5px; }
@@ -1217,8 +1218,9 @@ html[data-skin="blossom"] {
 .global-timer-bubble {
   position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
   z-index: 999;
-  display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 12px;
+  display: flex; align-items: center; justify-content: center; flex-wrap: nowrap; gap: 10px;
   padding: 10px 16px 10px 12px;
+  max-width: calc(100vw - 32px);
   border-radius: 999px;
   background: var(--grad-brand);
   color: #fff;
@@ -1242,27 +1244,28 @@ html[data-skin="blossom"] {
 }
 .global-timer-bubble .gtb-actions { display: flex; align-items: center; gap: 6px; }
 .global-timer-bubble .gtb-btn {
-  width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
-  border: 1px solid rgba(255,255,255,.6);
-  color: #fff; font-size: 13px; font-weight: 700; line-height: 1;
-  display: inline-flex; align-items: center; justify-content: center;
-  /* 默认 = 暂停（琥珀渐变） */
-  background: linear-gradient(180deg, rgba(251,191,36,.95), rgba(217,119,6,.92));
-  box-shadow: 0 2px 6px rgba(20,40,120,.28), inset 0 1px 0 rgba(255,255,255,.45);
-  text-shadow: 0 1px 2px rgba(20,40,120,.35);
-  transition: transform .12s var(--ease), box-shadow .18s var(--ease), filter .18s var(--ease);
+  height: 26px; padding: 0 11px; border-radius: 999px; cursor: pointer;
+  border: 1px solid transparent;
+  color: #B45309; font-size: 12px; font-weight: 600; line-height: 1;
+  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+  /* 默认 = 暂停（浅琥珀胶囊） */
+  background: rgba(251,191,36,.18); border-color: rgba(251,191,36,.4);
+  box-shadow: none; text-shadow: none;
+  transition: background .16s var(--ease), border-color .16s var(--ease), transform .12s var(--ease);
 }
 .global-timer-bubble .gtb-btn:hover {
-  filter: brightness(1.12);
-  transform: translateY(-1px) scale(1.06);
-  box-shadow: 0 4px 10px rgba(20,40,120,.32), inset 0 1px 0 rgba(255,255,255,.55);
+  background: rgba(251,191,36,.3); border-color: rgba(217,119,6,.6);
+  transform: translateY(-1px);
 }
-.global-timer-bubble .gtb-btn:active { transform: scale(.94); }
-/* 续梭 / 落梭（绿系） */
-.global-timer-bubble .gtb-btn.gtb-resume { background: linear-gradient(180deg, rgba(74,222,128,.95), rgba(22,163,74,.92)); }
-.global-timer-bubble .gtb-btn.gtb-end { background: linear-gradient(180deg, rgba(52,211,153,.95), rgba(5,150,105,.94)); }
-/* 取消（红系） */
-.global-timer-bubble .gtb-btn.gtb-cancel { background: linear-gradient(180deg, rgba(248,113,113,.95), rgba(220,38,38,.94)); }
+.global-timer-bubble .gtb-btn:active { transform: scale(.95); }
+/* 续梭 / 落梭（浅绿胶囊） */
+.global-timer-bubble .gtb-btn.gtb-resume { background: rgba(16,185,129,.14); border-color: rgba(16,185,129,.38); color: #047857; }
+.global-timer-bubble .gtb-btn.gtb-resume:hover { background: rgba(16,185,129,.26); border-color: rgba(5,150,105,.6); }
+.global-timer-bubble .gtb-btn.gtb-end { background: rgba(16,185,129,.2); border-color: rgba(16,185,129,.45); color: #047857; }
+.global-timer-bubble .gtb-btn.gtb-end:hover { background: rgba(16,185,129,.32); border-color: rgba(5,150,105,.65); }
+/* 取消（浅红胶囊） */
+.global-timer-bubble .gtb-btn.gtb-cancel { background: rgba(239,68,68,.1); border-color: rgba(239,68,68,.32); color: #DC2626; }
+.global-timer-bubble .gtb-btn.gtb-cancel:hover { background: rgba(239,68,68,.2); border-color: rgba(220,38,38,.55); }
 
 /* 呼吸效果：仅进行中（IN_PROGRESS）时脉动，暂停态静止 */
 @keyframes gtb-breathe {
@@ -1412,11 +1415,11 @@ html[data-skin="blossom"] {
 }
 .global-bubbles .global-timer-bubble:hover { transform: translateY(-1px); }
 .global-parent-bubble { padding: 12px 18px 12px 14px; }
-.global-parent-bubble .gtb-title { font-size: 14px; max-width: 300px; }
+.global-parent-bubble .gtb-title { font-size: 13.5px; max-width: 150px; }
 .global-parent-bubble .gtb-time { font-size: 14px; }
 .global-child-bubble { padding: 8px 14px 8px 10px; transform: scale(.92); transform-origin: top center; }
 .global-child-bubble:hover { transform: scale(.92) translateY(-1px); }
-.gtb-progress { width: 130px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.22); overflow: hidden; }
+.gtb-progress { width: 60px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.22); overflow: hidden; flex-shrink: 0; }
 .gtb-progress i { display: block; height: 100%; border-radius: 2px; background: rgba(255,255,255,.92); transition: width .3s ease; }
 .gtb-meta { font-size: 11px; color: rgba(255,255,255,.88); white-space: nowrap; }
 

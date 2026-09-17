@@ -127,9 +127,9 @@
           <div class="gtb-progress"><i :style="{width: (activeParentPlan.progress||0) + '%'}"></i></div>
           <div class="gtb-meta">子计划 {{ activeParentPlan.completedCount }}/{{ activeParentPlan.childCount }}</div>
           <div class="gtb-actions">
-            <button v-if="activeParentPlan.status==='IN_PROGRESS'" class="gtb-btn" @click.stop="parentPlanAction(activeParentPlan,'pause')" title="暂停">⏸</button>
-            <button v-if="activeParentPlan.status==='PAUSED'" class="gtb-btn gtb-resume" @click.stop="parentPlanAction(activeParentPlan,'resume')" title="续梭">▶</button>
-            <button v-if="activeParentPlan.status==='IN_PROGRESS'||activeParentPlan.status==='PAUSED'" class="gtb-btn gtb-end" @click.stop="parentPlanAction(activeParentPlan,'complete')" title="完成">✓</button>
+            <button v-if="activeParentPlan.status==='IN_PROGRESS'" class="gtb-btn" @click.stop="parentPlanAction(activeParentPlan,'pause')" title="暂停">⏸ 暂停</button>
+            <button v-if="activeParentPlan.status==='PAUSED'" class="gtb-btn gtb-resume" @click.stop="parentPlanAction(activeParentPlan,'resume')" title="续梭">▶ 续梭</button>
+            <button v-if="activeParentPlan.status==='IN_PROGRESS'||activeParentPlan.status==='PAUSED'" class="gtb-btn gtb-end" @click.stop="parentPlanAction(activeParentPlan,'complete')" title="完成">✓ 完成</button>
           </div>
         </div>
         <!-- 内嵌执行中的子计划：直接放进主计划气泡（含计时 + 穿梭按钮），点击跳转今日经纬 -->
@@ -138,10 +138,10 @@
           <span class="gtb-child-time">{{ formatTimer(elapsedSeconds) }}</span>
           <span class="gtb-child-title">{{ activeSchedule.title }}</span>
           <span class="gtb-actions">
-            <button v-if="canAct(activeSchedule.status,'pause')" class="gtb-btn" @click.stop="pauseSchedule(activeSchedule)" title="暂停">⏸</button>
-            <button v-if="canAct(activeSchedule.status,'resume')" class="gtb-btn gtb-resume" @click.stop="resumeSchedule(activeSchedule)" title="续梭">▶</button>
-            <button v-if="canAct(activeSchedule.status,'end')" class="gtb-btn gtb-end" @click.stop="endSchedule(activeSchedule)" title="落梭">⏹</button>
-            <button v-if="canAct(activeSchedule.status,'cancel')" class="gtb-btn gtb-cancel" @click.stop="cancelSchedule(activeSchedule)" title="取消">✕</button>
+            <button v-if="canAct(activeSchedule.status,'pause')" class="gtb-btn" @click.stop="pauseSchedule(activeSchedule)" title="暂停">⏸ 暂停</button>
+            <button v-if="canAct(activeSchedule.status,'resume')" class="gtb-btn gtb-resume" @click.stop="resumeSchedule(activeSchedule)" title="续梭">▶ 续梭</button>
+            <button v-if="canAct(activeSchedule.status,'end')" class="gtb-btn gtb-end" @click.stop="endSchedule(activeSchedule)" title="落梭">⏹ 落梭</button>
+            <button v-if="canAct(activeSchedule.status,'cancel')" class="gtb-btn gtb-cancel" @click.stop="cancelSchedule(activeSchedule)" title="取消">✕ 取消</button>
           </span>
         </div>
       </div>
@@ -153,10 +153,10 @@
         <div class="gtb-main">
           <div class="gtb-title">{{ activeSchedule.title }}</div>
           <div class="gtb-actions">
-            <button v-if="canAct(activeSchedule.status,'pause')" class="gtb-btn" @click.stop="pauseSchedule(activeSchedule)" title="暂停">⏸</button>
-            <button v-if="canAct(activeSchedule.status,'resume')" class="gtb-btn gtb-resume" @click.stop="resumeSchedule(activeSchedule)" title="续梭">▶</button>
-            <button v-if="canAct(activeSchedule.status,'end')" class="gtb-btn gtb-end" @click.stop="endSchedule(activeSchedule)" title="落梭">⏹</button>
-            <button v-if="canAct(activeSchedule.status,'cancel')" class="gtb-btn gtb-cancel" @click.stop="cancelSchedule(activeSchedule)" title="取消">✕</button>
+            <button v-if="canAct(activeSchedule.status,'pause')" class="gtb-btn" @click.stop="pauseSchedule(activeSchedule)" title="暂停">⏸ 暂停</button>
+            <button v-if="canAct(activeSchedule.status,'resume')" class="gtb-btn gtb-resume" @click.stop="resumeSchedule(activeSchedule)" title="续梭">▶ 续梭</button>
+            <button v-if="canAct(activeSchedule.status,'end')" class="gtb-btn gtb-end" @click.stop="endSchedule(activeSchedule)" title="落梭">⏹ 落梭</button>
+            <button v-if="canAct(activeSchedule.status,'cancel')" class="gtb-btn gtb-cancel" @click.stop="cancelSchedule(activeSchedule)" title="取消">✕ 取消</button>
           </div>
         </div>
       </div>
