@@ -735,9 +735,10 @@
                 <button class="ai-suggestion" @click="aiQuickPrompt('生成今日总结')">📝 今日总结</button>
               </div>
               <div class="ai-input-row">
+                <div class="ai-input-resize-handle" @mousedown.prevent="startAiTextareaResize" title="拖拽上边缘向上扩宽输入框"></div>
                 <button class="ai-file-btn" title="上传文件（md / docx / doc / txt，≤2MB），内容将作为本次对话记忆用于提取计划" @click="aiFileInputEl && aiFileInputEl.click()" :disabled="aiLoading">📎</button>
                 <input ref="aiFileInputEl" type="file" accept=".md,.docx,.doc,.txt" style="display:none" @change="onAiFileSelected">
-                <textarea v-model="aiInput" @keydown.enter.exact.prevent="sendAiMessage" class="ai-chat-textarea" rows="1" placeholder="输入你的需求，例如：帮我生成未来一周的规划...（Enter 发送 / Shift+Enter 换行）" :disabled="aiStreaming"></textarea>
+                <textarea v-model="aiInput" @keydown.enter.exact.prevent="sendAiMessage" class="ai-chat-textarea" rows="1" :style="aiTextareaH ? {height: aiTextareaH + 'px'} : {}" placeholder="输入你的需求，例如：帮我生成未来一周的规划...（Enter 发送 / Shift+Enter 换行）" :disabled="aiStreaming"></textarea>
                 <!-- 双钥匙第二把：用户确认后 AI 才可写日程 -->
                 <label class="ai-write-toggle" title="开启后，AI 可依据你的对话内容直接创建日程">
                   <input type="checkbox" v-model="aiWriteEnabled"> 允许写日程

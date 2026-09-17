@@ -523,10 +523,20 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   color: var(--primary); cursor: pointer; transition: var(--transition); border: 1px solid transparent;
 }
 .ai-suggestion:hover { background: var(--primary); color: #fff; border-color: var(--primary-dark); transform: translateY(-1px); }
-.ai-input-row { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); align-items: flex-end; background: var(--bg-card); }
-/* 可滚动 + 可拖拽高度：min-height 起步，max-height 封顶，resize 手柄在右下角 */
+.ai-input-row { position: relative; display: flex; gap: 8px; padding: 14px 16px 12px; border-top: 1px solid var(--border); align-items: flex-end; background: var(--bg-card); }
+/* 上边框拖拽手柄：横跨整行，向上拉取扩宽（hover 显示主题色小提手） */
+.ai-input-resize-handle {
+  position: absolute; top: -6px; left: 0; right: 0; height: 12px;
+  cursor: ns-resize; z-index: 6;
+}
+.ai-input-resize-handle::after {
+  content: ''; position: absolute; left: 50%; transform: translateX(-50%); top: 4px;
+  width: 44px; height: 3px; border-radius: 2px; background: transparent; transition: background .2s var(--ease);
+}
+.ai-input-resize-handle:hover::after { background: var(--primary); box-shadow: 0 0 6px rgba(74,108,247,.5); }
+/* 可滚动 + 拖拽高度：resize:none 关原生右下角手柄，高度由顶部手柄控制（向上扩展，底部不动） */
 .ai-input-row textarea.ai-chat-textarea {
-  flex: 1; min-height: 44px; max-height: 180px; resize: vertical; overflow-y: auto;
+  flex: 1; min-height: 44px; max-height: 320px; resize: none; overflow-y: auto;
   padding: 10px 15px; border: 2px solid var(--border); border-radius: 18px; outline: none;
   font-size: 14px; line-height: 1.5; font-family: inherit; transition: var(--transition);
   background: var(--bg-soft); color: var(--text); box-sizing: border-box;

@@ -520,6 +520,28 @@ const app = createApp({
     let aiRenderTimer = null;              // 流式渲染节流器（~90ms 合并一次 Markdown 渲染）
     let aiLatestText = '';                 // 流式累计文本（与 botMsg.content 分离，节流写入）
 
+    // ============ AI 输入框上边框拖拽扩宽（向上拉取，底部不动） ============
+    const aiTextareaH = ref(null);         // 拖拽高度（null = 自动），Vue 响应式驱动，重渲染不丢
+    let aiTextareaResize = null;           // { startY, startH }
+    function startAiTextareaResize(e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      const ta = document.querySelector('textarea.ai-chat-textarea');
+      if (!ta) return;
+      aiTextareaResize = { startY: e.clientY, startH: ta.offsetHeight };
+      const move = (ev) => {
+        if (!aiTextareaResize) return;
+        const delta = aiTextareaResize.startY - ev.clientY; // 向上拖为正
+        aiTextareaH.value = Math.min(320, Math.max(44, aiTextareaResize.startH + delta));
+      };
+      const up = () => {
+        aiTextareaResize = null;
+        window.removeEventListener('mousemove', move);
+        window.removeEventListener('mouseup', up);
+      };
+      window.addEventListener('mousemove', move);
+      window.addEventListener('mouseup', up);
+    }
+
     // ============ Stats ============
     const stats = reactive({
       totalSchedules: 0, completionRate: 0, totalFocusTime: 0, streakDays: 0
@@ -2363,7 +2385,7 @@ const app = createApp({
       newConversation, switchConversation, renameConversation, deleteConversation,
       deleteSelectedConversations, clearCurrentConversation,
       // AI 三栏面板：隐藏 / 拖拽调宽
-      aiPanels, aiWidths, toggleAiPanel, showAllAiPanels, startAiResize,
+      aiPanels, aiWidths, toggleAiPanel, showAllAiPanels, startAiResize, startAiTextareaResize, aiTextareaH,
       // 头像上传
       uploadAvatar, onAvatarFileChange,
       // AI 文件附件（临时记忆拼接）
