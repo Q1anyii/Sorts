@@ -27,6 +27,7 @@ public class SortsGatewayProperties {
      */
     private List<String> whitelist = new ArrayList<>(List.of(
             "/api/v1/auth/**",
+            "/api/v1/users/avatar/files/**",
             "/actuator/**",
             "/doc.html",
             "/webjars/**",

@@ -246,7 +246,9 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   display: flex; align-items: center; justify-content: center; font-size: 16px;
   color: #fff; font-weight: 700; flex-shrink: 0;
   box-shadow: 0 0 0 2px rgba(255,255,255,.18);
+  overflow: hidden;
 }
+.user-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .user-mini-info { flex: 1; min-width: 0; }
 .user-mini-info .name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .user-mini-info .points { font-size: 11px; color: rgba(255,255,255,.5); }
@@ -303,14 +305,16 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   transition: var(--transition); border: 2px solid transparent; position: relative; min-height: 80px;
   background: var(--bg-soft);
 }
-.calendar-day:hover { background: var(--primary-light); transform: translateY(-1px); }
-.calendar-day.today { border-color: var(--primary); background: var(--primary-light); box-shadow: var(--ring); }
-.calendar-day.other-month { opacity: .35; }
-.calendar-day .day-num { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
-.calendar-day.today .day-num { color: var(--primary); font-weight: 800; }
-.calendar-day .day-dots { display: flex; flex-wrap: wrap; gap: 3px; }
-.calendar-day .day-dot { width: 6px; height: 6px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(255,255,255,.6); }
-.calendar-day .day-more { font-size: 10px; color: var(--text-light); font-weight: 600; }
+.calendar-day:hover { transform: translateY(-1px); filter: brightness(1.05); }
+.calendar-day.today { border-color: var(--primary); box-shadow: var(--ring); }
+.calendar-day.other-month { opacity: .4; }
+.calendar-day .day-num {
+  font-size: 13px; font-weight: 700; margin-bottom: 3px;
+  display: inline-block; padding: 1px 7px; border-radius: 9px;
+  color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.5);
+  background: rgba(255,255,255,.22); backdrop-filter: blur(1px);
+}
+.calendar-day.today .day-num { color: #fff; font-weight: 800; background: rgba(255,255,255,.32); }
 
 /* ============================ 10. 日程列表 ============================ */
 .schedule-item {
@@ -583,6 +587,43 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 }
 .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--primary); box-shadow: var(--ring); }
 .form-textarea { resize: vertical; min-height: 80px; }
+.form-select {
+  appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 34px;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center;
+}
+.form-select:hover { border-color: var(--primary); }
+
+/* 织历月份自定义选择器（弹层：年份切换 + 月份网格） */
+.month-picker { position: relative; }
+.month-picker-trigger {
+  min-width: 148px; padding: 8px 30px 8px 14px; font-size: 15px; font-weight: 700; color: var(--text);
+  background: var(--bg-card); border: 2px solid var(--border); border-radius: var(--radius-sm);
+  cursor: pointer; transition: var(--transition);
+}
+.month-picker-trigger:hover, .month-picker-trigger:focus { border-color: var(--primary); box-shadow: var(--ring); outline: none; }
+.month-picker-panel {
+  position: absolute; left: 0; top: calc(100% + 6px); z-index: 60;
+  width: 300px; background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 14px; box-shadow: 0 12px 32px rgba(15, 23, 42, .14);
+  padding: 12px; animation: slide-in-top .16s var(--ease) both;
+}
+.month-picker-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.month-picker-head button {
+  width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg-soft); color: var(--text); cursor: pointer; font-size: 13px; transition: var(--transition);
+}
+.month-picker-head button:hover { background: var(--primary-light); color: var(--primary); }
+.month-picker-year { font-weight: 700; font-size: 15px; }
+.month-picker-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.month-picker-cell {
+  padding: 9px 0; border-radius: 9px; border: 1px solid transparent; cursor: pointer;
+  background: var(--bg-soft); color: var(--text-secondary); font-size: 13px; font-weight: 600; transition: var(--transition);
+}
+.month-picker-cell:hover { background: var(--primary-light); color: var(--primary); }
+.month-picker-cell.active { background: var(--primary); color: #fff; font-weight: 700; box-shadow: 0 4px 10px rgba(74,108,247,.3); }
+@keyframes slide-in-top { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+.date-range-sep { color: var(--text-secondary); font-weight: 700; }
 
 /* ============================ 18. Tabs ============================ */
 .tabs { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
@@ -1054,3 +1095,72 @@ html[data-skin="blossom"] {
 @media (prefers-reduced-motion: reduce) {
   .notify-mask, .notify-box, .toast-item { animation: none !important; }
 }
+
+/* ============================ 全局穿梭气泡（跨页面置顶） ============================ */
+.global-timer-bubble {
+  position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+  z-index: 999;
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px 10px 12px;
+  border-radius: 999px;
+  background: var(--grad-brand);
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(20,40,120,.32);
+  cursor: pointer;
+  user-select: none;
+  transition: transform .18s var(--ease), box-shadow .18s var(--ease);
+}
+.global-timer-bubble:hover { transform: translateX(-50%) translateY(-1px); box-shadow: 0 10px 26px rgba(20,40,120,.42); }
+.global-timer-bubble .gtb-time {
+  font-family: var(--font-mono, monospace);
+  font-size: 15px; font-weight: 700; letter-spacing: .5px;
+  padding: 4px 10px; border-radius: 999px;
+  background: rgba(255,255,255,.16);
+  white-space: nowrap;
+}
+.global-timer-bubble .gtb-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.global-timer-bubble .gtb-title {
+  font-size: 13px; font-weight: 600; max-width: 240px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.global-timer-bubble .gtb-actions { display: flex; align-items: center; gap: 6px; }
+.global-timer-bubble .gtb-btn {
+  width: 26px; height: 26px; border-radius: 50%; border: none; cursor: pointer;
+  background: rgba(255,255,255,.2); color: #fff; font-size: 12px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background .15s var(--ease), transform .1s var(--ease);
+}
+.global-timer-bubble .gtb-btn:hover { background: rgba(255,255,255,.34); transform: scale(1.08); }
+.global-timer-bubble .gtb-btn.gtb-end { background: rgba(34,197,94,.85); }
+.global-timer-bubble .gtb-btn.gtb-end:hover { background: rgba(34,197,94,1); }
+.global-timer-bubble .gtb-btn.gtb-cancel { background: rgba(239,68,68,.8); }
+.global-timer-bubble .gtb-btn.gtb-cancel:hover { background: rgba(239,68,68,1); }
+.global-timer-bubble .gtb-btn.gtb-resume { background: rgba(74,222,128,.3); }
+
+/* 呼吸效果：仅进行中（IN_PROGRESS）时脉动，暂停态静止 */
+@keyframes gtb-breathe {
+  0%   { box-shadow: 0 8px 22px rgba(20,40,120,.32), 0 0 0 0 rgba(124,156,245,.6); }
+  50%  { box-shadow: 0 8px 22px rgba(20,40,120,.32), 0 0 0 12px rgba(124,156,245,0); }
+  100% { box-shadow: 0 8px 22px rgba(20,40,120,.32), 0 0 0 0 rgba(124,156,245,0); }
+}
+/* 进行中：气泡叠加流光扫过（与主面板 active-timer 呼吸同源），直观表达正在计时 */
+.global-timer-bubble.is-running { animation: gtb-breathe 2.2s ease-in-out infinite; }
+.global-timer-bubble.is-running::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(100deg, transparent 22%, rgba(255,255,255,.38) 50%, transparent 78%);
+  background-size: 220% 100%;
+  animation: shimmer 3s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .global-timer-bubble.is-running { animation: none; }
+  .global-timer-bubble.is-running::after { animation: none; }
+}
+
+/* ============================ 设置页头像上传 ============================ */
+.profile-avatar-box {
+  width: 64px; height: 64px; border-radius: 50%; background: var(--grad-brand);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 24px; font-weight: 700; overflow: hidden;
+  box-shadow: 0 6px 16px rgba(74,108,247,.28); flex-shrink: 0;
+}
+.profile-avatar-box img { width: 100%; height: 100%; object-fit: cover; display: block; }

@@ -40,6 +40,9 @@ mybatis-plus:
 
 # ========== 项目自定义配置 ==========
 sorts:
+  user:
+    # 头像存储目录（容器内由 sorts-user-avatar 卷持久化）
+    avatar-dir: ${USER_AVATAR_DIR:./data/avatar}
   internal:
     # 服务间凭证：各服务取值必须一致，生产环境务必用环境变量注入
     token: ${INTERNAL_TOKEN:sorts-internal-dev-token}

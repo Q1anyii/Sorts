@@ -91,6 +91,7 @@ public class TimerServiceImpl implements TimerService {
             throw new BizException(ErrorCode.CONFLICT, "仅穿梭中的日程可暂停");
         }
         settleSegment(userId, schedule, LocalDateTime.now());
+        schedule.setActualStartTime(null);
         schedule.setStatus(ScheduleStatus.PAUSED.name());
         schedule.setLastOperatorId(userId);
         scheduleMapper.updateById(schedule);
@@ -108,6 +109,7 @@ public class TimerServiceImpl implements TimerService {
         assertNoOtherRunning(userId, scheduleId);
 
         LocalDateTime now = LocalDateTime.now();
+        schedule.setActualStartTime(now);
         schedule.setStatus(ScheduleStatus.IN_PROGRESS.name());
         schedule.setLastOperatorId(userId);
         scheduleMapper.updateById(schedule);

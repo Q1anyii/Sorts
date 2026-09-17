@@ -104,7 +104,10 @@
       </nav>
       <div class="sidebar-footer">
         <div class="user-mini" @click="currentPage='profile'">
-          <div class="user-avatar">{{ userInfo.nickname ? userInfo.nickname[0] : 'U' }}</div>
+          <div class="user-avatar">
+            <img v-if="userInfo.avatarUrl" :src="userInfo.avatarUrl" alt="头像">
+            <span v-else>{{ userInfo.nickname ? userInfo.nickname[0] : 'U' }}</span>
+          </div>
           <div class="user-mini-info">
             <div class="name">{{ userInfo.nickname || userInfo.username }}</div>
             <div class="points">⭐ {{ userInfo.points }} 光阴砂</div>
@@ -112,6 +115,22 @@
         </div>
       </div>
     </aside>
+
+    <!-- 全局穿梭气泡：日程进行中跨页面悬浮置顶提醒（点击空白处回今日经纬） -->
+    <div class="global-timer-bubble" v-if="currentPage!=='dashboard' && activeSchedule && (activeSchedule.status==='IN_PROGRESS' || activeSchedule.status==='PAUSED')"
+         :class="{'is-running': activeSchedule.status==='IN_PROGRESS'}" :style="bubbleStyle(activeSchedule)"
+         @click="currentPage='dashboard'" title="回到今日经纬">
+      <div class="gtb-time">{{ formatTimer(elapsedSeconds) }}</div>
+      <div class="gtb-main">
+        <div class="gtb-title">{{ activeSchedule.title }}</div>
+        <div class="gtb-actions">
+          <button v-if="canAct(activeSchedule.status,'pause')" class="gtb-btn" @click.stop="pauseSchedule(activeSchedule)" title="暂停">⏸</button>
+          <button v-if="canAct(activeSchedule.status,'resume')" class="gtb-btn gtb-resume" @click.stop="resumeSchedule(activeSchedule)" title="续梭">▶</button>
+          <button v-if="canAct(activeSchedule.status,'end')" class="gtb-btn gtb-end" @click.stop="endSchedule(activeSchedule)" title="落梭">⏹</button>
+          <button v-if="canAct(activeSchedule.status,'cancel')" class="gtb-btn gtb-cancel" @click.stop="cancelSchedule(activeSchedule)" title="取消">✕</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Main Content Area -->
     <main class="main-content">
@@ -221,13 +240,15 @@
               <div class="empty-icon">📭</div>
               <p>未来几天暂无日程安排</p>
             </div>
-            <div v-for="s in upcomingSchedules" :key="s.id" class="schedule-item">
+            <div v-for="s in upcomingSchedules" :key="s.id" class="schedule-item" @click="openScheduleDetail(s)" style="cursor:pointer;">
               <div class="time-block">
                 <div class="time">{{ formatDate(s.plannedStartTime) }}</div>
                 <div class="duration">{{ formatTime(s.plannedStartTime) }}</div>
               </div>
               <div class="schedule-info">
                 <div class="title">{{ s.title }}</div>
+                <div class="desc" v-if="s.description">{{ s.description }}</div>
+                <div class="desc" v-else style="color:var(--text-secondary);">点击查看详情</div>
               </div>
               <span class="status-badge" :class="'status-'+s.status">{{ statusLabel(s.status) }}</span>
             </div>
@@ -246,9 +267,21 @@
             <div class="calendar-header">
               <div class="calendar-nav">
                 <button @click="prevMonth">◀</button>
-                <select class="form-select month-select" :value="calYear + '-' + calMonth" @change="onCalendarMonthChange">
-                <option v-for="o in calendarMonthOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
-              </select>
+                <div class="month-picker">
+                  <button class="month-picker-trigger" type="button" @click="openMonthPicker">{{ calYear }}年{{ calMonth }}月 ▾</button>
+                  <div v-if="monthPickerOpen" class="month-picker-panel" @click.stop>
+                    <div class="month-picker-head">
+                      <button type="button" @click="pickerYear--">◀</button>
+                      <span class="month-picker-year">{{ pickerYear }}年</span>
+                      <button type="button" @click="pickerYear++">▶</button>
+                    </div>
+                    <div class="month-picker-grid">
+                      <button v-for="m in 12" :key="m" type="button"
+                        class="month-picker-cell" :class="{active: m === calMonth && pickerYear === calYear}"
+                        @click="pickMonth(m)">{{ m }}月</button>
+                    </div>
+                  </div>
+                </div>
                 <button @click="nextMonth">▶</button>
               </div>
               <button class="btn btn-outline btn-sm" @click="goToToday">回到今天</button>
@@ -263,15 +296,10 @@
                   'other-month': !day.isCurrentMonth
                 }"
                 @click="selectCalendarDay(day)"
+                :style="day.paletteBg ? { background: day.paletteBg } : null"
+                :title="day.totalCount ? day.totalCount + ' 项日程' : ''"
               >
                 <div class="day-num">{{ day.dayOfMonth }}</div>
-                <div class="day-dots">
-                  <span
-                    v-for="(c, i) in day.colors.slice(0,4)" :key="i"
-                    class="day-dot" :style="{background:c}"
-                  ></span>
-                </div>
-                <div class="day-more" v-if="day.totalCount > 4">+{{ day.totalCount - 4 }}</div>
               </div>
             </div>
           </div>
@@ -336,9 +364,9 @@
               <option value="month">本月</option>
               <option value="custom">自定义</option>
             </select>
-            <input class="form-input" type="date" v-model="scheduleFilter.startDate" style="width:140px;" :disabled="scheduleFilter.preset && scheduleFilter.preset!=='custom'">
-            <span style="color:var(--text-secondary);">~</span>
-            <input class="form-input" type="date" v-model="scheduleFilter.endDate" style="width:140px;" :disabled="scheduleFilter.preset && scheduleFilter.preset!=='custom'">
+            <input class="form-input" type="date" v-model="scheduleFilter.startDate" style="width:140px;" :disabled="scheduleFilter.preset && scheduleFilter.preset!=='custom'" @change="onDateChange">
+            <span class="date-range-sep">~</span>
+            <input class="form-input" type="date" v-model="scheduleFilter.endDate" style="width:140px;" :disabled="scheduleFilter.preset && scheduleFilter.preset!=='custom'" @change="onDateChange">
             <button class="btn btn-outline btn-sm" @click="clearDateFilter">清空筛选</button>
             <button class="btn btn-primary btn-sm" @click="showScheduleModal=true; editingSchedule=null">+ 新建日程</button>
           </div>
@@ -726,6 +754,20 @@
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
           <div class="card">
             <div class="card-title mb-3">👤 基本信息</div>
+            <div class="form-group">
+              <label>头像</label>
+              <div style="display:flex; align-items:center; gap:14px;">
+                <div class="profile-avatar-box">
+                  <img v-if="userInfo.avatarUrl" :src="userInfo.avatarUrl" alt="头像">
+                  <span v-else>{{ userInfo.nickname ? userInfo.nickname[0] : 'U' }}</span>
+                </div>
+                <div>
+                  <input ref="avatarInput" type="file" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none;" @change="onAvatarFileChange">
+                  <button class="btn btn-outline btn-sm" @click="$refs.avatarInput && $refs.avatarInput.click()">上传头像</button>
+                  <p style="font-size:12px; color:var(--text-secondary); margin-top:6px;">支持 PNG / JPG / GIF / WebP，不超过 2MB</p>
+                </div>
+              </div>
+            </div>
             <div class="form-group">
               <label>用户名</label>
               <input class="form-input" :value="userInfo.username" disabled>

@@ -473,6 +473,8 @@ const app = createApp({
     // ============ Calendar State ============
     const calYear = ref(new Date().getFullYear());
     const calMonth = ref(new Date().getMonth() + 1);
+    const monthPickerOpen = ref(false);      // 织历月份自定义选择器浮层
+    const pickerYear = ref(new Date().getFullYear()); // 选择面板内预览年份（箭头切换不触发日历跳转）
     const selectedDaySchedules = ref(null);
     const selectedDayLabel = ref('');
     const selectedDayDate = ref('');
@@ -661,6 +663,50 @@ const app = createApp({
         }
       });
 
+      // 调色板背景（圆形渐变画布）：每种颜色 = 一个随机落点的颜料点，圆形扩散，
+      // 半径随数量占比变大（占比越大扩散越广），各层半透明叠加 → 颜色之间自然渐变过渡
+      function hexToRgba(hex, alpha) {
+        const h = String(hex || '').replace('#', '');
+        if (h.length !== 6 && h.length !== 3) return hex;
+        const full = h.length === 3 ? h.split('').map(x => x + x).join('') : h;
+        const n = parseInt(full, 16);
+        return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+      }
+      function buildPaletteBg(sc) {
+        if (!sc.length) return null;
+        const map = new Map();
+        sc.forEach(s => {
+          const c = scheduleDotColor(s);
+          map.set(c, (map.get(c) || 0) + 1);
+        });
+        const entries = [...map.entries()];
+        for (let i = entries.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [entries[i], entries[j]] = [entries[j], entries[i]];
+        }
+        const total = sc.length;
+        const N = entries.length;
+        // 互斥分区：按点数排 rows×cols 网格，每个颜色点固定落在独立单元内（单元内随机、单元间互斥）
+        const rows = Math.ceil(Math.sqrt(N));
+        const cols = Math.ceil(N / rows);
+        const cells = [];
+        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) cells.push([r, c]);
+        for (let i = cells.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [cells[i], cells[j]] = [cells[j], cells[i]];
+        }
+        const layers = entries.map(([c, cnt], idx) => {
+          const [r, cc] = cells[idx % cells.length];
+          const cellW = 84 / cols, cellH = 84 / rows;
+          const x = (8 + (cc + 0.5) * cellW + (Math.random() - 0.5) * cellW * 0.55).toFixed(1);
+          const y = (8 + (r + 0.5) * cellH + (Math.random() - 0.5) * cellH * 0.55).toFixed(1);
+          const rad = (75 + (cnt / total) * 55).toFixed(1); // 占比越大扩散越广 75%-130%，覆盖整格不露底
+          return `radial-gradient(circle at ${x}% ${y}%, ${hexToRgba(c, .92)} 0%, ${hexToRgba(c, .5)} 42%, ${hexToRgba(c, 0)} ${rad}%)`;
+        });
+        layers.push('linear-gradient(135deg, #F7F8FC, #FDF7EF)'); // 柔和暖底
+        return layers.join(', ');
+      }
+
       const days = [];
       const prevLastDay = new Date(year, month - 1, 0).getDate();
       for (let i = startDayOfWeek - 1; i >= 0; i--) {
@@ -668,27 +714,44 @@ const app = createApp({
         const dm = month - 1; const dy = dm === 0 ? year - 1 : year; const m = dm === 0 ? 12 : dm;
         const ds = `${dy}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const sc = scheduleMap[ds] || [];
-        days.push({ key: 'p' + d, dayOfMonth: d, isToday: false, isCurrentMonth: false, dateStr: ds, totalCount: sc.length, colors: sc.map(scheduleDotColor) });
+        days.push({ key: 'p' + d, dayOfMonth: d, isToday: false, isCurrentMonth: false, dateStr: ds, totalCount: sc.length, paletteBg: buildPaletteBg(sc) });
       }
       for (let d = 1; d <= daysInMonth; d++) {
         const ds = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const sc = scheduleMap[ds] || [];
-        days.push({ key: 'c' + d, dayOfMonth: d, isToday: ds === tStr, isCurrentMonth: true, dateStr: ds, totalCount: sc.length, colors: sc.map(scheduleDotColor) });
+        days.push({ key: 'c' + d, dayOfMonth: d, isToday: ds === tStr, isCurrentMonth: true, dateStr: ds, totalCount: sc.length, paletteBg: buildPaletteBg(sc) });
       }
       const remaining = 42 - days.length;
       for (let d = 1; d <= remaining; d++) {
         const dm = month + 1; const dy = dm === 13 ? year + 1 : year; const m = dm === 13 ? 1 : dm;
         const ds = `${dy}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const sc = scheduleMap[ds] || [];
-        days.push({ key: 'n' + d, dayOfMonth: d, isToday: false, isCurrentMonth: false, dateStr: ds, totalCount: sc.length, colors: sc.map(scheduleDotColor) });
+        days.push({ key: 'n' + d, dayOfMonth: d, isToday: false, isCurrentMonth: false, dateStr: ds, totalCount: sc.length, paletteBg: buildPaletteBg(sc) });
       }
       return days;
     });
-    // 日程任务点分色：用户自定义颜色标记优先，否则按紧急度（URGENT红/HIGH琥珀/MEDIUM蓝/LOW灰绿）
-    const PRIORITY_DOT_COLOR = { URGENT: '#EF4444', HIGH: '#F59E0B', MEDIUM: '#4A6CF7', LOW: '#94A3B8' };
+    // 日程任务点分色：用户自定义颜色标记优先，否则按紧急度（柔和自然暖色调）
+    const PRIORITY_DOT_COLOR = { URGENT: '#F49B8B', HIGH: '#F6C177', MEDIUM: '#8FB8DE', LOW: '#A9C3A3' };
     function scheduleDotColor(s) {
       if (s.color) return s.color;
       return PRIORITY_DOT_COLOR[s.priority] || '#4A6CF7';
+    }
+    /** 颜色加深（气泡渐变末端）：hex → 按 factor 加深的 rgb */
+    function shadeColor(hex, factor) {
+      const h = String(hex || '').replace('#', '');
+      const full = h.length === 3 ? h.split('').map(x => x + x).join('') : h;
+      if (full.length !== 6) return hex;
+      const n = parseInt(full, 16);
+      const r = Math.min(255, Math.round(((n >> 16) & 255) * factor));
+      const g = Math.min(255, Math.round(((n >> 8) & 255) * factor));
+      const b = Math.min(255, Math.round((n & 255) * factor));
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+    /** 全局气泡背景：跟随任务点颜色动态渐变（135deg 风格不变），深色端为同色系加深 */
+    function bubbleStyle(s) {
+      if (!s) return {};
+      const c = s.color || PRIORITY_DOT_COLOR[s.priority] || '#4A6CF7';
+      return { background: `linear-gradient(135deg, ${c} 0%, ${shadeColor(c, 0.68)} 100%)` };
     }
     // 织历月份下拉：覆盖近 5 年（当前年 ±2）
     const calendarMonthOptions = computed(() => {
@@ -721,7 +784,7 @@ const app = createApp({
     const tagStats = ref([]);
 
     const dayHeaders = ['日', '一', '二', '三', '四', '五', '六'];
-    const tagColors = ['#4A6CF7', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6'];
+    const tagColors = ['#8FB8DE', '#A9D6B8', '#F6C177', '#F49B8B', '#C4B5FD', '#F9A8D4', '#9DB8E8', '#7FD1CC'];
 
     // ============ 工具 ============
     function formatTime(dt) { if (!dt) return ''; return dt.slice(11, 16); }
@@ -936,6 +999,10 @@ const app = createApp({
     function prevMonth() { if (calMonth.value === 1) { calMonth.value = 12; calYear.value--; } else calMonth.value--; }
     function nextMonth() { if (calMonth.value === 12) { calMonth.value = 1; calYear.value++; } else calMonth.value++; }
     function goToToday() { const d = new Date(); calYear.value = d.getFullYear(); calMonth.value = d.getMonth() + 1; }
+    /** 打开月份选择器：预览年初始化为当前年（箭头只改预览，不触发日历跳转） */
+    function openMonthPicker() { pickerYear.value = calYear.value; monthPickerOpen.value = true; }
+    /** 选定月份：应用预览年 + 月份，一并生效并关闭面板 */
+    function pickMonth(m) { calYear.value = pickerYear.value; calMonth.value = m; monthPickerOpen.value = false; }
     function selectCalendarDay(day) {
       selectedDayLabel.value = day.dateStr;
       selectedDayDate.value = day.dateStr;
@@ -999,6 +1066,11 @@ const app = createApp({
       scheduleFilter.preset = '';
       scheduleFilter.startDate = '';
       scheduleFilter.endDate = '';
+      syncSchedulesFromFilter();
+    }
+    /** 织程日期输入变更：手动改起止日期即自动查询（无需再点刷新/清空） */
+    function onDateChange() {
+      if (scheduleFilter.startDate || scheduleFilter.endDate) scheduleFilter.preset = 'custom';
       syncSchedulesFromFilter();
     }
     /** 织程数据源随筛选刷新：有范围走后端闭区间查询，否则拉全量 */
@@ -1181,6 +1253,32 @@ const app = createApp({
           aiMessages.value.push({ role: 'bot', content: aiErrorMessage(e) });
         } finally {
           aiLoading.value = false;
+          aiScrollToBottom();
+        }
+        return;
+      }
+
+      // 总结意图：自动生成今日总结并写入织史（后端 /ai/summary/daily 生成后即落库）
+      const isSummary = /(今日|今天|当日|当天)\s*(总结|汇总)|(总结|汇总)\s*(今日|今天|当日|当天)|生成\s*今日\s*总结|今日\s*总结|总结\s*今日/.test(msg);
+      if (isSummary) {
+        try {
+          aiMessages.value.push({ role: 'user', content: msg });
+          aiMessages.value.push({ role: 'bot', content: '正在为你总结今日织程与专注情况，请稍候…' });
+          aiScrollToBottom();
+          const report = await apiFetch('/ai/summary/daily?stream=false', { method: 'POST', body: { date: getTodayStr() } });
+          const bot = aiMessages.value[aiMessages.value.length - 1];
+          bot.content = (report && report.content)
+            ? (report.title ? '**' + report.title + '**\n\n' : '') + report.content
+            : '今日总结已生成，请到织史查看。';
+          bot.suggestedActions = [{ type: 'VIEW_REPORTS', label: '查看织史' }];
+          await loadReports(); // 织史列表同步刷新，新增总结立即可见
+          notifySuccess('今日总结已自动保存到织史');
+          await saveConversation(true);
+        } catch (e) {
+          aiMessages.value.push({ role: 'bot', content: aiErrorMessage(e) });
+        } finally {
+          aiLoading.value = false;
+          aiStreaming.value = false;
           aiScrollToBottom();
         }
         return;
@@ -1610,6 +1708,37 @@ const app = createApp({
       } catch (e) { showError(e, '保存失败'); }
     }
 
+    /** 头像上传：FormData 直传（apiFetch 是 JSON 通道，multipart 单独处理） */
+    async function uploadAvatar(file) {
+      if (!file) return;
+      if (!/image\/(png|jpeg|gif|webp)/.test(file.type)) { notifyWarning('仅支持 PNG / JPG / GIF / WebP 格式的头像'); return; }
+      if (file.size > 2 * 1024 * 1024) { notifyWarning('头像图片不能超过 2MB'); return; }
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        const access = getTokens().access;
+        const resp = await fetch(API_BASE + '/users/avatar/upload', {
+          method: 'POST',
+          headers: { 'Authorization': access && access.startsWith('Bearer ') ? access : 'Bearer ' + access },
+          body: fd
+        });
+        const parsed = await resp.json().catch(() => null);
+        if (!parsed || parsed.code !== 0) {
+          const err = parsed || {};
+          throw { code: err.code || -1, message: err.message || '头像上传失败，请稍后再试' };
+        }
+        applyUser(parsed.data);
+        notifySuccess('头像已更新');
+        try { localStorage.setItem('shuttle_user', JSON.stringify({ ...userInfo })); } catch (e) { /* 缓存失败不阻塞 */ }
+      } catch (e) { showError(e, '头像上传失败'); }
+    }
+    /** 文件选择变化：取第一张直接上传（input 复用，可连续换图） */
+    function onAvatarFileChange(e) {
+      const f = e.target && e.target.files && e.target.files[0];
+      if (f) uploadAvatar(f);
+      if (e.target) e.target.value = '';
+    }
+
     async function saveReminderSettings() {
       try {
         await apiFetch('/notifications/settings', {
@@ -1913,13 +2042,12 @@ const app = createApp({
       // Timer（状态机动作合法性 + 自愈秒表）
       activeSchedule, elapsedSeconds, canAct, canStartNow,
       startSchedule, pauseSchedule, resumeSchedule, endSchedule, cancelSchedule,
-      formatTimer,
+      formatTimer, bubbleStyle,
       // Data
       schedules, notifications, mallItems, wardrobe, aiReports,
       // Calendar
-      calYear, calMonth, calendarDays, dayHeaders,
-      calendarMonthOptions, onCalendarMonthChange,
-      prevMonth, nextMonth, goToToday, selectCalendarDay, openDayInSchedules,
+      calYear, calMonth, monthPickerOpen, pickerYear, calendarDays, dayHeaders,
+      prevMonth, nextMonth, goToToday, openMonthPicker, pickMonth, selectCalendarDay, openDayInSchedules,
       selectedDaySchedules, selectedDayLabel, selectedDayDate,
       // AI（流式 + Markdown + 双钥匙写权限）
       aiInput, aiMessages, aiLoading, aiSuggestions,
@@ -1936,12 +2064,14 @@ const app = createApp({
       allConversationsChecked, toggleConvSelect, toggleAllConversations,
       newConversation, switchConversation, renameConversation, deleteConversation,
       deleteSelectedConversations, clearCurrentConversation,
+      // 头像上传
+      uploadAvatar, onAvatarFileChange,
       // Stats
       stats, todayStats, todaySchedules, upcomingSchedules,
       filteredSchedules, groupedSchedules, filteredMallItems,
       trendData, tagStats,
       // Filters（织程日期范围）
-      scheduleFilter, mallTab, applyDatePreset, clearDateFilter,
+      scheduleFilter, mallTab, applyDatePreset, clearDateFilter, onDateChange,
       // 织程多选 / 批量删除
       selectedScheduleIds, allSchedulesChecked, someSchedulesChecked,
       toggleAllSchedules, toggleScheduleSelect, deleteSelectedSchedules, deletingSchedules,

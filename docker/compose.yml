@@ -168,6 +168,23 @@ services:
         MODULE: sorts-user
     image: sorts/user:local
     container_name: sorts-user
+    environment:
+      TZ: Asia/Shanghai
+      NACOS_ADDR: nacos:8848
+      NACOS_ENABLED: "true"
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:-sorts_dev}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-sorts_dev}
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:-sorts-internal-dev-token}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -Duser.timezone=Asia/Shanghai"
+      USER_AVATAR_DIR: /app/data/avatar
+    volumes:
+      - sorts-user-avatar:/app/data/avatar
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8081/actuator/health | grep -q UP"]
       interval: 15s
@@ -291,3 +308,4 @@ volumes:
   nacos-data:
   nacos-logs:
   rabbitmq-data:
+  sorts-user-avatar:

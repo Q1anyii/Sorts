@@ -11,6 +11,13 @@ import com.sorts.user.dto.UpdateUserRequest;
 import com.sorts.user.dto.UserVO;
 import com.sorts.user.service.UserService;
 import jakarta.validation.Valid;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -74,5 +81,44 @@ public class UserController {
             throw new BizException(ErrorCode.UNAUTHORIZED, "缺少用户身份信息");
         }
         return Result.success("pong:" + userId);
+    }
+
+    // ==================== 头像 ====================
+
+    /**
+     * 上传 / 更换头像（multipart）。落盘到 user 服务 {@code sorts.user.avatar-dir}，
+     * 更新 {@code t_user.avatar_url} 后返回最新用户资料。
+     * 限制：PNG/JPG/GIF/WebP，单文件 ≤ 2MB。
+     */
+    @PostMapping(value = "/avatar/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Result<UserVO> uploadAvatar(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
+                                       @RequestParam("file") MultipartFile file) {
+        return Result.success(userService.uploadAvatar(userId, file));
+    }
+
+    /**
+     * 头像静态资源。文件名服务端生成（u{userId}_{ts}.{ext}），网关已放行免鉴权；
+     * 文件名做白名单校验，杜绝路径穿越。
+     */
+    @GetMapping("/avatar/files/{filename:.+}")
+    public ResponseEntity<Resource> avatarFile(@PathVariable("filename") String filename) {
+        if (filename == null || !filename.matches("[A-Za-z0-9._-]+")) {
+            return ResponseEntity.notFound().build();
+        }
+        FileSystemResource resource = userService.loadAvatarFile(filename);
+        if (resource == null || !resource.exists()) {
+            return ResponseEntity.notFound().build();
+        }
+        String ext = filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
+        MediaType mediaType = switch (ext) {
+            case "jpg", "jpeg" -> MediaType.IMAGE_JPEG;
+            case "gif" -> MediaType.IMAGE_GIF;
+            case "webp" -> MediaType.parseMediaType("image/webp");
+            default -> MediaType.IMAGE_PNG;
+        };
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, "public, max-age=604800")
+                .contentType(mediaType)
+                .body(resource);
     }
 }
