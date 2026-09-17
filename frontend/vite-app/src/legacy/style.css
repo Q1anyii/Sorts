@@ -314,9 +314,9 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   font-size: 13px; font-weight: 700; line-height: 1;
   margin: 0; padding: 3px 8px; border-radius: 8px;
   display: block; text-align: center;
-  color: #475569; background: rgba(255,255,255,.62); /* 左上角 + 浅灰圆角标签底，对标图例 */
+  color: #475569; background: rgba(255,255,255,.38); /* 左上角 + 浅灰圆角标签底，底部更透 */
 }
-.calendar-day.today .day-num { color: #1E3A8A; background: rgba(255,255,255,.8); }
+.calendar-day.today .day-num { color: #1E3A8A; background: rgba(255,255,255,.58); }
 
 /* ============================ 10. 日程列表 ============================ */
 .schedule-item {
