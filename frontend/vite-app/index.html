@@ -71,6 +71,9 @@
           <div class="nav-item" :class="{active: currentPage==='schedules'}" @click="currentPage='schedules'">
             <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" style="vertical-align:-4px" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></span> 织程
           </div>
+          <div class="nav-item" :class="{active: currentPage==='plans'}" @click="currentPage='plans'">
+            <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" style="vertical-align:-4px" aria-hidden="true"><path d="M4 21V4"/><path d="M4 4h14l-2.8 3.5L18 11H4"/></svg></span> 主计划
+          </div>
         </div>
         <div class="nav-section">
           <div class="nav-section-title">智能助手</div>
@@ -113,18 +116,35 @@
       </div>
     </aside>
 
-    <!-- 全局穿梭气泡：日程进行中跨页面悬浮置顶提醒（点击空白处回今日经纬） -->
-    <div class="global-timer-bubble" v-if="currentPage!=='dashboard' && activeSchedule && (activeSchedule.status==='IN_PROGRESS' || activeSchedule.status==='PAUSED')"
-         :class="{'is-running': activeSchedule.status==='IN_PROGRESS'}" :style="bubbleStyle(activeSchedule)"
-         @click="currentPage='dashboard'" title="回到今日经纬">
-      <div class="gtb-time">{{ formatTimer(elapsedSeconds) }}</div>
-      <div class="gtb-main">
-        <div class="gtb-title">{{ activeSchedule.title }}</div>
-        <div class="gtb-actions">
-          <button v-if="canAct(activeSchedule.status,'pause')" class="gtb-btn" @click.stop="pauseSchedule(activeSchedule)" title="暂停">⏸</button>
-          <button v-if="canAct(activeSchedule.status,'resume')" class="gtb-btn gtb-resume" @click.stop="resumeSchedule(activeSchedule)" title="续梭">▶</button>
-          <button v-if="canAct(activeSchedule.status,'end')" class="gtb-btn gtb-end" @click.stop="endSchedule(activeSchedule)" title="落梭">⏹</button>
-          <button v-if="canAct(activeSchedule.status,'cancel')" class="gtb-btn gtb-cancel" @click.stop="cancelSchedule(activeSchedule)" title="取消">✕</button>
+    <!-- 全局穿梭气泡：主计划（上/大）+ 子计划（下/小）跨页面悬浮置顶提醒 -->
+    <div class="global-bubbles" v-if="currentPage!=='dashboard' && (activeParentPlan || (activeSchedule && (activeSchedule.status==='IN_PROGRESS' || activeSchedule.status==='PAUSED')))">
+      <div class="global-timer-bubble global-parent-bubble" v-if="activeParentPlan"
+           :class="{'is-running': activeParentPlan.status==='IN_PROGRESS'}" :style="bubbleStyle(activeParentPlan)"
+           @click="currentPage='plans'" title="回到主计划">
+        <div class="gtb-time">{{ statusLabel(activeParentPlan.status) }} · 第{{ activeParentPlan.daysRunning || 1 }}天</div>
+        <div class="gtb-main">
+          <div class="gtb-title">主计划：{{ activeParentPlan.title }}</div>
+          <div class="gtb-progress"><i :style="{width: (activeParentPlan.progress||0) + '%'}"></i></div>
+          <div class="gtb-meta">子计划 {{ activeParentPlan.completedCount }}/{{ activeParentPlan.childCount }}</div>
+          <div class="gtb-actions">
+            <button v-if="activeParentPlan.status==='IN_PROGRESS'" class="gtb-btn" @click.stop="parentPlanAction(activeParentPlan,'pause')" title="暂停">⏸</button>
+            <button v-if="activeParentPlan.status==='PAUSED'" class="gtb-btn gtb-resume" @click.stop="parentPlanAction(activeParentPlan,'resume')" title="续梭">▶</button>
+            <button v-if="activeParentPlan.status==='IN_PROGRESS'||activeParentPlan.status==='PAUSED'" class="gtb-btn gtb-end" @click.stop="parentPlanAction(activeParentPlan,'complete')" title="完成">✓</button>
+          </div>
+        </div>
+      </div>
+      <div class="global-timer-bubble global-child-bubble" v-if="activeSchedule && (activeSchedule.status==='IN_PROGRESS' || activeSchedule.status==='PAUSED')"
+           :class="{'is-running': activeSchedule.status==='IN_PROGRESS'}" :style="bubbleStyle(activeSchedule)"
+           @click="currentPage='dashboard'" title="回到今日经纬">
+        <div class="gtb-time">{{ formatTimer(elapsedSeconds) }}</div>
+        <div class="gtb-main">
+          <div class="gtb-title">{{ activeSchedule.title }}</div>
+          <div class="gtb-actions">
+            <button v-if="canAct(activeSchedule.status,'pause')" class="gtb-btn" @click.stop="pauseSchedule(activeSchedule)" title="暂停">⏸</button>
+            <button v-if="canAct(activeSchedule.status,'resume')" class="gtb-btn gtb-resume" @click.stop="resumeSchedule(activeSchedule)" title="续梭">▶</button>
+            <button v-if="canAct(activeSchedule.status,'end')" class="gtb-btn gtb-end" @click.stop="endSchedule(activeSchedule)" title="落梭">⏹</button>
+            <button v-if="canAct(activeSchedule.status,'cancel')" class="gtb-btn gtb-cancel" @click.stop="cancelSchedule(activeSchedule)" title="取消">✕</button>
+          </div>
         </div>
       </div>
     </div>
@@ -139,8 +159,29 @@
           <p>{{ todayStr }} · 今天也要高效哦！</p>
         </div>
 
-        <!-- Active Timer -->
-        <div class="active-timer" v-if="activeSchedule" style="margin-bottom:16px;" :class="{'is-running': activeSchedule.status==='IN_PROGRESS'}" :style="bubbleStyle(activeSchedule)">
+        <!-- 主计划气泡（大，在上）：长时间计划 + 子计划聚合进度 -->
+        <div class="active-timer parent-active-timer" v-if="activeParentPlan" style="margin-bottom:12px;"
+             :class="{'is-running': activeParentPlan.status==='IN_PROGRESS'}" :style="bubbleStyle(activeParentPlan)">
+          <div class="timer-display">{{ statusLabel(activeParentPlan.status) }} · 第{{ activeParentPlan.daysRunning || 1 }}天</div>
+          <div class="timer-info">
+            <div class="timer-title" :class="{'is-running': activeParentPlan.status==='IN_PROGRESS'}">主计划：{{ activeParentPlan.title }}</div>
+            <div class="timer-meta">
+              <span v-if="activeParentPlan.startDate">{{ activeParentPlan.startDate }} ~ {{ activeParentPlan.endDate || '…' }} · </span>
+              子计划 {{ activeParentPlan.completedCount }}/{{ activeParentPlan.childCount }} · 进度 {{ activeParentPlan.progress || 0 }}%
+            </div>
+            <div class="timer-progress"><i :style="{width: (activeParentPlan.progress||0) + '%'}"></i></div>
+          </div>
+          <div class="timer-actions">
+            <button v-if="activeParentPlan.status==='PENDING'||activeParentPlan.status==='PAUSED'" class="btn btn-sm" @click="parentPlanAction(activeParentPlan,'start')">▶ 开始</button>
+            <button v-if="activeParentPlan.status==='IN_PROGRESS'" class="btn btn-sm" @click="parentPlanAction(activeParentPlan,'pause')">⏸ 暂停</button>
+            <button v-if="activeParentPlan.status==='PAUSED'" class="btn btn-sm" @click="parentPlanAction(activeParentPlan,'resume')">▶ 续梭</button>
+            <button v-if="activeParentPlan.status==='IN_PROGRESS'||activeParentPlan.status==='PAUSED'" class="btn btn-sm btn-end" @click="parentPlanAction(activeParentPlan,'complete')">✓ 完成</button>
+            <button class="btn btn-sm btn-outline" @click="currentPage='plans'">📌 查看</button>
+          </div>
+        </div>
+        <!-- 子计划气泡（小，在下）：穿梭计时五态流转 -->
+        <div class="active-timer child-active-timer" v-if="activeSchedule" style="margin-bottom:16px;"
+             :class="{'is-running': activeSchedule.status==='IN_PROGRESS'}" :style="bubbleStyle(activeSchedule)">
           <div class="timer-display">{{ formatTimer(elapsedSeconds) }}</div>
           <div class="timer-info">
             <div class="timer-title" :class="{'is-running': activeSchedule.status==='IN_PROGRESS'}">{{ activeSchedule.title }}</div>
@@ -329,6 +370,151 @@
       </div>
 
       <!-- ============ SCHEDULE LIST ============ -->
+      <!-- ============ PLANS（主计划：长时间计划容器） ============ -->
+      <div v-if="currentPage==='plans'" class="page-view">
+        <div class="page-header">
+          <h2>📌 主线 · 主计划</h2>
+          <p>长时间计划容器：一个主计划可挂载多个子计划（现有日程），进度随子计划完成自动聚合。</p>
+        </div>
+
+        <!-- 详情视图 -->
+        <div v-if="parentPlanDetail" class="card plan-detail-card" style="margin-bottom:16px;">
+          <div class="card-header" style="padding:12px 16px; border-bottom:1px solid var(--border,#eee); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div class="card-title" style="display:flex; align-items:center; gap:8px;">
+              <button class="btn btn-sm btn-outline" @click="closeParentPlan">← 返回</button>
+              <span style="font-weight:600;">{{ parentPlanDetail.title }}</span>
+              <span class="plan-status-badge" :class="'st-' + parentPlanDetail.status">{{ statusLabel(parentPlanDetail.status) }}</span>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn btn-outline btn-sm" @click="openParentPlanForm(parentPlanDetail)">编辑</button>
+              <button class="btn btn-primary btn-sm" @click="openParentAttachModal">＋ 添加子计划</button>
+            </div>
+          </div>
+          <div class="plan-detail-body" style="padding:14px 16px;">
+            <p class="plan-detail-desc" style="margin:0 0 8px; color:var(--text-secondary);">{{ parentPlanDetail.description || '暂无描述' }}</p>
+            <div class="plan-detail-meta" style="display:flex; gap:16px; flex-wrap:wrap; font-size:13px; color:var(--text-secondary); margin-bottom:10px;">
+              <span v-if="parentPlanDetail.startDate">🗓 {{ parentPlanDetail.startDate }} ~ {{ parentPlanDetail.endDate || '…' }}</span>
+              <span>子计划 {{ parentPlanDetail.completedCount }}/{{ parentPlanDetail.childCount }}</span>
+              <span>进度 {{ parentPlanDetail.progress || 0 }}%</span>
+            </div>
+            <div class="plan-card-progress"><i :style="{width: (parentPlanDetail.progress||0) + '%', background: parentPlanDetail.color || 'var(--primary)'}"></i></div>
+          </div>
+          <div class="plan-children" style="padding:0 16px 14px;">
+            <div v-if="!parentPlanDetail.children.length" class="empty-state" style="padding:18px;">
+              <p>还没有子计划，点击右上角「＋ 添加子计划」挂载现有日程</p>
+            </div>
+            <div v-for="c in parentPlanDetail.children" :key="c.id" class="plan-child-row"
+                 style="display:flex; align-items:center; gap:10px; padding:9px 4px; border-top:1px solid var(--border,#f0f0f0);">
+              <span class="child-status-dot" style="width:10px; height:10px; border-radius:50%; flex:none; background: c.color || 'var(--primary)';"></span>
+              <span class="child-title" style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer;" :title="'前往织程查看 ' + c.title" @click="currentPage='schedules'">{{ c.title }}</span>
+              <span class="child-meta" style="font-size:12px; color:var(--text-secondary); flex:none;">
+                {{ c.plannedStartTime ? formatDate(c.plannedStartTime) + ' ' + formatTime(c.plannedStartTime) : '未排期' }} · {{ statusLabel(c.status) }}
+              </span>
+              <button class="btn btn-sm btn-outline" @click="detachChild(c.id)">移出</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 列表工具栏 -->
+        <div class="plans-toolbar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; flex-wrap:wrap;">
+          <span style="color:var(--text-secondary); font-size:13px;">共 {{ parentPlanTotal }} 个主计划</span>
+          <button class="btn btn-primary btn-sm" @click="openParentPlanForm(null)">＋ 新建主计划</button>
+        </div>
+
+        <!-- 列表 -->
+        <div v-if="parentPlans.length===0" class="empty-state" style="padding:48px 20px;">
+          <div class="empty-icon">📌</div>
+          <p>还没有主计划。把长期目标（如备考、项目、健身计划）建成主计划，再把每日日程挂载为子计划。</p>
+        </div>
+        <div v-else class="plans-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px;">
+          <div v-for="p in parentPlans" :key="p.id" class="card plan-card" :style="p.color ? {borderTop:'3px solid ' + p.color} : {}">
+            <div class="plan-card-head" style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+              <span class="plan-card-title" style="font-weight:600; font-size:15px; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">{{ p.title }}</span>
+              <span class="plan-status-badge" :class="'st-' + p.status">{{ statusLabel(p.status) }}</span>
+            </div>
+            <div class="plan-card-meta" v-if="p.startDate || p.endDate" style="font-size:12px; color:var(--text-secondary); margin-top:6px;">
+              🗓 {{ p.startDate || '…' }} ~ {{ p.endDate || '…' }}
+            </div>
+            <div class="plan-card-progress" style="margin:10px 0 6px;"><i :style="{width: (p.progress||0) + '%', background: p.color || 'var(--primary)'}"></i></div>
+            <div class="plan-card-stats" style="font-size:12px; color:var(--text-secondary);">
+              子计划 {{ p.completedCount }}/{{ p.childCount }} · 进度 {{ p.progress || 0 }}%<template v-if="p.status==='IN_PROGRESS'||p.status==='PAUSED'"> · 第{{ p.daysRunning || 1 }}天</template>
+            </div>
+            <div class="plan-card-actions" style="display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;">
+              <button class="btn btn-sm" @click="openParentPlan(p)">详情</button>
+              <button v-if="p.status==='PENDING'||p.status==='PAUSED'" class="btn btn-sm" @click="parentPlanAction(p,'start')">▶ 开始</button>
+              <button v-if="p.status==='IN_PROGRESS'" class="btn btn-sm" @click="parentPlanAction(p,'pause')">⏸ 暂停</button>
+              <button v-if="p.status==='IN_PROGRESS'||p.status==='PAUSED'" class="btn btn-sm btn-end" @click="parentPlanAction(p,'complete')">✓ 完成</button>
+              <button class="btn btn-sm btn-outline" @click="openParentPlanForm(p)">编辑</button>
+              <button class="btn btn-sm btn-cancel" @click="deleteParentPlan(p)">删除</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 新建 / 编辑主计划弹窗 -->
+        <div class="modal-mask" v-if="parentPlanForm.show" @click.self="parentPlanForm.show=false">
+          <div class="modal">
+            <h3>{{ parentPlanForm.editingId ? '编辑主计划' : '新建主计划' }}</h3>
+            <div class="form-group">
+              <label>标题</label>
+              <input v-model="parentPlanForm.title" placeholder="例如：秋招备战（9月-10月）" />
+            </div>
+            <div class="form-group">
+              <label>描述</label>
+              <textarea class="form-textarea" v-model="parentPlanForm.description" placeholder="主计划目标与说明（可选）"></textarea>
+            </div>
+            <div class="form-row" style="display:flex; gap:12px; flex-wrap:wrap;">
+              <div class="form-group" style="flex:1; min-width:150px;">
+                <label>开始日期</label>
+                <input type="date" v-model="parentPlanForm.startDate" />
+              </div>
+              <div class="form-group" style="flex:1; min-width:150px;">
+                <label>结束日期</label>
+                <input type="date" v-model="parentPlanForm.endDate" />
+              </div>
+            </div>
+            <div class="form-row" style="display:flex; gap:12px; flex-wrap:wrap;">
+              <div class="form-group" style="flex:1; min-width:120px;">
+                <label>主题色</label>
+                <input type="color" v-model="parentPlanForm.color" style="height:38px; padding:2px; width:80px; cursor:pointer;" />
+              </div>
+              <div class="form-group" style="flex:1; min-width:150px;">
+                <label>优先级</label>
+                <select v-model="parentPlanForm.priority">
+                  <option value="LOW">低</option>
+                  <option value="MEDIUM">中</option>
+                  <option value="HIGH">高</option>
+                  <option value="URGENT">紧急</option>
+                </select>
+              </div>
+            </div>
+            <div class="modal-actions">
+              <button class="btn btn-outline btn-sm" @click="parentPlanForm.show=false">取消</button>
+              <button class="btn btn-primary btn-sm" :disabled="!parentPlanForm.title.trim()" @click="saveParentPlan">保存</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 添加子计划弹窗 -->
+        <div class="modal-mask" v-if="parentAttachModal" @click.self="parentAttachModal=false">
+          <div class="modal">
+            <h3>添加子计划</h3>
+            <p style="font-size:13px; color:var(--text-secondary); margin-bottom:10px;">从现有日程中选择要挂载到「{{ parentPlanDetail ? parentPlanDetail.title : '' }}」的子计划：</p>
+            <div class="attach-list" style="max-height:320px; overflow-y:auto;">
+              <label v-for="c in parentAttachCandidates" :key="c.id" class="attach-item" style="display:flex; align-items:center; gap:8px; padding:8px 6px; cursor:pointer; border-bottom:1px solid var(--border,#f2f2f2);">
+                <input type="checkbox" :value="c.id" v-model="parentAttachIds" />
+                <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ c.title }}</span>
+                <span style="font-size:12px; color:var(--text-secondary); flex:none;">{{ c.plannedStartTime ? formatDate(c.plannedStartTime) : '未排期' }}</span>
+              </label>
+              <p v-if="parentAttachCandidates.length===0" class="empty-state" style="padding:18px;">暂无可挂载的日程，请先到织程创建日程</p>
+            </div>
+            <div class="modal-actions">
+              <button class="btn btn-outline btn-sm" @click="parentAttachModal=false">取消</button>
+              <button class="btn btn-primary btn-sm" :disabled="!parentAttachIds.length" @click="attachSelectedChildren">挂载（{{ parentAttachIds.length }}）</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div v-if="currentPage==='schedules'" class="page-view">
         <div class="page-header">
           <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg> 织程</h2>

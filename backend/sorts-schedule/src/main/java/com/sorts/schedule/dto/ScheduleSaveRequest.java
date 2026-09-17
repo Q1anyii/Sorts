@@ -38,4 +38,7 @@ public class ScheduleSaveRequest {
 
     /** 主题色（十六进制） */
     private String color;
+
+    /** 所属主计划ID（可空；不校验存在性，由主计划模块挂载） */
+    private Long parentId;
 }

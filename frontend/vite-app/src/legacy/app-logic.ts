@@ -431,7 +431,7 @@ const app = createApp({
     // ============ Navigation（hash 路由 + 刷新保持） ============
     const currentPage = ref('dashboard');
 
-    const VALID_PAGES = ['dashboard', 'calendar', 'schedules', 'ai', 'reports', 'stats', 'mall', 'notifications', 'profile'];
+    const VALID_PAGES = ['dashboard', 'calendar', 'schedules', 'plans', 'ai', 'reports', 'stats', 'mall', 'notifications', 'profile'];
     const SS_PREFIX = 'sorts.ss.';
     function parseHash() {
       const h = location.hash.replace(/^#\/?/, '');
@@ -1861,6 +1861,128 @@ const app = createApp({
       } catch (e) { /* 商城加载失败保留空态 */ }
     }
 
+    // ============ 主计划（长时间计划容器，含子计划） ============
+    const parentPlans = ref([]);
+    const parentPlanTotal = ref(0);
+    const parentPlanPage = ref(1);
+    const parentPlanDetail = ref(null);
+    const parentPlanForm = reactive({ show: false, editingId: null, title: '', description: '', color: '#5B7FFF', priority: 'MEDIUM', startDate: '', endDate: '' });
+    const parentAttachModal = ref(false);
+    const parentAttachCandidates = ref([]);
+    const parentAttachIds = ref([]);
+
+    /** 活跃主计划：进行中或暂停中（主页/全局气泡共用） */
+    const activeParentPlan = computed(() => {
+      const list = parentPlans.value || [];
+      return list.find(p => p.status === 'IN_PROGRESS' || p.status === 'PAUSED') || null;
+    });
+
+    async function loadParentPlans(page) {
+      try {
+        const p = page || parentPlanPage.value;
+        const data = await apiFetch('/parent-plans', { params: { page: p, pageSize: 20 } });
+        parentPlans.value = (data && data.list) || [];
+        parentPlanTotal.value = (data && data.total) || 0;
+        parentPlanPage.value = p;
+      } catch (e) { showError(e, '主计划加载失败'); }
+    }
+
+    function openParentPlanForm(plan) {
+      parentPlanForm.show = true;
+      parentPlanForm.editingId = plan ? plan.id : null;
+      parentPlanForm.title = plan ? plan.title : '';
+      parentPlanForm.description = plan ? (plan.description || '') : '';
+      parentPlanForm.color = plan && plan.color ? plan.color : '#5B7FFF';
+      parentPlanForm.priority = plan ? (plan.priority || 'MEDIUM') : 'MEDIUM';
+      parentPlanForm.startDate = plan && plan.startDate ? plan.startDate : '';
+      parentPlanForm.endDate = plan && plan.endDate ? plan.endDate : '';
+    }
+
+    async function saveParentPlan() {
+      const body = {
+        title: parentPlanForm.title,
+        description: parentPlanForm.description,
+        color: parentPlanForm.color,
+        priority: parentPlanForm.priority,
+        startDate: parentPlanForm.startDate || null,
+        endDate: parentPlanForm.endDate || null
+      };
+      try {
+        if (parentPlanForm.editingId) {
+          await apiFetch('/parent-plans/' + parentPlanForm.editingId, { method: 'PUT', body: body });
+        } else {
+          await apiFetch('/parent-plans', { method: 'POST', body: body });
+        }
+        parentPlanForm.show = false;
+        parentPlanForm.editingId = null;
+        await loadParentPlans(1);
+        toast(parentPlanForm.editingId ? '主计划已更新' : '主计划已创建', 'success');
+      } catch (e) { showError(e, '保存主计划失败'); }
+    }
+
+    async function deleteParentPlan(plan) {
+      const ok = await notifyConfirm({ title: '删除主计划', message: '确定删除「' + (plan.title || '') + '」吗？其子计划将保留为独立日程。', confirmText: '删除' });
+      if (!ok) return;
+      try {
+        await apiFetch('/parent-plans/' + plan.id, { method: 'DELETE' });
+        if (parentPlanDetail.value && parentPlanDetail.value.id === plan.id) parentPlanDetail.value = null;
+        await loadParentPlans();
+        toast('主计划已删除', 'success');
+      } catch (e) { showError(e, '删除主计划失败'); }
+    }
+
+    /** 主计划状态流转：start / pause / resume / complete */
+    async function parentPlanAction(plan, action) {
+      try {
+        const updated = await apiFetch('/parent-plans/' + plan.id + '/' + action, { method: 'POST' });
+        await loadParentPlans();
+        if (parentPlanDetail.value && parentPlanDetail.value.id === plan.id) {
+          parentPlanDetail.value = updated;
+        }
+        const actionText = { start: '已开始', pause: '已暂停', resume: '已继续', complete: '已完成' }[action] || action;
+        toast('主计划「' + actionText + '」', 'success');
+      } catch (e) { showError(e, '主计划状态操作失败'); }
+    }
+
+    async function openParentPlan(plan) {
+      try {
+        parentPlanDetail.value = await apiFetch('/parent-plans/' + plan.id);
+      } catch (e) { showError(e, '主计划详情加载失败'); }
+    }
+
+    function closeParentPlan() { parentPlanDetail.value = null; }
+
+    async function openParentAttachModal() {
+      parentAttachModal.value = true;
+      parentAttachIds.value = [];
+      try {
+        const page = await apiFetch('/schedules', { params: { view: 'all', pageSize: 500, sort: 'plannedStartTime', order: 'asc' } });
+        const attached = new Set((parentPlanDetail.value && parentPlanDetail.value.children || []).map(c => c.id));
+        parentAttachCandidates.value = ((page && page.list) || []).filter(s => !attached.has(s.id));
+      } catch (e) { showError(e, '日程加载失败'); }
+    }
+
+    async function attachSelectedChildren() {
+      if (!parentAttachIds.value.length) { toast('请先勾选要挂载的日程', 'warning'); return; }
+      try {
+        parentPlanDetail.value = await apiFetch('/parent-plans/' + parentPlanDetail.value.id + '/children', {
+          method: 'POST', body: { scheduleIds: parentAttachIds.value }
+        });
+        parentAttachModal.value = false;
+        parentAttachIds.value = [];
+        await loadParentPlans();
+        toast('子计划已挂载', 'success');
+      } catch (e) { showError(e, '挂载子计划失败'); }
+    }
+
+    async function detachChild(scheduleId) {
+      try {
+        parentPlanDetail.value = await apiFetch('/parent-plans/' + parentPlanDetail.value.id + '/children/' + scheduleId, { method: 'DELETE' });
+        await loadParentPlans();
+        toast('子计划已移出', 'success');
+      } catch (e) { showError(e, '移出子计划失败'); }
+    }
+
     async function loadReports() {
       try {
         const page = await apiFetch('/ai/reports', { params: { page: 1, pageSize: 50 } });
@@ -1951,6 +2073,7 @@ const app = createApp({
         loadNotifications(),
         loadMallData(),
         loadReports(),
+        loadParentPlans(),
         loadStats(),
         loadReminderSettings(),
         loadActiveSchedule()
@@ -2148,6 +2271,12 @@ const app = createApp({
       scheduleForm, reminderSettings, profileSaved,
       // Mall
       purchaseItem, confirmPurchase, useItem, deactivateWardrobe, activeAvatar, activeBadge,
+      // 主计划（长时间计划容器）
+      parentPlans, parentPlanTotal, parentPlanPage, parentPlanDetail, activeParentPlan,
+      parentPlanForm, parentAttachModal, parentAttachCandidates, parentAttachIds,
+      loadParentPlans, saveParentPlan, deleteParentPlan, parentPlanAction,
+      openParentPlanForm, openParentPlan, closeParentPlan,
+      openParentAttachModal, attachSelectedChildren, detachChild,
       // Notifications
       unreadNotifCount, readNotif, markAllRead,
       // Schedule CRUD

@@ -238,6 +238,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     private Schedule buildEntity(Long userId, ScheduleSaveRequest request) {
         Schedule schedule = new Schedule();
         schedule.setUserId(userId);
+        schedule.setParentId(request.getParentId());
         schedule.setTitle(request.getTitle());
         schedule.setDescription(request.getDescription());
         schedule.setPlannedStartTime(request.getPlannedStartTime());

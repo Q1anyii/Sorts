@@ -1274,3 +1274,42 @@ html[data-skin="blossom"] {
   .ai-panel-chat { flex-basis: 100%; }
   .ai-resizer { display: none; }
 }
+/* ============================ 16. 主计划（长时间计划容器 + 气泡并列） ============================ */
+/* 全局气泡容器：主计划（上/大）+ 子计划（下/小）纵向排列，悬浮置顶 */
+.global-bubbles {
+  position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+  z-index: 999; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  pointer-events: none;
+}
+.global-bubbles .global-timer-bubble {
+  position: static; transform: none; pointer-events: auto;
+}
+.global-bubbles .global-timer-bubble:hover { transform: translateY(-1px); }
+.global-parent-bubble { padding: 12px 18px 12px 14px; }
+.global-parent-bubble .gtb-title { font-size: 14px; max-width: 300px; }
+.global-parent-bubble .gtb-time { font-size: 14px; }
+.global-child-bubble { padding: 8px 14px 8px 10px; transform: scale(.92); transform-origin: top center; }
+.global-child-bubble:hover { transform: scale(.92) translateY(-1px); }
+.gtb-progress { width: 130px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.22); overflow: hidden; }
+.gtb-progress i { display: block; height: 100%; border-radius: 2px; background: rgba(255,255,255,.92); transition: width .3s ease; }
+.gtb-meta { font-size: 11px; color: rgba(255,255,255,.88); white-space: nowrap; }
+
+/* 主页气泡：主计划在上（大）、子计划在下（小） */
+.parent-active-timer { padding: 24px 26px; }
+.parent-active-timer .timer-display { font-size: 30px; }
+.child-active-timer { padding: 14px 18px; margin-bottom: 14px; }
+.child-active-timer .timer-display { font-size: 24px; }
+.timer-progress { height: 5px; border-radius: 3px; background: rgba(255,255,255,.25); overflow: hidden; margin-top: 7px; max-width: 360px; }
+.timer-progress i { display: block; height: 100%; border-radius: 3px; background: rgba(255,255,255,.92); transition: width .3s ease; }
+
+/* 主计划列表 / 详情 */
+.plan-status-badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+.plan-status-badge.st-PENDING { background: rgba(148,163,184,.16); color: #64748b; }
+.plan-status-badge.st-IN_PROGRESS { background: rgba(34,197,94,.14); color: #16a34a; }
+.plan-status-badge.st-PAUSED { background: rgba(245,158,11,.16); color: #d97706; }
+.plan-status-badge.st-COMPLETED { background: rgba(99,102,241,.14); color: #6366f1; }
+.plan-card-progress { height: 6px; border-radius: 3px; background: rgba(120,130,160,.12); overflow: hidden; }
+.plan-card-progress i { display: block; height: 100%; border-radius: 3px; transition: width .3s ease; }
+.plan-card { transition: var(--transition); }
+.plan-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(20,40,120,.1); }
+.plan-child-row:hover { background: var(--bg-soft); }

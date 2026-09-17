@@ -28,6 +28,9 @@ public class Schedule {
 
     private Long userId;
 
+    /** 所属主计划ID（NULL=独立日程） */
+    private Long parentId;
+
     private String title;
 
     private String description;

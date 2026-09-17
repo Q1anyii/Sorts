@@ -20,6 +20,9 @@ public class ScheduleVO {
 
     private Long userId;
 
+    /** 所属主计划ID（NULL=独立日程） */
+    private Long parentId;
+
     private String title;
 
     private String description;
@@ -55,6 +58,7 @@ public class ScheduleVO {
         ScheduleVO vo = new ScheduleVO();
         vo.setId(schedule.getId());
         vo.setUserId(schedule.getUserId());
+        vo.setParentId(schedule.getParentId());
         vo.setTitle(schedule.getTitle());
         vo.setDescription(schedule.getDescription());
         vo.setPlannedStartTime(schedule.getPlannedStartTime());

@@ -60,7 +60,7 @@ spring:
         - id: sorts-schedule
           uri: lb://sorts-schedule
           predicates:
-            - Path=/api/v1/schedules/**,/api/v1/calendar/**,/api/v1/statistics/**
+            - Path=/api/v1/schedules/**,/api/v1/calendar/**,/api/v1/statistics/**,/api/v1/parent-plans/**
         # ========== AI 服务 ==========
         - id: sorts-ai
           uri: lb://sorts-ai
