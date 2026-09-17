@@ -82,16 +82,12 @@ function openNotify({ type = 'info', title = '提示', summary = '', detail = ''
 }
 function notifySuccess(text) { toast(text, 'success'); }
 function notifyWarning(text) { toast(text, 'warning'); }
-/** 错误弹窗：摘要 + 详情（生产隐藏堆栈），开发环境保留 console 便于排障 */
+/** 错误弹窗：只展示 message 摘要；详情（堆栈/响应对象）仅进 console 供开发排障，不展示给用户 */
 function notifyError(err, fallback = '操作失败，请稍后再试') {
   const e = err || {};
   const message = (e && e.message) ? e.message : fallback;
-  let detail = '';
-  if (e && e.detail) detail = e.detail;
-  else if (e && e.stack && IS_DEV) detail = e.stack;
-  else if (IS_DEV && typeof e === 'object' && e.code !== undefined) detail = JSON.stringify(e, null, 2);
   if (IS_DEV) console.warn('[notify]', message, e);
-  openNotify({ type: 'error', title: '操作失败', summary: message, detail });
+  openNotify({ type: 'error', title: '操作失败', summary: message });
 }
 /** 确认弹窗：resolve(true/false) */
 function notifyConfirm({ title = '确认操作', message = '', confirmText = '确认', cancelText = '取消' }) {
@@ -121,7 +117,15 @@ function refreshTokens() {
   })
     .then(parseResult)
     .then((t) => { saveTokens(t); return t.accessToken; })
-    .catch((e) => { clearTokens(); throw e; })
+    .catch((e) => {
+      // 仅令牌业务失效（refresh 无效/过期等 4xx）才清令牌触发登出；
+      // 网络瞬时抖动（无 code/status 的 TypeError）不清令牌，保留会话下次请求重试，避免误登出
+      const isAuthFailure = e && typeof e === 'object' &&
+        ((e.code === 40101 || e.code === 40102 || e.code === 40103) ||
+         (typeof e.status === 'number' && e.status >= 400 && e.status < 500));
+      if (isAuthFailure) clearTokens();
+      throw e;
+    })
     .finally(() => { refreshPromise = null; });
   return refreshPromise;
 }
