@@ -135,7 +135,7 @@ const app = createApp({
     // ============ AI State ============
     const aiInput = ref('');
     const aiMessages = ref([
-      { role: 'bot', content: '你好！我是梭子 AI 助手 🤖 我可以帮你：\n\n📅 **规划日程**：告诉我你的需求，我会生成结构化的日程安排\n📊 **效率分析**：分析你的时间使用情况\n📝 **生成总结**：每日/月度/年度智能总结\n\n试试对我说："明天上午学习Java 2小时，下午运动1小时"' }
+      { role: 'bot', content: '你好！我是梭灵 🤖 我可以帮你：\n\n📅 **规划日程**：告诉我你的需求，我会生成结构化的日程安排\n📊 **效率分析**：分析你的时间使用情况\n📝 **生成总结**：每日/月度/年度智能总结\n\n试试对我说："明天上午学习Java 2小时，下午运动1小时"' }
     ]);
     const aiLoading = ref(false);
     const aiSuggestions = ref([]);
@@ -342,7 +342,7 @@ const app = createApp({
       isLoggedIn.value = false;
       schedules.value = [];
       notifications.value = [];
-      aiMessages.value = [{ role: 'bot', content: '你好！我是梭子 AI 助手 🤖 我可以帮你：\n\n📅 **规划日程**：告诉我你的需求，我会生成结构化的日程安排\n📊 **效率分析**：分析你的时间使用情况\n📝 **生成总结**：每日/月度/年度智能总结\n\n试试对我说："明天上午学习Java 2小时，下午运动1小时"' }];
+      aiMessages.value = [{ role: 'bot', content: '你好！我是梭灵 🤖 我可以帮你：\n\n📅 **规划日程**：告诉我你的需求，我会生成结构化的日程安排\n📊 **效率分析**：分析你的时间使用情况\n📝 **生成总结**：每日/月度/年度智能总结\n\n试试对我说："明天上午学习Java 2小时，下午运动1小时"' }];
       aiSuggestions.value = [];
       currentPlanId = null;
       activeSchedule.value = null;
@@ -415,7 +415,7 @@ const app = createApp({
         } catch (e) { /* 积分拉取失败不阻塞主流程 */ }
         activeSchedule.value = null;
         elapsedSeconds.value = 0;
-        alert(earned > 0 ? `✅ 日程完成！获得 ${earned} 积分` : '✅ 日程已完成');
+        alert(earned > 0 ? `✅ 日程完成！获得 ${earned} 光阴砂` : '✅ 日程已完成');
       } catch (e) {
         showError(e, '结束日程失败');
       }
@@ -660,7 +660,7 @@ const app = createApp({
         alert(`✅ 成功购买 "${item.name}"！`);
       } catch (e) {
         purchaseConfirm.value = null;
-        showError(e, '购买失败（可能积分不足或已拥有）');
+        showError(e, '购买失败（可能光阴砂不足或已拥有）');
       }
     }
 

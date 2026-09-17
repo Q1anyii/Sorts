@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>梭子 - 智能日程管理</title>
+<title>梭子 - 专注计时与日程规划</title>
 <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
 <script src="https://unpkg.com/vue-router@4.3.0/dist/vue-router.global.prod.js"></script>
 <link rel="stylesheet" href="css/style.css">
@@ -17,7 +17,7 @@
       <div class="login-logo">
         <div class="icon">🚀</div>
         <h1>梭子</h1>
-        <p>智能日程管理 · AI 驱动高效生活</p>
+        <p>专注计时与日程规划 · AI 驱动高效生活</p>
       </div>
       <div class="form-modes">
         <div class="form-mode" :class="{active: authMode==='login'}" @click="authMode='login'">登录</div>
@@ -65,16 +65,16 @@
             <span class="nav-icon">📊</span> 工作台
           </div>
           <div class="nav-item" :class="{active: currentPage==='calendar'}" @click="currentPage='calendar'">
-            <span class="nav-icon">📅</span> 日历
+            <span class="nav-icon">📅</span> 织历
           </div>
           <div class="nav-item" :class="{active: currentPage==='schedules'}" @click="currentPage='schedules'">
-            <span class="nav-icon">📋</span> 日程列表
+            <span class="nav-icon">📋</span> 日程清单
           </div>
         </div>
         <div class="nav-section">
           <div class="nav-section-title">智能助手</div>
           <div class="nav-item" :class="{active: currentPage==='ai'}" @click="currentPage='ai'">
-            <span class="nav-icon">🤖</span> AI 助手
+            <span class="nav-icon">🤖</span> 梭灵
           </div>
           <div class="nav-item" :class="{active: currentPage==='reports'}" @click="currentPage='reports'">
             <span class="nav-icon">📝</span> 总结报告
@@ -83,13 +83,13 @@
         <div class="nav-section">
           <div class="nav-section-title">更多</div>
           <div class="nav-item" :class="{active: currentPage==='stats'}" @click="currentPage='stats'">
-            <span class="nav-icon">📈</span> 统计分析
+            <span class="nav-icon">📈</span> 纹谱统计
           </div>
           <div class="nav-item" :class="{active: currentPage==='mall'}" @click="currentPage='mall'">
-            <span class="nav-icon">🛒</span> 积分商城
+            <span class="nav-icon">🛒</span> 锦市
           </div>
           <div class="nav-item" :class="{active: currentPage==='notifications'}" @click="currentPage='notifications'">
-            <span class="nav-icon">🔔</span> 消息通知
+            <span class="nav-icon">🔔</span> 飞鸽传书
             <span class="badge" v-if="unreadNotifCount">{{ unreadNotifCount }}</span>
           </div>
           <div class="nav-item" :class="{active: currentPage==='profile'}" @click="currentPage='profile'">
@@ -102,7 +102,7 @@
           <div class="user-avatar">{{ userInfo.nickname ? userInfo.nickname[0] : 'U' }}</div>
           <div class="user-mini-info">
             <div class="name">{{ userInfo.nickname || userInfo.username }}</div>
-            <div class="points">⭐ {{ userInfo.points }} 积分</div>
+            <div class="points">⭐ {{ userInfo.points }} 光阴砂</div>
           </div>
         </div>
       </div>
@@ -165,7 +165,7 @@
             <div class="stat-icon purple">⭐</div>
             <div>
               <div class="stat-value">{{ userInfo.points }}</div>
-              <div class="stat-label">我的积分</div>
+              <div class="stat-label">我的光阴砂</div>
             </div>
           </div>
         </div>
@@ -226,7 +226,7 @@
       <!-- ============ CALENDAR ============ -->
       <div v-if="currentPage==='calendar'">
         <div class="page-header">
-          <h2>📅 日历视图</h2>
+          <h2>📅 织历视图</h2>
           <p>查看和管理你的日程安排</p>
         </div>
         <div class="card" style="margin-bottom:16px;">
@@ -291,7 +291,7 @@
       <!-- ============ SCHEDULE LIST ============ -->
       <div v-if="currentPage==='schedules'">
         <div class="page-header">
-          <h2>📋 日程列表</h2>
+          <h2>📋 日程清单</h2>
           <p>管理你的所有日程</p>
         </div>
         <!-- Filters -->
@@ -350,7 +350,7 @@
       <!-- ============ AI ASSISTANT ============ -->
       <div v-if="currentPage==='ai'">
         <div class="page-header">
-          <h2>🤖 AI 智能助手</h2>
+          <h2>🤖 梭灵</h2>
           <p>用自然语言描述你的需求，AI 帮你规划日程</p>
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
@@ -446,7 +446,7 @@
       <!-- ============ STATISTICS ============ -->
       <div v-if="currentPage==='stats'">
         <div class="page-header">
-          <h2>📈 统计分析</h2>
+          <h2>📈 纹谱统计</h2>
           <p>深入了解你的时间使用情况</p>
         </div>
         <div class="stats-grid">
@@ -508,8 +508,8 @@
       <!-- ============ MALL ============ -->
       <div v-if="currentPage==='mall'">
         <div class="page-header">
-          <h2>🛒 积分商城</h2>
-          <p>用积分兑换个性化装扮 · 当前积分：<strong>⭐ {{ userInfo.points }}</strong></p>
+          <h2>🛒 锦市</h2>
+          <p>用光阴砂兑换个性化装扮 · 当前光阴砂：<strong>⭐ {{ userInfo.points }}</strong></p>
         </div>
         <div class="tabs">
           <div class="tab-item" :class="{active: mallTab==='all'}" @click="mallTab='all'">全部</div>
@@ -530,7 +530,7 @@
                   class="btn btn-warning btn-sm"
                   :disabled="userInfo.points < item.price"
                   @click="purchaseItem(item)"
-                >{{ userInfo.points < item.price ? '积分不足' : '购买' }}</button>
+                >{{ userInfo.points < item.price ? '光阴砂不足' : '购买' }}</button>
                 <button v-else class="btn btn-success btn-sm" @click="useItem(item)">{{ item.isActive ? '使用中' : '使用' }}</button>
               </div>
             </div>
@@ -542,9 +542,9 @@
             <div class="modal-header"><h3>确认购买</h3></div>
             <div class="modal-body" style="text-align:center;">
               <div style="font-size:48px; margin-bottom:12px;">🛍</div>
-              <p>确认花费 <strong>⭐ {{ purchaseConfirm.price }}</strong> 积分购买</p>
+              <p>确认花费 <strong>⭐ {{ purchaseConfirm.price }}</strong> 光阴砂购买</p>
               <p style="font-size:18px; font-weight:600;">"{{ purchaseConfirm.name }}" ？</p>
-              <p style="font-size:12px; color:var(--text-secondary);">购买后剩余 {{ userInfo.points - purchaseConfirm.price }} 积分</p>
+              <p style="font-size:12px; color:var(--text-secondary);">购买后剩余 {{ userInfo.points - purchaseConfirm.price }} 光阴砂</p>
             </div>
             <div class="modal-footer">
               <button class="btn btn-outline" @click="purchaseConfirm=null">取消</button>
@@ -557,7 +557,7 @@
       <!-- ============ NOTIFICATIONS ============ -->
       <div v-if="currentPage==='notifications'">
         <div class="page-header">
-          <h2>🔔 消息通知</h2>
+          <h2>🔔 飞鸽传书</h2>
           <button class="btn btn-outline btn-sm" @click="markAllRead" v-if="unreadNotifCount > 0">全部标记已读</button>
         </div>
         <div class="card">
@@ -602,10 +602,10 @@
             <p v-if="profileSaved" style="color:var(--success); font-size:13px; margin-top:8px;">✅ 已保存</p>
           </div>
           <div class="card">
-            <div class="card-title mb-3">🎨 我的装扮</div>
+            <div class="card-title mb-3">🎨 云裳阁</div>
             <div v-if="wardrobe.length===0" class="empty-state">
-              <p>还没有装扮物品，去商城看看吧！</p>
-              <button class="btn btn-primary btn-sm mt-3" @click="currentPage='mall'">去商城</button>
+              <p>还没有装扮物品，去锦市看看吧！</p>
+              <button class="btn btn-primary btn-sm mt-3" @click="currentPage='mall'">去锦市</button>
             </div>
             <div v-for="w in wardrobe" :key="w.id" style="display:flex; align-items:center; gap:12px; padding:10px; border-radius:8px; background:var(--bg); margin-bottom:8px;">
               <span style="font-size:24px;">{{ w.item.type==='SKIN'?'🎨':'🏅' }}</span>
