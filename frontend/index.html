@@ -143,7 +143,7 @@
         </div>
 
         <!-- Active Timer -->
-        <div class="active-timer" v-if="activeSchedule" style="margin-bottom:16px;" :class="{'is-running': activeSchedule.status==='IN_PROGRESS'}">
+        <div class="active-timer" v-if="activeSchedule" style="margin-bottom:16px;" :class="{'is-running': activeSchedule.status==='IN_PROGRESS'}" :style="bubbleStyle(activeSchedule)">
           <div class="timer-display">{{ formatTimer(elapsedSeconds) }}</div>
           <div class="timer-info">
             <div class="timer-title" :class="{'is-running': activeSchedule.status==='IN_PROGRESS'}">{{ activeSchedule.title }}</div>
@@ -438,10 +438,7 @@
             <div class="conv-sidebar">
               <div class="conv-head">
                 <span>💬 会话</span>
-                <div style="display:flex; gap:6px; align-items:center;">
-                  <button class="btn btn-primary btn-sm" @click="newConversation">＋ 新建</button>
-                  <button class="icon-btn" title="隐藏会话，对话窗口占满" @click="toggleAiPanel('sidebar')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
-                </div>
+                <button class="btn btn-primary btn-sm" @click="newConversation">＋ 新建</button>
               </div>
               <div class="conv-list">
                 <div class="conv-item" :class="{active: currentConversationId===c.id}" v-for="c in conversations" :key="c.id" @click="switchConversation(c.id)">
@@ -466,10 +463,14 @@
             <div class="ai-chat">
               <div class="ai-chat-bar">
                 <div class="ai-chat-bar-side">
-                  <button v-if="!aiPanels.sidebar" class="icon-btn" title="展开会话列表" @click="aiPanels.sidebar = true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+                  <button v-if="aiPanels.sidebar" class="icon-btn" title="隐藏会话列表" @click="toggleAiPanel('sidebar')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+                  <button v-else class="icon-btn" title="展开会话列表" @click="aiPanels.sidebar = true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
                   <span class="ai-chat-bar-title">💬 对话</span>
                 </div>
-                <button v-if="!aiPanels.plans" class="icon-btn" title="展开规划建议" @click="aiPanels.plans = true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+                <div class="ai-chat-bar-side">
+                  <button v-if="aiPanels.plans" class="icon-btn" title="隐藏规划建议" @click="toggleAiPanel('plans')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+                  <button v-else class="icon-btn" title="展开规划建议" @click="aiPanels.plans = true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+                </div>
               </div>
               <div class="ai-chat-messages" ref="aiChatMessages">
                 <div class="ai-message" v-for="(msg, i) in aiMessages" :key="i" :class="msg.role">
@@ -520,7 +521,6 @@
                 <button v-if="aiSuggestions.length" class="btn btn-outline btn-sm" @click="toggleAllSuggestions">{{ aiSelectedIndices.length===aiSuggestions.length ? '取消全选' : '全选' }}</button>
                 <button v-if="aiSuggestions.length && aiSelectedIndices.length" class="btn btn-outline btn-sm" @click="clearAiSelection">清除勾选</button>
                 <button v-if="aiSuggestions.length" class="btn btn-success btn-sm" :disabled="!aiSelectedIndices.length" @click="adoptSelectedSuggestions">批量采纳（{{ aiSelectedIndices.length }}）</button>
-                <button class="icon-btn" title="隐藏规划建议，会话与对话占满" @click="toggleAiPanel('plans')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
               </div>
             </div>
             <div class="ai-plan-scroll">
