@@ -77,7 +77,7 @@ services:
     restart: unless-stopped
     environment:
       MODE: standalone
-      NACOS_AUTH_ENABLE: "false"
+      NACOS_AUTH_ENABLE: "${NACOS_AUTH_ENABLE:-false}"
       JVM_XMS: 512m
       JVM_XMX: 512m
       JVM_XMN: 256m
@@ -136,6 +136,7 @@ services:
         REDIS_PORT: "6379"
         REDIS_PASSWORD: ${REDIS_PASSWORD:-sorts_dev}
         INTERNAL_TOKEN: ${INTERNAL_TOKEN:-sorts-internal-dev-token}
+        JWT_SECRET: ${JWT_SECRET:-sorts-dev-secret-please-override-by-env-jwt-secret}
         DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
         JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -Duser.timezone=Asia/Shanghai"
     profiles: ["app"]
@@ -180,6 +181,7 @@ services:
       REDIS_PORT: "6379"
       REDIS_PASSWORD: ${REDIS_PASSWORD:-sorts_dev}
       INTERNAL_TOKEN: ${INTERNAL_TOKEN:-sorts-internal-dev-token}
+      JWT_SECRET: ${JWT_SECRET:-sorts-dev-secret-please-override-by-env-jwt-secret}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -Duser.timezone=Asia/Shanghai"
       USER_AVATAR_DIR: /app/data/avatar

@@ -318,7 +318,7 @@ bash scripts/docker.sh app-down  # 停服务
 | GET     | `/api/v1/users/avatar/files/{filename}` | 头像静态读取（网关白名单免鉴权；扩展名映射 Content-Type，Cache-Control 7 天） |
 | PUT     | `/api/v1/users/me/password`   | 修改密码                                               |
 | GET     | `/api/v1/users/points`        | 查询光阴砂余额及流水                                         |
-| POST    | `/api/v1/users/points/change` | 变更光阴砂（**内部调用**；api-spec 写作 `deduct`，实现路径为 `change`） |
+| POST    | `/api/v1/users/points/change` | 变更光阴砂（**内部调用**；正数增、负数减，与 api-spec 已对齐） |
 
 ### 日程与计时
 
@@ -462,7 +462,7 @@ bash scripts/docker.sh app-down  # 停服务
 | 层    | 命令                                        | 规模                       |
 | ---- | ----------------------------------------- | ------------------------ |
 | 后端单测 | `cd backend && ./mvnw test`               | 39 个测试类 / 334 个用例        |
-| 前端单测（存档 Vite 工程） | `cd frontend/vite-app && npm test` | 4 个测试文件 / 19 个用例 |
+| 前端单测（存档 Vite 工程） | `cd frontend/vite-app && npm test` | 4 个测试文件 / 19 个用例；⚠️ 仅覆盖存档工程，主版 CDN 前端（`frontend/index.html + js/ + css/`）无自动化测试，属已知覆盖盲区 |
 | 集成测试 | `cd backend && ./mvnw -Pintegration test` | Testcontainers（需 Docker） |
 
 **覆盖范围**

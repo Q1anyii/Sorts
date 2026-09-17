@@ -1602,19 +1602,19 @@
         }
       }
     },
-    "/users/points/deduct": {
+    "/users/points/change": {
       "post": {
         "tags": [
           "用户接口"
         ],
-        "summary": "扣减积分（内部调用）",
-        "description": "由 mall-service 等内部服务调用，用于购买商品时扣减积分",
+        "summary": "变更光阴砂（内部调用）",
+        "description": "由 mall-service / schedule-service 等内部服务调用，正数增、负数减",
         "security": [
           {
             "bearerAuth": []
           }
         ],
-        "operationId": "deductPoints",
+        "operationId": "changePoints",
         "requestBody": {
           "required": true,
           "content": {
@@ -1622,14 +1622,13 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "amount",
+                  "delta",
                   "reason"
                 ],
                 "properties": {
-                  "amount": {
+                  "delta": {
                     "type": "integer",
-                    "minimum": 1,
-                    "description": "扣减数量"
+                    "description": "变动数量（正增负减，不可为 0）"
                   },
                   "reason": {
                     "type": "string"
@@ -1645,10 +1644,10 @@
         },
         "responses": {
           "200": {
-            "description": "扣减成功"
+            "description": "变更成功"
           },
           "400": {
-            "description": "积分不足"
+            "description": "光阴砂不足（扣减为负时）"
           }
         }
       }

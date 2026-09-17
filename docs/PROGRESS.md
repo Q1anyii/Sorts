@@ -415,7 +415,7 @@ event: error   data: {"code":503,"message":"..."}
 26. **AI 命名前后端不一致**（M7 收尾，已修）：后端 `AiPrompts` 的人设一直是「你是『梭灵』」，Java 代码、日志、报错文案全用梭灵；只有 M6 前端把菜单 / 路由标题 / 对话页写成了「AI 织师 / 织师」。已统一回梭灵。
 27. **AI 服务已接入真实 DeepSeek 密钥并完成端到端验证**（M7 收尾）：密钥写入 `docker/.env`（`*.env` 已被 gitignore，不入库）。实测 `/ai/chat?stream=false` 1.9s 返回、`/ai/chat` 不带参返回 92 帧 `event:delta`、`/ai/plan` 1.7s 返回 3 条建议、`/ai/plan?stream=true` 返回 1078 帧。
 28. **采用 MIT 许可证**（M7 收尾）：新增 `LICENSE`（Copyright 2026 谦亦AAA），README 许可证章节同步。
-29. **`api-spec` 与实现的第三处偏差**：积分内部接口 api-spec 写 `/users/points/deduct`，实现路径为 `/api/v1/users/points/change`（内部凭证白名单 `sorts.internal.paths` 里也是后者）。与第 11、17 条同属已知偏差，前端以 `Result.code` 为准。
+29. ~~**`api-spec` 与实现的第三处偏差**：积分内部接口 api-spec 写 `/users/points/deduct`，实现路径为 `/api/v1/users/points/change`（内部凭证白名单 `sorts.internal.paths` 里也是后者）。~~ → **已修复**（2026-09-17 审查收尾）：api-spec 对齐为 `/users/points/change`，字段 `amount` → `delta`（正增负减），README / PROGRESS 同步更新。
 
 
 ---
