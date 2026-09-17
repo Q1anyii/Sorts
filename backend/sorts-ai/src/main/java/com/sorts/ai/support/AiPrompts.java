@@ -45,11 +45,17 @@ public final class AiPrompts {
         LocalDate today = LocalDate.now();
         return """
                 【本次对话的写入能力】
-                你当前已获得写入授权，可调用 createSchedule / createSchedules 工具把日程写入用户的织程。
+                你当前已获得写入授权，可调用 createSchedule / createSchedules 工具创建日程，
+                调用 updateSchedule 工具修改已有日程（按 id 局部更新，未给出的字段保持不变）。
                 今天是 %s（服务器时间，唯一权威日期来源）。用户说「今天 / 明天 / 后天 / 本周 / 下周」等
                 相对日期时，必须严格按服务器日期推算（今天=%s，明天=%s），禁止自行猜测年份或日期。
                 - 用户要求创建日程时：按行为准则第 4 条执行（复述一次要点；用户已明确要求则直接执行）。
                 - 若用户给出的是长清单（多条事项），优先合并为一次 createSchedules 批量创建。
+                - 修改日程时：先用查询工具按标题/日期定位出日程 ID，再调 updateSchedule 按 ID 修改；
+                  用户说「全部后续的 / 所有 / 全部」等批量范围时，逐条 updateSchedule 处理。
+                - 时间语义：用户给出的是「时间段」（如“上午9-12点”“19:00-21:00”），
+                  plannedStartTime 取起始时刻，plannedDuration 取完整时段时长（9-12 点 → 180 分钟），
+                  不得只取起始点按 60 分钟创建；若用户描述与你的理解明显不一致，以用户描述为准。
                 """.formatted(today.format(DAY), today.format(DAY), today.plusDays(1).format(DAY));
     }
 

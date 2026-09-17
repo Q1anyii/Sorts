@@ -1,6 +1,7 @@
 package com.sorts.ai.service.impl;
 
 import com.sorts.ai.client.ScheduleClient;
+import com.sorts.ai.support.ConversationStore;
 import com.sorts.ai.client.dto.BatchCreateDto;
 import com.sorts.ai.client.dto.ScheduleDto;
 import com.sorts.ai.config.DeepSeekProperties;
@@ -69,6 +70,9 @@ class PlanServiceImplTest {
     @Mock
     private ScheduleClient scheduleClient;
 
+    @Mock
+    private ConversationStore conversationStore;
+
     private DeepSeekProperties properties;
 
     private PlanServiceImpl service;
@@ -77,7 +81,7 @@ class PlanServiceImplTest {
     void setUp() {
         properties = new DeepSeekProperties();
         properties.setApiKey("test-key");
-        service = new PlanServiceImpl(chatModelClient, properties, planMapper, scheduleClient, jsonCodec);
+        service = new PlanServiceImpl(chatModelClient, properties, planMapper, scheduleClient, jsonCodec, conversationStore);
         when(planMapper.insert(any(SchedulePlan.class))).thenAnswer(invocation -> {
             SchedulePlan plan = invocation.getArgument(0);
             plan.setId(1L);

@@ -18,6 +18,9 @@ public class AIPlanRequest {
     @Size(max = 2000, message = "规划描述不能超过 2000 字")
     private String userPrompt;
 
+    /** 会话ID（可选）：规划请求同步写入对话历史，便于后续普通对话衔接上下文 */
+    private String conversationId;
+
     /** 目标日期，缺省明天 */
     private LocalDate targetDate;
 

@@ -352,7 +352,9 @@ function renderMarkdown(text) {
       '<pre><code class="language-' + escapeHtml(language) + '">' + escapeHtml(codeText) + '</code></pre>' +
       '</div>';
   };
-  marked.setOptions({ gfm: true, breaks: false, renderer: renderer });
+  // gfm + breaks：AI 常以单个换行分隔「标题 / 表格 / 列表」，breaks:true 按 GitHub 风格将软换行视为块边界，
+  // 否则「## 标题」会留在段落内不被解析（表现为原始 md 文本裸露）。
+  marked.setOptions({ gfm: true, breaks: true, renderer: renderer });
   let html = marked.parse(cleaned);
   // highlight.js 代码高亮（渲染后处理；单块失败不影响正文）
   if (typeof hljs !== 'undefined') {
@@ -501,6 +503,8 @@ const app = createApp({
     /** AI 文件附件：上传解析后的内容只作为本次对话临时记忆（不持久化到会话） */
     const aiAttachedFile = ref(null);   // { name, chars, text }
     const aiFileInputEl = ref(null);    // 隐藏的 file input（模板 ref）
+    /** AI 新建日程 ID 列表：跳转织程后用于定位高亮（点击「查看新建的日程」时写入） */
+    const aiJustCreatedIds = ref([]);
     const aiMessages = ref([
       { role: 'bot', content: '你好！我是梭灵 🤖 我可以帮你：\n\n📅 **规划日程**：告诉我你的需求，我会生成结构化的日程安排\n📊 **效率分析**：分析你的时间使用情况\n📝 **生成总结**：每日/月度/年度智能总结\n\n试试对我说："明天上午学习Java 2小时，下午运动1小时"' }
     ]);
@@ -1275,12 +1279,20 @@ const app = createApp({
         if (action.payload && action.payload.requiresWritePermission) {
           aiWriteEnabled.value = true;
           toast('已开启「允许 AI 写入日程」，请重新发送', 'info');
+        } else if (action.payload && Array.isArray(action.payload.scheduleIds) && action.payload.scheduleIds.length) {
+          // 「查看新建的日程」：跳转织程并定位 AI 已创建的日程（高亮闪烁）
+          aiJustCreatedIds.value = action.payload.scheduleIds;
+          currentPage.value = 'schedules';
+          scheduleFilter.value = { preset: 'all' };
+          loadSchedules();
+          toast(`已为你定位 ${action.payload.scheduleIds.length} 条新建日程`, 'success');
         } else {
           showScheduleModal.value = true; editingSchedule.value = null;
         }
       }
       else if (action.type === 'VIEW_STATS') { currentPage.value = 'stats'; }
       else if (action.type === 'GENERATE_SUMMARY') { currentPage.value = 'reports'; }
+      else if (action.type === 'VIEW_REPORTS') { currentPage.value = 'reports'; }
     }
 
     async function sendAiMessage() {
@@ -1297,10 +1309,18 @@ const app = createApp({
       // 规划意图：走 /ai/plan JSON 通道（右侧结构化建议面板），保持原行为。
       // 相对时间范围（未来一周/下周/本周/明天等）由服务端注入解析，前端不再猜日期。
       // 带文件附件时强制走普通对话（文件内容经 /ai/chat 的 fileContent 注入，plan 通道不支持）
-      const isPlanning = !hasFile && /规划|安排|计划|日程/.test(msg);
+      // 规划意图判定（收紧）：仅「生成/规划/安排 新计划」类消息进结构化规划通道。
+      // 修改/调整/删除/补充类操作一律走普通对话（含写工具自动授权），避免「修改我的日程」
+      // 这类消息被「日程」关键词误路由到 /ai/plan 而丢失写权限与上下文。
+      const isPlanning = !hasFile
+        && !/修改|调整|更新|删除|移除|改成|改到|推迟|提前|补充|在此基础上|在此之上/.test(msg)
+        && /(帮我|请|给我)?\s*(生成|做|写|出|规划|安排).{0,10}(规划|计划|日程)/.test(msg);
       if (isPlanning) {
         try {
-          const plan = await apiFetch('/ai/plan', { method: 'POST', body: { userPrompt: msg } });
+          // 规划请求复用/初始化 Redis 会话 ID：plan 结果同步写入对话历史，
+          // 保证用户规划后继续追问（如「每天都要」）时 AI 能衔接到本轮上下文。
+          if (!aiConversationId.value) aiConversationId.value = crypto.randomUUID().replace(/-/g, '').slice(0, 24);
+          const plan = await apiFetch('/ai/plan', { method: 'POST', body: { userPrompt: msg, conversationId: aiConversationId.value } });
           currentPlanId = plan.planId || null;
           aiSuggestions.value = (plan.suggestions || []).map(sg => ({ ...sg, suggestedStart: sg.suggestedStart || '09:00' }));
           aiSelectedIndices.value = aiSuggestions.value.map((_, i) => i); // 默认全选，用户可取消
@@ -1349,10 +1369,11 @@ const app = createApp({
       }
 
       // 普通对话：SSE 流式（/ai/chat 默认流式），Markdown 打字机渲染
-      // 双钥匙第二把自动授权：用户消息明确表达写入意图时，自动开启本次「允许 AI 写入日程」，
-      // 避免模型「确认多轮后才发现写工具未下发」。本轮对话结束后自动复位为手动状态。
+      // 双钥匙第二把自动授权：用户消息明确表达写入意图（创建 / 修改 / 调整日程）时，
+      // 自动开启本次「允许 AI 写入日程」，避免模型「确认多轮后才发现写工具未下发」。
+      // 本轮对话结束后自动复位为手动状态。
       let autoGrantedWrite = false;
-      if (!aiWriteEnabled.value && /写入|创建日程|创建.{0,6}日程|加入日程|添加到日程|添加到织程|批量添|落梭写入|保存到日程|入库|帮我(建|创建|安排|加入).{0,12}(日程|计划)/.test(msg)) {
+      if (!aiWriteEnabled.value && /写入|创建日程|创建.{0,6}日程|加入日程|添加到日程|添加到织程|批量添|落梭写入|保存到日程|入库|修改|调整|更新|改成|改到|推迟|提前|重命名|删除日程|移除日程|帮我(建|创建|安排|加入|改|调整|更新).{0,12}(日程|计划)/.test(msg)) {
         aiWriteEnabled.value = true;
         autoGrantedWrite = true;
         toast('检测到写入需求，已自动开启「允许 AI 写入日程」', 'info');
@@ -2313,7 +2334,7 @@ const app = createApp({
       // 头像上传
       uploadAvatar, onAvatarFileChange,
       // AI 文件附件（临时记忆拼接）
-      aiAttachedFile, aiFileInputEl, onAiFileSelected, removeAiFile,
+      aiAttachedFile, aiFileInputEl, onAiFileSelected, removeAiFile, aiJustCreatedIds,
       // Stats
       stats, todayStats, todaySchedules, upcomingSchedules,
       filteredSchedules, groupedSchedules, filteredMallItems,

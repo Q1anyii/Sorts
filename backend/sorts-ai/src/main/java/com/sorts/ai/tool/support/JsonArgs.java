@@ -72,6 +72,24 @@ public final class JsonArgs {
         return value == null ? fallback : value;
     }
 
+    public static Long longValue(JsonNode args, String field) {
+        if (args == null || !args.hasNonNull(field)) {
+            return null;
+        }
+        JsonNode node = args.get(field);
+        if (node.isNumber()) {
+            return node.asLong();
+        }
+        if (node.isTextual()) {
+            try {
+                return Long.valueOf(node.asText().strip());
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
     public static Boolean bool(JsonNode args, String field) {
         if (args == null || !args.hasNonNull(field)) {
             return null;

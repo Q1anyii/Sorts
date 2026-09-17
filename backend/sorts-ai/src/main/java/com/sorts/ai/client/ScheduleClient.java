@@ -13,7 +13,9 @@ import com.sorts.common.result.Result;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.cloud.openfeign.SpringQueryMap;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -47,6 +49,15 @@ public interface ScheduleClient {
     @PostMapping("/schedules/batch")
     Result<List<ScheduleDto>> batchCreate(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
                                           @RequestBody BatchCreateDto request);
+
+    @GetMapping("/schedules/{id}")
+    Result<ScheduleDto> get(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
+                            @PathVariable("id") Long id);
+
+    @PutMapping("/schedules/{id}")
+    Result<ScheduleDto> update(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
+                               @PathVariable("id") Long id,
+                               @RequestBody ScheduleSaveDto request);
 
     @GetMapping("/statistics/summary")
     Result<StatisticsSummaryDto> summary(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,

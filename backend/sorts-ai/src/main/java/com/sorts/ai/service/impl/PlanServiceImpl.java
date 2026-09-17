@@ -25,6 +25,7 @@ import com.sorts.ai.llm.protocol.LlmResult;
 import com.sorts.ai.mapper.SchedulePlanMapper;
 import com.sorts.ai.service.PlanService;
 import com.sorts.ai.support.AiPrompts;
+import com.sorts.ai.support.ConversationStore;
 import com.sorts.ai.support.JsonPayloads;
 import com.sorts.ai.support.PlanRangeDetector;
 import com.sorts.ai.tool.support.DateTimes;
@@ -90,6 +91,8 @@ public class PlanServiceImpl implements PlanService {
     private final ScheduleClient scheduleClient;
 
     private final ToolJsonCodec jsonCodec;
+
+    private final ConversationStore conversationStore;
 
     @Override
     public AIPlanResponse generate(Long userId, AIPlanRequest request, boolean stream, Consumer<String> onDelta) {
@@ -160,6 +163,15 @@ public class PlanServiceImpl implements PlanService {
         plan.setAdoptedCount(0);
         plan.setExpiresAt(LocalDateTime.now().plusHours(VALID_HOURS));
         planMapper.insert(plan);
+
+        // 规划请求同步写入对话历史：让后续普通对话能衔接「上一轮规划了什么」，
+        // 避免用户在规划后追问「每天都要」时 AI 丢失上文。Redis 故障不阻塞主流程。
+        if (request.getConversationId() != null && !request.getConversationId().isBlank()) {
+            conversationStore.save(userId, request.getConversationId(), List.of(
+                    ChatMessage.user(request.getUserPrompt()),
+                    ChatMessage.assistant("已生成 " + suggestions.size() + " 条规划建议（" + startDate + " ~ " + endDate
+                            + "），可在右侧面板勾选后批量采纳；如需直接创建，告诉我并开启「允许 AI 写入日程」。")));
+        }
 
         return AIPlanResponse.builder()
                 .planId(plan.getPlanId())

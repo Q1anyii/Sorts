@@ -572,7 +572,7 @@
               <span>📅 {{ g.date }}</span>
               <span class="date-group-count">{{ g.items.length }} 条</span>
             </div>
-            <div v-for="s in g.items" :key="s.id" class="schedule-item" @click="openScheduleDetail(s)" style="cursor:pointer;">
+            <div v-for="s in g.items" :key="s.id" class="schedule-item" :class="{ 'just-created': aiJustCreatedIds.includes(s.id) }" @click="openScheduleDetail(s)" style="cursor:pointer;">
               <input type="checkbox" class="schedule-check" :checked="selectedScheduleIds.includes(s.id)" @click.stop="toggleScheduleSelect(s.id)">
               <div class="time-block">
                 <div class="time">{{ formatDate(s.plannedStartTime) }}</div>
