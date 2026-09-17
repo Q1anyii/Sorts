@@ -62,38 +62,38 @@
         <div class="nav-section">
           <div class="nav-section-title">主菜单</div>
           <div class="nav-item" :class="{active: currentPage==='dashboard'}" @click="currentPage='dashboard'">
-            <span class="nav-icon">📊</span> 工作台
+            <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" style="vertical-align:-4px" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg></span> 今日经纬
           </div>
           <div class="nav-item" :class="{active: currentPage==='calendar'}" @click="currentPage='calendar'">
-            <span class="nav-icon">📅</span> 织历
+            <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" style="vertical-align:-4px" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span> 织历
           </div>
           <div class="nav-item" :class="{active: currentPage==='schedules'}" @click="currentPage='schedules'">
-            <span class="nav-icon">📋</span> 日程清单
+            <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" style="vertical-align:-4px" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></span> 织程
           </div>
         </div>
         <div class="nav-section">
           <div class="nav-section-title">智能助手</div>
           <div class="nav-item" :class="{active: currentPage==='ai'}" @click="currentPage='ai'">
-            <span class="nav-icon">🤖</span> 梭灵
+            <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" style="vertical-align:-4px" aria-hidden="true"><path d="M12 3l1.9 5.8 5.8 1.9-5.8 1.9L12 18.4l-1.9-5.8-5.8-1.9 5.8-1.9z"/><path d="M19 3v4M17 5h4"/></svg></span> 梭灵
           </div>
           <div class="nav-item" :class="{active: currentPage==='reports'}" @click="currentPage='reports'">
-            <span class="nav-icon">📝</span> 总结报告
+            <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" style="vertical-align:-4px" aria-hidden="true"><path d="M6 2.5h8.5L19 7v14.5H6z"/><path d="M14.5 2.5V7H19M9.5 12.5h5.5M9.5 16.5h5.5"/></svg></span> 织史
           </div>
         </div>
         <div class="nav-section">
           <div class="nav-section-title">更多</div>
           <div class="nav-item" :class="{active: currentPage==='stats'}" @click="currentPage='stats'">
-            <span class="nav-icon">📈</span> 纹谱统计
+            <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" style="vertical-align:-4px" aria-hidden="true"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg></span> 纹谱统计
           </div>
           <div class="nav-item" :class="{active: currentPage==='mall'}" @click="currentPage='mall'">
-            <span class="nav-icon">🛒</span> 锦市
+            <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" style="vertical-align:-4px" aria-hidden="true"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V9"/><path d="M3 9h18M9 21v-8h6v8"/></svg></span> 锦市
           </div>
           <div class="nav-item" :class="{active: currentPage==='notifications'}" @click="currentPage='notifications'">
-            <span class="nav-icon">🔔</span> 飞鸽传书
+            <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" style="vertical-align:-4px" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span> 飞鸽传书
             <span class="badge" v-if="unreadNotifCount">{{ unreadNotifCount }}</span>
           </div>
           <div class="nav-item" :class="{active: currentPage==='profile'}" @click="currentPage='profile'">
-            <span class="nav-icon">⚙️</span> 个人设置
+            <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" style="vertical-align:-4px" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg></span> 设置
           </div>
         </div>
       </nav>
@@ -226,7 +226,7 @@
       <!-- ============ CALENDAR ============ -->
       <div v-if="currentPage==='calendar'">
         <div class="page-header">
-          <h2>📅 织历视图</h2>
+          <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> 织历视图</h2>
           <p>查看和管理你的日程安排</p>
         </div>
         <div class="card" style="margin-bottom:16px;">
@@ -291,7 +291,7 @@
       <!-- ============ SCHEDULE LIST ============ -->
       <div v-if="currentPage==='schedules'">
         <div class="page-header">
-          <h2>📋 日程清单</h2>
+          <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg> 织程</h2>
           <p>管理你的所有日程</p>
         </div>
         <!-- Filters -->
@@ -350,7 +350,7 @@
       <!-- ============ AI ASSISTANT ============ -->
       <div v-if="currentPage==='ai'">
         <div class="page-header">
-          <h2>🤖 梭灵</h2>
+          <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><path d="M12 3l1.9 5.8 5.8 1.9-5.8 1.9L12 18.4l-1.9-5.8-5.8-1.9 5.8-1.9z"/><path d="M19 3v4M17 5h4"/></svg> 梭灵</h2>
           <p>用自然语言描述你的需求，AI 帮你规划日程</p>
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
@@ -408,7 +408,7 @@
       <!-- ============ AI REPORTS ============ -->
       <div v-if="currentPage==='reports'">
         <div class="page-header">
-          <h2>📝 总结报告</h2>
+          <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><path d="M6 2.5h8.5L19 7v14.5H6z"/><path d="M14.5 2.5V7H19M9.5 12.5h5.5M9.5 16.5h5.5"/></svg> 织史</h2>
           <p>AI 生成的智能总结与效率分析</p>
         </div>
         <div class="flex gap-3 mb-4">
@@ -446,7 +446,7 @@
       <!-- ============ STATISTICS ============ -->
       <div v-if="currentPage==='stats'">
         <div class="page-header">
-          <h2>📈 纹谱统计</h2>
+          <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg> 纹谱统计</h2>
           <p>深入了解你的时间使用情况</p>
         </div>
         <div class="stats-grid">
@@ -508,7 +508,7 @@
       <!-- ============ MALL ============ -->
       <div v-if="currentPage==='mall'">
         <div class="page-header">
-          <h2>🛒 锦市</h2>
+          <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V9"/><path d="M3 9h18M9 21v-8h6v8"/></svg> 锦市</h2>
           <p>用光阴砂兑换个性化装扮 · 当前光阴砂：<strong>⭐ {{ userInfo.points }}</strong></p>
         </div>
         <div class="tabs">
@@ -557,7 +557,7 @@
       <!-- ============ NOTIFICATIONS ============ -->
       <div v-if="currentPage==='notifications'">
         <div class="page-header">
-          <h2>🔔 飞鸽传书</h2>
+          <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg> 飞鸽传书</h2>
           <button class="btn btn-outline btn-sm" @click="markAllRead" v-if="unreadNotifCount > 0">全部标记已读</button>
         </div>
         <div class="card">
@@ -582,7 +582,7 @@
 
       <!-- ============ PROFILE ============ -->
       <div v-if="currentPage==='profile'">
-        <div class="page-header"><h2>⚙️ 个人设置</h2></div>
+        <div class="page-header"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg> 设置</h2></div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
           <div class="card">
             <div class="card-title mb-3">👤 基本信息</div>
