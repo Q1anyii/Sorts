@@ -29,6 +29,9 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-sorts_dev}
       TZ: Asia/Shanghai
+      # 让 init 脚本经由的 mysql 客户端连接字符集为 utf8mb4（容器默认 locale 为 C/POSIX，
+      # 不设 LANG 时客户端默认 latin1，会把 UTF-8 中文双重编码入库）
+      LANG: C.UTF-8
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
