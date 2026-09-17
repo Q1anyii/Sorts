@@ -425,17 +425,23 @@
 
       <!-- ============ AI ASSISTANT ============ -->
       <div v-if="currentPage==='ai'" class="page-view">
-        <div class="page-header">
-          <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><path d="M12 3l1.9 5.8 5.8 1.9-5.8 1.9L12 18.4l-1.9-5.8-5.8-1.9 5.8-1.9z"/><path d="M19 3v4M17 5h4"/></svg> 梭灵</h2>
-          <p>用自然语言描述你的需求，AI 帮你规划日程 · 会话自动保存，刷新不丢</p>
+        <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+          <div>
+            <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><path d="M12 3l1.9 5.8 5.8 1.9-5.8 1.9L12 18.4l-1.9-5.8-5.8-1.9 5.8-1.9z"/><path d="M19 3v4M17 5h4"/></svg> 梭灵</h2>
+            <p>用自然语言描述你的需求，AI 帮你规划日程 · 会话自动保存，刷新不丢</p>
+          </div>
+          <button v-if="!aiPanels.sidebar || !aiPanels.chat || !aiPanels.plans" type="button" class="chip-btn" @click="showAllAiPanels">⟳ 恢复全部面板</button>
         </div>
-        <div style="display:grid; grid-template-columns:250px 1fr 1fr; gap:16px;">
-          <!-- 会话列表（后端持久化） -->
-          <div class="card" style="padding:0; overflow:hidden;">
+        <div class="ai-layout">
+          <!-- 会话列表（后端持久化）：v-if 隐藏；宽度可拖拽 -->
+          <div v-if="aiPanels.sidebar" class="card ai-panel ai-panel-sidebar" :style="{width: aiWidths.sidebar + 'px'}">
             <div class="conv-sidebar">
               <div class="conv-head">
                 <span>💬 会话</span>
-                <button class="btn btn-primary btn-sm" @click="newConversation">＋ 新建</button>
+                <div style="display:flex; gap:6px; align-items:center;">
+                  <button class="btn btn-primary btn-sm" @click="newConversation">＋ 新建</button>
+                  <button class="icon-btn" title="隐藏会话，对话窗口占满" @click="toggleAiPanel('sidebar')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+                </div>
               </div>
               <div class="conv-list">
                 <div class="conv-item" :class="{active: currentConversationId===c.id}" v-for="c in conversations" :key="c.id" @click="switchConversation(c.id)">
@@ -454,9 +460,17 @@
               </div>
             </div>
           </div>
+          <div v-if="aiPanels.sidebar && aiPanels.chat" class="ai-resizer" @mousedown.prevent="startAiResize($event, 'sidebar')" title="拖动调整宽度"></div>
           <!-- Chat -->
-          <div class="card" style="padding:0; overflow:hidden;">
+          <div v-if="aiPanels.chat" class="card ai-panel ai-panel-chat" style="padding:0; overflow:hidden;">
             <div class="ai-chat">
+              <div class="ai-chat-bar">
+                <div class="ai-chat-bar-side">
+                  <button v-if="!aiPanels.sidebar" class="icon-btn" title="展开会话列表" @click="aiPanels.sidebar = true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+                  <span class="ai-chat-bar-title">💬 对话</span>
+                </div>
+                <button v-if="!aiPanels.plans" class="icon-btn" title="展开规划建议" @click="aiPanels.plans = true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+              </div>
               <div class="ai-chat-messages" ref="aiChatMessages">
                 <div class="ai-message" v-for="(msg, i) in aiMessages" :key="i" :class="msg.role">
                   <div class="ai-avatar" :class="msg.role">{{ msg.role === 'user' ? '👤' : '🤖' }}</div>
@@ -497,14 +511,16 @@
               </div>
             </div>
           </div>
-          <!-- Plan Display：多日规划按天分组 + 勾选 + 编辑 + 批量采纳 -->
-          <div class="card" style="padding:0; overflow:hidden; display:flex; flex-direction:column;">
+          <!-- Plan Display：多日规划按天分组 + 勾选 + 编辑 + 批量采纳；v-if 隐藏；宽度可拖拽 -->
+          <div v-if="aiPanels.chat && aiPanels.plans" class="ai-resizer" @mousedown.prevent="startAiResize($event, 'plans')" title="拖动调整宽度"></div>
+          <div v-if="aiPanels.plans" class="card ai-panel ai-panel-plans" :style="{width: aiWidths.plans + 'px'}">
             <div class="card-header" style="padding:12px 16px; border-bottom:1px solid var(--border, #eee);">
               <div class="card-title">📋 多日规划建议 <span v-if="aiPlanRange && aiPlanRange.startDate" style="font-size:12px; color:var(--text-secondary);">（{{ aiPlanRange.startDate }} ~ {{ aiPlanRange.endDate }}）</span></div>
-              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
                 <button v-if="aiSuggestions.length" class="btn btn-outline btn-sm" @click="toggleAllSuggestions">{{ aiSelectedIndices.length===aiSuggestions.length ? '取消全选' : '全选' }}</button>
                 <button v-if="aiSuggestions.length && aiSelectedIndices.length" class="btn btn-outline btn-sm" @click="clearAiSelection">清除勾选</button>
                 <button v-if="aiSuggestions.length" class="btn btn-success btn-sm" :disabled="!aiSelectedIndices.length" @click="adoptSelectedSuggestions">批量采纳（{{ aiSelectedIndices.length }}）</button>
+                <button class="icon-btn" title="隐藏规划建议，会话与对话占满" @click="toggleAiPanel('plans')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
               </div>
             </div>
             <div class="ai-plan-scroll">

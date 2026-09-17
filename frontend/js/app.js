@@ -528,6 +528,35 @@ const app = createApp({
     const aiEditForm = reactive({ title: '', suggestedStart: '', duration: 60 });
     const convSelectedIds = ref([]);
 
+    // ============ AI 三栏面板：隐藏 / 拖拽调宽（适配窗口不留白不溢出） ============
+    const aiPanels = reactive({ sidebar: true, chat: true, plans: true });
+    const aiWidths = reactive({ sidebar: 250, plans: 340 });
+    const AI_MIN_W = { sidebar: 180, plans: 260 };
+    const AI_MAX_W = { sidebar: 420, plans: 640 };
+    function toggleAiPanel(k) { if (k === 'chat') return; aiPanels[k] = !aiPanels[k]; } // 对话窗口始终显示，不可隐藏
+    function showAllAiPanels() { aiPanels.sidebar = true; aiPanels.chat = true; aiPanels.plans = true; }
+    /** 拖拽分隔条：sidebar 的条在面板右侧（向右拖变宽）；plans 的条在面板左侧（向右拖变窄） */
+    function startAiResize(e, key) {
+      if (e.button !== undefined && e.button !== 0) return;
+      const startX = e.clientX;
+      const startW = aiWidths[key];
+      const neg = key === 'plans';
+      const move = (ev) => {
+        const delta = ev.clientX - startX;
+        aiWidths[key] = Math.round(Math.min(AI_MAX_W[key], Math.max(AI_MIN_W[key], neg ? startW - delta : startW + delta)));
+      };
+      const up = () => {
+        window.removeEventListener('mousemove', move);
+        window.removeEventListener('mouseup', up);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      };
+      window.addEventListener('mousemove', move);
+      window.addEventListener('mouseup', up);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+
     // ============ Modal State ============
     const showScheduleModal = ref(false);
     const editingSchedule = ref(null);
@@ -2064,6 +2093,8 @@ const app = createApp({
       allConversationsChecked, toggleConvSelect, toggleAllConversations,
       newConversation, switchConversation, renameConversation, deleteConversation,
       deleteSelectedConversations, clearCurrentConversation,
+      // AI 三栏面板：隐藏 / 拖拽调宽
+      aiPanels, aiWidths, toggleAiPanel, showAllAiPanels, startAiResize,
       // 头像上传
       uploadAvatar, onAvatarFileChange,
       // Stats
