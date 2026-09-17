@@ -128,6 +128,8 @@ services:
         TZ: Asia/Shanghai
         NACOS_ADDR: nacos:8848
         NACOS_ENABLED: "true"
+        # 「双钥匙」第一把：AI 写工具服务端开关（本地默认开启；生产按需收紧）
+        AI_TOOL_ALLOW_WRITE: ${AI_TOOL_ALLOW_WRITE:-true}
         MYSQL_HOST: mysql
         MYSQL_PORT: "3306"
         MYSQL_USER: root

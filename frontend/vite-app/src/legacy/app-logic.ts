@@ -1267,7 +1267,15 @@ const app = createApp({
     /** 执行 AI 建议操作（done 事件 suggestedActions，如 CREATE_SCHEDULE/VIEW_STATS） */
     function runSuggestedAction(action) {
       if (!action || !action.type) return;
-      if (action.type === 'CREATE_SCHEDULE') { showScheduleModal.value = true; editingSchedule.value = null; }
+      if (action.type === 'CREATE_SCHEDULE') {
+        // 后端检测到写工具被拒时返回 requiresWritePermission：直接开启写入授权，提示重发
+        if (action.payload && action.payload.requiresWritePermission) {
+          aiWriteEnabled.value = true;
+          toast('已开启「允许 AI 写入日程」，请重新发送', 'info');
+        } else {
+          showScheduleModal.value = true; editingSchedule.value = null;
+        }
+      }
       else if (action.type === 'VIEW_STATS') { currentPage.value = 'stats'; }
       else if (action.type === 'GENERATE_SUMMARY') { currentPage.value = 'reports'; }
     }
@@ -1334,6 +1342,14 @@ const app = createApp({
       }
 
       // 普通对话：SSE 流式（/ai/chat 默认流式），Markdown 打字机渲染
+      // 双钥匙第二把自动授权：用户消息明确表达写入意图时，自动开启本次「允许 AI 写入日程」，
+      // 避免模型「确认多轮后才发现写工具未下发」。本轮对话结束后自动复位为手动状态。
+      let autoGrantedWrite = false;
+      if (!aiWriteEnabled.value && /写入|创建日程|创建.{0,6}日程|加入日程|添加到日程|添加到织程|批量添|落梭写入|保存到日程|入库|帮我(建|创建|安排|加入).{0,12}(日程|计划)/.test(msg)) {
+        aiWriteEnabled.value = true;
+        autoGrantedWrite = true;
+        toast('检测到写入需求，已自动开启「允许 AI 写入日程」', 'info');
+      }
       aiAbortController = new AbortController();
       aiStreaming.value = true;
       aiLatestText = '';
@@ -1374,6 +1390,7 @@ const app = createApp({
         aiStreaming.value = false;
         aiLoading.value = false;
         aiAbortController = null;
+        if (autoGrantedWrite) { aiWriteEnabled.value = false; autoGrantedWrite = false; } // 自动授权仅本次生效
         aiScrollToBottom();
       }
     }

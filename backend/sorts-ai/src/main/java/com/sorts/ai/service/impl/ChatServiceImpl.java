@@ -71,7 +71,10 @@ public class ChatServiceImpl implements ChatService {
 
         List<ChatMessage> history = conversationStore.load(userId, conversationId);
         List<ChatMessage> messages = new ArrayList<>();
-        messages.add(ChatMessage.system(AiPrompts.CHAT_SYSTEM));
+        // 写能力事实注入：让模型在对话一开始就明确自己能不能写，
+        // 避免「复述确认多轮后才发现写工具未下发」的糟糕体验；同时注入服务器权威日期
+        messages.add(ChatMessage.system(AiPrompts.CHAT_SYSTEM
+                + (allowWrite ? AiPrompts.writeToolsAvailable() : AiPrompts.writeToolsUnavailable())));
         messages.addAll(history);
         messages.add(ChatMessage.user(request.getMessage()));
 
