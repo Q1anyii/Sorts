@@ -498,6 +498,9 @@ const app = createApp({
 
     // ============ AI State ============
     const aiInput = ref('');
+    /** AI 文件附件：上传解析后的内容只作为本次对话临时记忆（不持久化到会话） */
+    const aiAttachedFile = ref(null);   // { name, chars, text }
+    const aiFileInputEl = ref(null);    // 隐藏的 file input（模板 ref）
     const aiMessages = ref([
       { role: 'bot', content: '你好！我是梭灵 🤖 我可以帮你：\n\n📅 **规划日程**：告诉我你的需求，我会生成结构化的日程安排\n📊 **效率分析**：分析你的时间使用情况\n📝 **生成总结**：每日/月度/年度智能总结\n\n试试对我说："明天上午学习Java 2小时，下午运动1小时"' }
     ]);
@@ -1281,7 +1284,10 @@ const app = createApp({
     }
 
     async function sendAiMessage() {
-      const msg = aiInput.value.trim();
+      const hasFile = !!(aiAttachedFile.value && aiAttachedFile.value.text);
+      let msg = aiInput.value.trim();
+      // 仅带附件、无输入指令时给一个默认提取指令
+      if (!msg && hasFile) msg = '请从上传的文件内容中提取计划安排';
       if (!msg || aiLoading.value) return;
       aiMessages.value.push({ role: 'user', content: msg });
       aiInput.value = '';
@@ -1290,7 +1296,8 @@ const app = createApp({
 
       // 规划意图：走 /ai/plan JSON 通道（右侧结构化建议面板），保持原行为。
       // 相对时间范围（未来一周/下周/本周/明天等）由服务端注入解析，前端不再猜日期。
-      const isPlanning = /规划|安排|计划|日程/.test(msg);
+      // 带文件附件时强制走普通对话（文件内容经 /ai/chat 的 fileContent 注入，plan 通道不支持）
+      const isPlanning = !hasFile && /规划|安排|计划|日程/.test(msg);
       if (isPlanning) {
         try {
           const plan = await apiFetch('/ai/plan', { method: 'POST', body: { userPrompt: msg } });
@@ -1316,7 +1323,7 @@ const app = createApp({
       }
 
       // 总结意图：自动生成今日总结并写入织史（后端 /ai/summary/daily 生成后即落库）
-      const isSummary = /(今日|今天|当日|当天)\s*(总结|汇总)|(总结|汇总)\s*(今日|今天|当日|当天)|生成\s*今日\s*总结|今日\s*总结|总结\s*今日/.test(msg);
+      const isSummary = !hasFile && /(今日|今天|当日|当天)\s*(总结|汇总)|(总结|汇总)\s*(今日|今天|当日|当天)|生成\s*今日\s*总结|今日\s*总结|总结\s*今日/.test(msg);
       if (isSummary) {
         try {
           aiMessages.value.push({ role: 'user', content: msg });
@@ -1367,6 +1374,7 @@ const app = createApp({
       };
       try {
         const body = { message: msg };
+        if (hasFile) body.fileContent = aiAttachedFile.value.text; // 文件内容仅本次临时记忆
         if (aiConversationId.value) body.conversationId = aiConversationId.value; // 多轮上下文（Redis 12h）
         if (aiWriteEnabled.value) body.allowWrite = true; // 双钥匙第二把（用户已确认）
         await sseChat('/ai/chat', body, {
@@ -1377,6 +1385,7 @@ const app = createApp({
             if (payload && payload.conversationId) aiConversationId.value = payload.conversationId;
             // 建议操作：挂在当前消息上，渲染为气泡内快捷按钮
             botMsg.suggestedActions = (payload && Array.isArray(payload.suggestedActions)) ? payload.suggestedActions : [];
+            if (hasFile) { aiAttachedFile.value = null; } // 提取完成即释放附件（临时记忆不留存）
             saveConversation(true); // AI 返回后落一次会话快照
           },
           onError: (e) => { botMsg.content = aiErrorMessage(e); },
@@ -1399,6 +1408,42 @@ const app = createApp({
       aiInput.value = prompt;
       sendAiMessage();
     }
+
+    /* ============================================================
+     * AI 文件附件：上传解析（md/docx/doc/txt，≤2MB）→ 临时记忆拼接
+     * 解析结果只作为本次对话上下文用于提取计划，不持久化到会话
+     * ============================================================ */
+    async function onAiFileSelected(e) {
+      const f = e.target && e.target.files && e.target.files[0];
+      if (e.target) e.target.value = '';
+      if (!f) return;
+      const ext = (f.name.split('.').pop() || '').toLowerCase();
+      if (!['md', 'docx', 'doc', 'txt'].includes(ext)) { notifyWarning('仅支持 md / docx / doc / txt 格式'); return; }
+      if (f.size > 2 * 1024 * 1024) { notifyWarning('文件不能超过 2MB'); return; }
+      try {
+        const fd = new FormData();
+        fd.append('file', f);
+        const access = getTokens().access;
+        const resp = await fetch(API_BASE + '/ai/files/parse', {
+          method: 'POST',
+          headers: { 'Authorization': access && access.startsWith('Bearer ') ? access : 'Bearer ' + access },
+          body: fd
+        });
+        const parsed = await resp.json().catch(() => null);
+        if (!parsed || parsed.code !== 0) {
+          const err = parsed || {};
+          if (parsed && (parsed.code === 40101 || parsed.code === 40102 || resp.status === 401)) {
+            await refreshTokens();
+            return onAiFileSelected(e);
+          }
+          throw { code: err.code || -1, message: err.message || '文件解析失败，请稍后再试' };
+        }
+        aiAttachedFile.value = { name: parsed.data.fileName, chars: parsed.data.chars, text: parsed.data.text };
+        toast(`已解析「${parsed.data.fileName}」（${parsed.data.chars} 字），将作为本次记忆用于提取计划`, 'info');
+      } catch (err) { showError(err, '文件解析失败'); }
+    }
+
+    function removeAiFile() { aiAttachedFile.value = null; }
 
     /* ============================================================
      * 多日规划：勾选 / 编辑 / 批量采纳
@@ -2267,6 +2312,8 @@ const app = createApp({
       aiPanels, aiWidths, toggleAiPanel, showAllAiPanels, startAiResize,
       // 头像上传
       uploadAvatar, onAvatarFileChange,
+      // AI 文件附件（临时记忆拼接）
+      aiAttachedFile, aiFileInputEl, onAiFileSelected, removeAiFile,
       // Stats
       stats, todayStats, todaySchedules, upcomingSchedules,
       filteredSchedules, groupedSchedules, filteredMallItems,

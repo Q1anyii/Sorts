@@ -31,6 +31,16 @@ public class ChatRequest {
      */
     private Boolean allowWrite = Boolean.FALSE;
 
+    /**
+     * 用户上传文件解析出的文本（可选）。
+     *
+     * <p>只作为<b>本次对话的临时记忆拼接</b>用于提取计划：注入本轮模型上下文，
+     * 但<b>不写入会话历史</b>（不持久化、刷新即失效）。文件内容不含可执行计划时，
+     * 模型按提示词明确告知用户，不编造计划。</p>
+     */
+    @Size(max = 20000, message = "文件解析内容过长")
+    private String fileContent;
+
     public boolean streaming() {
         return stream == null || stream;
     }

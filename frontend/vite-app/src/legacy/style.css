@@ -404,6 +404,28 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 }
 .ai-message:not(.user) .ai-bubble { background: var(--bg-card); border: 1px solid var(--border); border-top-left-radius: 5px; box-shadow: var(--shadow); }
 .ai-message.user .ai-bubble { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; border-top-right-radius: 5px; box-shadow: 0 4px 12px rgba(74,108,247,.25); }
+/* AI 输入区文件附件 */
+.ai-file-btn {
+  flex-shrink: 0; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--bg-soft); font-size: 16px; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; transition: all .2s var(--ease);
+}
+.ai-file-btn:hover:not(:disabled) { border-color: var(--primary); background: rgba(74,108,247,.08); }
+.ai-file-btn:disabled { opacity: .5; cursor: not-allowed; }
+.ai-file-chip {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin: 8px 14px 0; padding: 6px 12px; border-radius: 10px;
+  background: rgba(74,108,247,.08); border: 1px solid rgba(74,108,247,.25);
+  font-size: 12.5px; color: var(--text, #333); animation: pop-in .25s var(--ease) both;
+}
+.ai-file-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-file-chip span i { font-style: normal; color: var(--text-secondary, #888); margin-left: 4px; }
+.ai-file-chip-close {
+  flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; border: none; cursor: pointer;
+  background: rgba(0,0,0,.08); color: #555; font-size: 11px; line-height: 1; display: flex;
+  align-items: center; justify-content: center; transition: background .2s;
+}
+.ai-file-chip-close:hover { background: rgba(220,53,69,.15); color: #dc3545; }
 
 /* 思考中指示器：三点弹跳 */
 .thinking-dots { display: inline-flex; gap: 5px; align-items: center; padding: 6px 2px; }

@@ -688,6 +688,8 @@
                 <button class="ai-suggestion" @click="aiQuickPrompt('生成今日总结')">📝 今日总结</button>
               </div>
               <div class="ai-input-row">
+                <button class="ai-file-btn" title="上传文件（md / docx / doc / txt，≤2MB），内容将作为本次对话记忆用于提取计划" @click="aiFileInputEl && aiFileInputEl.click()" :disabled="aiLoading">📎</button>
+                <input ref="aiFileInputEl" type="file" accept=".md,.docx,.doc,.txt" style="display:none" @change="onAiFileSelected">
                 <textarea v-model="aiInput" @keydown.enter.exact.prevent="sendAiMessage" class="ai-chat-textarea" rows="1" placeholder="输入你的需求，例如：帮我生成未来一周的规划...（Enter 发送 / Shift+Enter 换行）" :disabled="aiStreaming"></textarea>
                 <!-- 双钥匙第二把：用户确认后 AI 才可写日程 -->
                 <label class="ai-write-toggle" title="开启后，AI 可依据你的对话内容直接创建日程">
@@ -695,6 +697,10 @@
                 </label>
                 <button v-if="aiStreaming" class="ai-stop-btn" @click="stopAiReply">⏹ 停止</button>
                 <button v-else class="btn btn-primary btn-sm" @click="sendAiMessage" :disabled="aiLoading">发送</button>
+              </div>
+              <div v-if="aiAttachedFile" class="ai-file-chip">
+                <span>📎 {{ aiAttachedFile.name }} <i>· 已解析 {{ aiAttachedFile.chars }} 字，作为本次记忆用于提取计划</i></span>
+                <button class="ai-file-chip-close" title="移除附件" @click="removeAiFile">✕</button>
               </div>
             </div>
           </div>

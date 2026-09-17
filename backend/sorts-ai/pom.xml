@@ -66,6 +66,17 @@
             <groupId>com.sorts</groupId>
             <artifactId>sorts-common</artifactId>
         </dependency>
+        <!-- 文件解析：docx（poi-ooxml）与旧版 doc（poi-scratchpad） -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-scratchpad</artifactId>
+            <version>5.2.5</version>
+        </dependency>
     </dependencies>
 
     <build>

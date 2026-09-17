@@ -76,6 +76,10 @@ public class ChatServiceImpl implements ChatService {
         messages.add(ChatMessage.system(AiPrompts.CHAT_SYSTEM
                 + (allowWrite ? AiPrompts.writeToolsAvailable() : AiPrompts.writeToolsUnavailable())));
         messages.addAll(history);
+        // 文件内容临时记忆拼接：仅用于提取计划，不写入会话历史（用户原话仍照常持久化）
+        if (StringUtils.hasText(request.getFileContent())) {
+            messages.add(ChatMessage.user(AiPrompts.fileMemoryPrefix() + request.getFileContent()));
+        }
         messages.add(ChatMessage.user(request.getMessage()));
 
         List<ToolDefinition> tools = toolRegistry.definitions(allowWrite);
