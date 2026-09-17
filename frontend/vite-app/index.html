@@ -657,7 +657,10 @@
               </div>
               <div class="ai-chat-messages" ref="aiChatMessages">
                 <div class="ai-message" v-for="(msg, i) in aiMessages" :key="i" :class="msg.role">
-                  <div class="ai-avatar" :class="msg.role">{{ msg.role === 'user' ? '👤' : '🤖' }}</div>
+                  <div class="ai-avatar" :class="msg.role">
+                    <img v-if="msg.role==='user' && userInfo.avatarUrl" :src="userInfo.avatarUrl" alt="我">
+                    <span v-else>{{ msg.role === 'user' ? '👤' : '🤖' }}</span>
+                  </div>
                   <div class="ai-bubble">
                     <!-- AI 回复：Markdown 渲染；流式期间末条追加打字光标 ▍ -->
                     <div v-if="msg.role==='bot'" class="markdown-body"
