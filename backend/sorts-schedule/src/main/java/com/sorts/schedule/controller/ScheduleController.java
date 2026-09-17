@@ -4,6 +4,7 @@ import com.sorts.common.constant.AuthConstants;
 import com.sorts.common.result.PageData;
 import com.sorts.common.result.Result;
 import com.sorts.schedule.dto.BatchCreateRequest;
+import com.sorts.schedule.dto.BatchDeleteRequest;
 import com.sorts.schedule.dto.ScheduleQuery;
 import com.sorts.schedule.dto.ScheduleSaveRequest;
 import com.sorts.schedule.dto.ScheduleVO;
@@ -85,6 +86,18 @@ public class ScheduleController {
     public Result<Void> delete(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
                                @PathVariable("id") Long id) {
         scheduleService.delete(userId, id);
+        return Result.success();
+    }
+
+    /**
+     * 批量删除（织程多选）：事务内全部成功或全部失败。
+     *
+     * <p>用 POST + body 避免 DELETE 带 body 的兼容问题，与 {@code POST /batch} 风格一致。</p>
+     */
+    @PostMapping("/batch-delete")
+    public Result<Void> batchDelete(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
+                                    @Valid @RequestBody BatchDeleteRequest request) {
+        scheduleService.deleteBatch(userId, request.getIds());
         return Result.success();
     }
 }

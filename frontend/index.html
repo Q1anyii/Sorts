@@ -6,7 +6,7 @@
 <title>梭子 - 专注计时与日程规划</title>
 <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
 <script src="https://unpkg.com/vue-router@4.3.0/dist/vue-router.global.prod.js"></script>
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=20260917-1">
 <link rel="stylesheet" href="css/github.min.css">
 <style>[v-cloak]{display:none}</style>
 </head>
@@ -275,6 +275,7 @@
         <div class="card" v-if="selectedDaySchedules !== null">
           <div class="card-header">
             <div class="card-title">📋 {{ selectedDayLabel }} 的日程</div>
+            <button class="btn btn-outline btn-sm" @click="openDayInSchedules(selectedDayDate)">在织程中查看 →</button>
             <button class="btn btn-primary btn-sm" @click="showScheduleModal=true; editingSchedule=null; scheduleForm.plannedStartTime=selectedDayDate">+ 新建</button>
           </div>
           <div v-if="selectedDaySchedules.length===0" class="empty-state">
@@ -301,12 +302,12 @@
       <div v-if="currentPage==='schedules'" class="page-view">
         <div class="page-header">
           <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg> 织程</h2>
-          <p>管理你的所有日程</p>
+          <p>管理你的所有日程 · 支持日期范围查询与批量删除</p>
         </div>
         <!-- Filters -->
         <div class="card mb-4" style="margin-bottom:16px;">
           <div class="flex items-center gap-3" style="flex-wrap:wrap;">
-            <select class="form-select" v-model="scheduleFilter.status" style="width:140px;">
+            <select class="form-select" v-model="scheduleFilter.status" style="width:120px;">
               <option value="">全部状态</option>
               <option value="PENDING">待开始</option>
               <option value="IN_PROGRESS">进行中</option>
@@ -314,47 +315,77 @@
               <option value="COMPLETED">已完成</option>
               <option value="CANCELLED">已取消</option>
             </select>
-            <select class="form-select" v-model="scheduleFilter.priority" style="width:120px;">
+            <select class="form-select" v-model="scheduleFilter.priority" style="width:110px;">
               <option value="">全部优先级</option>
               <option value="URGENT">紧急</option>
               <option value="HIGH">高</option>
               <option value="MEDIUM">中</option>
               <option value="LOW">低</option>
             </select>
-            <input class="form-input" v-model="scheduleFilter.keyword" placeholder="🔍 搜索日程..." style="width:200px;">
+            <input class="form-input" v-model="scheduleFilter.keyword" placeholder="🔍 搜索日程..." style="width:150px;">
+            <select class="form-select" v-model="scheduleFilter.preset" @change="applyDatePreset" style="width:110px;">
+              <option value="">全部日期</option>
+              <option value="today">今天</option>
+              <option value="tomorrow">明天</option>
+              <option value="week">本周</option>
+              <option value="month">本月</option>
+              <option value="custom">自定义</option>
+            </select>
+            <input class="form-input" type="date" v-model="scheduleFilter.startDate" style="width:140px;" :disabled="scheduleFilter.preset && scheduleFilter.preset!=='custom'">
+            <span style="color:var(--text-secondary);">~</span>
+            <input class="form-input" type="date" v-model="scheduleFilter.endDate" style="width:140px;" :disabled="scheduleFilter.preset && scheduleFilter.preset!=='custom'">
+            <button class="btn btn-outline btn-sm" @click="clearDateFilter">清空筛选</button>
             <button class="btn btn-primary btn-sm" @click="showScheduleModal=true; editingSchedule=null">+ 新建日程</button>
           </div>
         </div>
-        <!-- List -->
+        <!-- 批量删除操作栏 -->
+        <div v-if="selectedScheduleIds.length" class="batch-bar">
+          <span>已选 <strong>{{ selectedScheduleIds.length }}</strong> 条日程</span>
+          <button class="btn btn-danger btn-sm" @click="deleteSelectedSchedules" :disabled="deletingSchedules">{{ deletingSchedules ? '删除中...' : '批量删除' }}</button>
+        </div>
+        <!-- List（按日期分组） -->
         <div class="card">
-          <div v-for="s in filteredSchedules" :key="s.id" class="schedule-item" @click="openScheduleDetail(s)" style="cursor:pointer;">
-            <div class="time-block">
-              <div class="time">{{ formatDate(s.plannedStartTime) }}</div>
-              <div class="duration">{{ formatTime(s.plannedStartTime) }}</div>
-            </div>
-            <div class="schedule-info">
-              <div class="title">
-                <span class="priority-dot" :class="'priority-'+s.priority" style="margin-right:6px;"></span>
-                {{ s.title }}
-              </div>
-              <div class="desc" v-if="s.description">{{ s.description }}</div>
-            </div>
-            <div class="schedule-tags">
-              <span class="tag" v-for="t in s.tags" :key="t">{{ t }}</span>
-            </div>
-            <span class="status-badge" :class="'status-'+s.status">{{ statusLabel(s.status) }}</span>
-            <div class="schedule-actions" @click.stop>
-              <button v-if="canAct(s.status,'start')" class="btn btn-success btn-sm" @click="startSchedule(s)">▶ 开梭</button>
-              <button v-if="canAct(s.status,'pause')" class="btn btn-warning btn-sm" @click="pauseSchedule(s)">⏸ 暂停</button>
-              <button v-if="canAct(s.status,'resume')" class="btn btn-success btn-sm" @click="resumeSchedule(s)">▶ 续梭</button>
-              <button v-if="canAct(s.status,'end')" class="btn btn-primary btn-sm" @click="endSchedule(s)">⏹ 落梭</button>
-              <button class="btn btn-outline btn-sm" @click="editSchedule(s)">✎</button>
-              <button class="btn btn-danger btn-sm" @click="deleteSchedule(s)">✕</button>
-            </div>
+          <div class="list-toolbar">
+            <label class="check-all">
+              <input type="checkbox" :checked="allSchedulesChecked" :indeterminate="someSchedulesChecked" @change="toggleAllSchedules"> 全选
+            </label>
+            <span style="font-size:12px; color:var(--text-secondary);">共 {{ filteredSchedules.length }} 条</span>
           </div>
+          <template v-for="g in groupedSchedules" :key="g.date">
+            <div class="date-group-head">
+              <span>📅 {{ g.date }}</span>
+              <span class="date-group-count">{{ g.items.length }} 条</span>
+            </div>
+            <div v-for="s in g.items" :key="s.id" class="schedule-item" @click="openScheduleDetail(s)" style="cursor:pointer;">
+              <input type="checkbox" class="schedule-check" :checked="selectedScheduleIds.includes(s.id)" @click.stop="toggleScheduleSelect(s.id)">
+              <div class="time-block">
+                <div class="time">{{ formatDate(s.plannedStartTime) }}</div>
+                <div class="duration">{{ formatTime(s.plannedStartTime) }}</div>
+              </div>
+              <div class="schedule-info">
+                <div class="title">
+                  <span class="priority-dot" :class="'priority-'+s.priority" style="margin-right:6px;"></span>
+                  {{ s.title }}
+                </div>
+                <div class="desc" v-if="s.description">{{ s.description }}</div>
+              </div>
+              <div class="schedule-tags">
+                <span class="tag" v-for="t in s.tags" :key="t">{{ t }}</span>
+              </div>
+              <span class="status-badge" :class="'status-'+s.status">{{ statusLabel(s.status) }}</span>
+              <div class="schedule-actions" @click.stop>
+                <button v-if="canAct(s.status,'start')" class="btn btn-success btn-sm" :disabled="!canStartNow(s)" :title="canStartNow(s) ? '开梭' : '未到计划开始时间，暂不可开启'" @click="startSchedule(s)">▶ 开梭</button>
+                <button v-if="canAct(s.status,'pause')" class="btn btn-warning btn-sm" @click="pauseSchedule(s)">⏸ 暂停</button>
+                <button v-if="canAct(s.status,'resume')" class="btn btn-success btn-sm" @click="resumeSchedule(s)">▶ 续梭</button>
+                <button v-if="canAct(s.status,'end')" class="btn btn-primary btn-sm" @click="endSchedule(s)">⏹ 落梭</button>
+                <button class="btn btn-outline btn-sm" @click="editSchedule(s)">✎</button>
+                <button class="btn btn-danger btn-sm" @click="deleteSchedule(s)">✕</button>
+              </div>
+            </div>
+          </template>
           <div v-if="filteredSchedules.length===0" class="empty-state">
             <div class="empty-icon">📭</div>
-            <p>没有找到匹配的日程</p>
+            <p>当前筛选下没有日程</p>
           </div>
         </div>
       </div>
@@ -363,9 +394,33 @@
       <div v-if="currentPage==='ai'" class="page-view">
         <div class="page-header">
           <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="vertical-align:-4px" aria-hidden="true"><path d="M12 3l1.9 5.8 5.8 1.9-5.8 1.9L12 18.4l-1.9-5.8-5.8-1.9 5.8-1.9z"/><path d="M19 3v4M17 5h4"/></svg> 梭灵</h2>
-          <p>用自然语言描述你的需求，AI 帮你规划日程</p>
+          <p>用自然语言描述你的需求，AI 帮你规划日程 · 会话自动保存，刷新不丢</p>
         </div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <div style="display:grid; grid-template-columns:250px 1fr 1fr; gap:16px;">
+          <!-- 会话列表（后端持久化） -->
+          <div class="card" style="padding:0; overflow:hidden;">
+            <div class="conv-sidebar">
+              <div class="conv-head">
+                <span>💬 会话</span>
+                <button class="btn btn-primary btn-sm" @click="newConversation">＋ 新建</button>
+              </div>
+              <div class="conv-list">
+                <div class="conv-item" :class="{active: currentConversationId===c.id}" v-for="c in conversations" :key="c.id" @click="switchConversation(c.id)">
+                  <input type="checkbox" :checked="convSelectedIds.includes(c.id)" @click.stop="toggleConvSelect(c.id)">
+                  <span class="conv-title" :title="c.title">{{ c.title }}</span>
+                  <span class="conv-del" title="删除会话" @click.stop="deleteConversation(c)">✕</span>
+                </div>
+                <div v-if="conversations.length===0" class="empty-state">
+                  <div class="empty-icon">💬</div>
+                  <p>还没有会话，点「新建」开始</p>
+                </div>
+              </div>
+              <div class="conv-foot">
+                <button v-if="convSelectedIds.length" class="btn btn-danger btn-sm" @click="deleteSelectedConversations">删除选中（{{ convSelectedIds.length }}）</button>
+                <button class="btn btn-outline btn-sm" @click="clearCurrentConversation" :disabled="!currentConversationId">清空当前</button>
+              </div>
+            </div>
+          </div>
           <!-- Chat -->
           <div class="card" style="padding:0; overflow:hidden;">
             <div class="ai-chat">
@@ -392,13 +447,14 @@
                 </div>
               </div>
               <div class="ai-suggestions">
+                <button class="ai-suggestion" @click="aiQuickPrompt('帮我生成未来一周规划')">📅 未来一周</button>
                 <button class="ai-suggestion" @click="aiQuickPrompt('帮我规划明天的日程')">📅 规划明天</button>
+                <button class="ai-suggestion" @click="aiQuickPrompt('帮我规划本周的日程')">📅 本周规划</button>
                 <button class="ai-suggestion" @click="aiQuickPrompt('分析我这周的效率')">📊 周效率分析</button>
                 <button class="ai-suggestion" @click="aiQuickPrompt('生成今日总结')">📝 今日总结</button>
-                <button class="ai-suggestion" @click="aiQuickPrompt('给我一些时间管理建议')">💡 管理建议</button>
               </div>
               <div class="ai-input-row">
-                <input v-model="aiInput" @keyup.enter="sendAiMessage" placeholder="输入你的需求，例如：明天上午学习2小时Java..." :disabled="aiStreaming">
+                <input v-model="aiInput" @keyup.enter="sendAiMessage" placeholder="输入你的需求，例如：帮我生成未来一周的规划..." :disabled="aiStreaming">
                 <!-- 双钥匙第二把：用户确认后 AI 才可写日程 -->
                 <label class="ai-write-toggle" title="开启后，AI 可依据你的对话内容直接创建日程">
                   <input type="checkbox" v-model="aiWriteEnabled"> 允许写日程
@@ -408,27 +464,60 @@
               </div>
             </div>
           </div>
-          <!-- Plan Display -->
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title">📋 生成的规划建议</div>
-              <button v-if="aiSuggestions.length>0" class="btn btn-success btn-sm" @click="adoptAllSuggestions">一键全部采纳</button>
-            </div>
-            <div v-if="aiSuggestions.length===0" class="empty-state">
-              <div class="empty-icon">🤖</div>
-              <p>在左侧输入你的需求，AI 会生成规划建议</p>
-            </div>
-            <div v-for="(sg, i) in aiSuggestions" :key="i" style="padding:12px; border-radius:8px; background:var(--bg); margin-bottom:8px; display:flex; align-items:center; gap:12px;">
-              <div style="width:4px; height:40px; border-radius:2px; background:var(--primary); flex-shrink:0;"></div>
-              <div style="flex:1;">
-                <div style="font-weight:500; font-size:14px;">{{ sg.title }}</div>
-                <div style="font-size:12px; color:var(--text-secondary);">
-                  🕐 {{ sg.suggestedStart }} · ⏱ {{ sg.duration }}分钟
-                  <span v-if="sg.priority" style="margin-left:8px;">· 优先级: {{ sg.priority }}</span>
-                </div>
-                <div style="font-size:12px; color:var(--text-light);" v-if="sg.reason">💡 {{ sg.reason }}</div>
+          <!-- Plan Display：多日规划按天分组 + 勾选 + 编辑 + 批量采纳 -->
+          <div class="card" style="padding:0; overflow:hidden; display:flex; flex-direction:column;">
+            <div class="card-header" style="padding:12px 16px; border-bottom:1px solid var(--border, #eee);">
+              <div class="card-title">📋 多日规划建议 <span v-if="aiPlanRange && aiPlanRange.startDate" style="font-size:12px; color:var(--text-secondary);">（{{ aiPlanRange.startDate }} ~ {{ aiPlanRange.endDate }}）</span></div>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button v-if="aiSuggestions.length" class="btn btn-outline btn-sm" @click="toggleAllSuggestions">{{ aiSelectedIndices.length===aiSuggestions.length ? '取消全选' : '全选' }}</button>
+                <button v-if="aiSuggestions.length && aiSelectedIndices.length" class="btn btn-outline btn-sm" @click="clearAiSelection">清除勾选</button>
+                <button v-if="aiSuggestions.length" class="btn btn-success btn-sm" :disabled="!aiSelectedIndices.length" @click="adoptSelectedSuggestions">批量采纳（{{ aiSelectedIndices.length }}）</button>
               </div>
-              <button class="btn btn-success btn-sm" @click="adoptSuggestion(i)">采纳</button>
+            </div>
+            <div class="ai-plan-scroll">
+              <div v-if="aiSuggestions.length===0" class="empty-state">
+                <div class="empty-icon">🤖</div>
+                <p>在左侧输入需求，AI 会按时间范围生成每天的计划</p>
+              </div>
+              <div v-for="g in aiGroupedSuggestions" :key="g.date" class="plan-day-group">
+                <div class="plan-day-head">
+                  <label class="plan-day-check">
+                    <input type="checkbox"
+                           :checked="g.items.every(x => aiSelectedIndices.includes(x.index))"
+                           @change="toggleDaySuggestions(g.items.map(x => x.index))">
+                    📅 {{ g.date }}
+                    <span class="date-group-count">{{ g.items.length }} 条</span>
+                  </label>
+                </div>
+                <div v-for="item in g.items" :key="item.index" class="plan-item" :class="{selected: aiSelectedIndices.includes(item.index)}">
+                  <input type="checkbox" class="schedule-check"
+                         :checked="aiSelectedIndices.includes(item.index)"
+                         @change="toggleSuggestion(item.index)">
+                  <div class="plan-item-body">
+                    <!-- 编辑态 -->
+                    <div v-if="aiEditIndex===item.index" class="plan-item-edit">
+                      <input class="form-input" v-model="aiEditForm.title" placeholder="标题" style="flex:1;">
+                      <input class="form-input" v-model="aiEditForm.suggestedStart" placeholder="开始 HH:mm" style="width:92px;">
+                      <input class="form-input" type="number" v-model.number="aiEditForm.duration" min="1" max="480" style="width:76px;">
+                      <button class="btn btn-primary btn-sm" @click="saveSuggestionEdit">保存</button>
+                      <button class="btn btn-outline btn-sm" @click="cancelSuggestionEdit">取消</button>
+                    </div>
+                    <!-- 展示态 -->
+                    <template v-else>
+                      <div class="plan-item-title">{{ item.sg.title }}</div>
+                      <div class="plan-item-meta">
+                        🕐 {{ item.sg.suggestedStart }} · ⏱ {{ item.sg.duration }}分钟
+                        <span v-if="item.sg.priority" style="margin-left:6px;">· {{ item.sg.priority }}</span>
+                      </div>
+                      <div v-if="item.sg.reason" class="plan-item-reason">💡 {{ item.sg.reason }}</div>
+                    </template>
+                  </div>
+                  <div class="plan-item-actions">
+                    <button v-if="aiEditIndex!==item.index" class="btn btn-outline btn-sm" @click="startEditSuggestion(item.index)">✎</button>
+                    <button class="btn btn-success btn-sm" @click="adoptSuggestion(item.index)">采纳</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -449,15 +538,27 @@
           <div style="font-size:36px;">⏳</div>
           <p style="margin-top:8px;">AI 正在生成报告，请稍候...</p>
         </div>
+        <div v-if="selectedReportIds.length" class="batch-bar">
+          <span>已选 <strong>{{ selectedReportIds.length }}</strong> 条织史</span>
+          <button class="btn btn-danger btn-sm" @click="deleteSelectedReports" :disabled="deletingReports">{{ deletingReports ? '删除中...' : '批量删除' }}</button>
+        </div>
         <div class="card">
+          <div class="list-toolbar" v-if="aiReports.length">
+            <label class="check-all">
+              <input type="checkbox" :checked="allReportsChecked" @change="toggleAllReports"> 全选
+            </label>
+            <span style="font-size:12px; color:var(--text-secondary);">共 {{ aiReports.length }} 条</span>
+          </div>
           <div v-if="aiReports.length===0" class="empty-state">
             <div class="empty-icon">📝</div>
             <p>还没有生成的报告</p>
           </div>
           <div v-for="r in aiReports" :key="r.id" class="report-card" @click="viewReportDetail(r)">
+            <input type="checkbox" class="schedule-check" :checked="selectedReportIds.includes(r.id)" @click.stop="toggleReportSelect(r.id)">
             <span class="report-type" :class="'report-type-'+r.type">{{ {DAILY:'每日', WEEKLY:'每周', MONTHLY:'月度', YEARLY:'年度'}[r.type] }}</span>
             <div class="report-title">{{ r.title }}</div>
             <div class="report-date">{{ r.generatedAt }}</div>
+            <button class="btn btn-danger btn-sm" style="margin-left:auto;" @click.stop="deleteReport(r)">删除</button>
           </div>
         </div>
         <!-- Report Detail Modal -->
@@ -779,10 +880,40 @@
       </div>
     </div>
   </div>
+  <!-- ============ 统一提示 NotifyModal ============ -->
+  <div class="notify-mask" v-if="notify.visible" @click.self="notify.type==='confirm' ? notifyCancel() : null">
+    <div class="notify-box" :class="'notify-' + notify.type">
+      <div class="notify-header">
+        <span class="notify-icon">{{ {success:'✅', warning:'⚠️', error:'❌', info:'💬', confirm:'❓'}[notify.type] }}</span>
+        <span class="notify-title">{{ notify.title }}</span>
+        <button class="notify-close" @click="notifyCancel" v-if="notify.type==='error' || notify.type==='confirm'">✕</button>
+      </div>
+      <div class="notify-body">
+        <div class="notify-summary">{{ notify.summary }}</div>
+        <div v-if="notify.detail" class="notify-detail">
+          <div class="notify-detail-head">
+            <span style="cursor:pointer;" @click="notify.detailOpen = !notify.detailOpen">{{ notify.detailOpen ? '▼' : '▶' }} 详细信息</span>
+            <button class="btn btn-outline btn-sm" style="padding:2px 8px; font-size:11px;" @click="copyNotifyDetail">复制</button>
+          </div>
+          <pre v-if="notify.detailOpen">{{ notify.detail }}</pre>
+        </div>
+      </div>
+      <div class="notify-footer">
+        <button v-if="notify.type==='confirm'" class="btn btn-outline" @click="notifyCancel">{{ notify.cancelText || '取消' }}</button>
+        <button class="btn" :class="notify.type==='error' ? 'btn-danger' : (notify.type==='warning' ? 'btn-warning' : 'btn-primary')" @click="notifyOk">{{ notify.confirmText || '知道了' }}</button>
+      </div>
+    </div>
+  </div>
+  <!-- 轻量 toast（成功/警告自动消失） -->
+  <div class="toast-wrap">
+    <div v-for="t2 in toasts" :key="t2.id" class="toast-item" :class="'toast-' + t2.type" @click="dismissToast(t2.id)">
+      <span>{{ t2.icon }}</span><span>{{ t2.text }}</span>
+    </div>
+  </div>
 </div>
 
 <script src="js/vendor/marked.min.js"></script>
 <script src="js/vendor/highlight.min.js"></script>
-<script src="js/app.js"></script>
+<script src="js/app.js?v=20260917-1"></script>
 </body>
 </html>

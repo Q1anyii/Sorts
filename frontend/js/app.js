@@ -27,6 +27,77 @@ function clearTokens() {
   localStorage.removeItem(TOKEN_KEYS.refresh);
 }
 
+/* ================================================================
+ * 统一提示：NotifyModal（错误/确认）+ Toast（成功/警告）
+ * ----------------------------------------------------------------
+ * 约定：用户可见的报错/成功/警告一律走本组件，不再依赖 alert / confirm /
+ * 裸 console。生产环境（非 localhost）不展示堆栈等敏感信息。
+ * ================================================================ */
+const IS_DEV = !location.hostname || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+const notify = reactive({
+  visible: false, type: 'info', title: '', summary: '', detail: '', detailOpen: false,
+  confirmText: '知道了', cancelText: '取消', _resolve: null, _autoClose: null
+});
+const toasts = ref([]);
+let toastSeq = 0;
+
+function dismissToast(id) {
+  const i = toasts.value.findIndex(t => t.id === id);
+  if (i >= 0) toasts.value.splice(i, 1);
+}
+function toast(text, type = 'success') {
+  const icons = { success: '✅', warning: '⚠️', error: '❌', info: '💬' };
+  const id = ++toastSeq;
+  toasts.value.push({ id, text, type, icon: icons[type] || '💬' });
+  setTimeout(() => dismissToast(id), 3200);
+}
+function notifyOk() {
+  const r = notify._resolve;
+  notify.visible = false;
+  if (notify._autoClose) { clearTimeout(notify._autoClose); notify._autoClose = null; }
+  notify._resolve = null;
+  if (r) r(true);
+}
+function notifyCancel() {
+  const r = notify._resolve;
+  notify.visible = false;
+  if (notify._autoClose) { clearTimeout(notify._autoClose); notify._autoClose = null; }
+  notify._resolve = null;
+  if (r) r(false);
+}
+function openNotify({ type = 'info', title = '提示', summary = '', detail = '', confirmText = '知道了', cancelText = '取消', autoClose = false, ms = 2500 }) {
+  notify.type = type; notify.title = title; notify.summary = summary;
+  notify.detail = detail; notify.detailOpen = false;
+  notify.confirmText = confirmText; notify.cancelText = cancelText;
+  notify.visible = true;
+  if (notify._autoClose) { clearTimeout(notify._autoClose); notify._autoClose = null; }
+  if (autoClose) notify._autoClose = setTimeout(() => notifyCancel(), ms);
+  return new Promise(resolve => { notify._resolve = resolve; });
+}
+function notifySuccess(text) { toast(text, 'success'); }
+function notifyWarning(text) { toast(text, 'warning'); }
+/** 错误弹窗：摘要 + 详情（生产隐藏堆栈），开发环境保留 console 便于排障 */
+function notifyError(err, fallback = '操作失败，请稍后再试') {
+  const e = err || {};
+  const message = (e && e.message) ? e.message : fallback;
+  let detail = '';
+  if (e && e.detail) detail = e.detail;
+  else if (e && e.stack && IS_DEV) detail = e.stack;
+  else if (IS_DEV && typeof e === 'object' && e.code !== undefined) detail = JSON.stringify(e, null, 2);
+  if (IS_DEV) console.warn('[notify]', message, e);
+  openNotify({ type: 'error', title: '操作失败', summary: message, detail });
+}
+/** 确认弹窗：resolve(true/false) */
+function notifyConfirm({ title = '确认操作', message = '', confirmText = '确认', cancelText = '取消' }) {
+  return openNotify({ type: 'confirm', title, summary: message, confirmText, cancelText });
+}
+function copyNotifyDetail() {
+  if (navigator.clipboard && notify.detail) {
+    navigator.clipboard.writeText(notify.detail).then(() => toast('已复制错误详情', 'info')).catch(() => {});
+  }
+}
+
 let refreshPromise = null;
 /** 无感续期：并发 401 只刷一次，其余请求挂同一 Promise */
 function refreshTokens() {
@@ -57,7 +128,7 @@ async function parseResult(resp) {
 }
 
 async function apiFetch(path, opts = {}) {
-  const { method = 'GET', body, params, skipAuth = false, retried = false } = opts;
+  const { method = 'GET', body, params, skipAuth = false, retried = false, silent = false } = opts;
   const url = new URL(API_BASE + path, location.origin);
   if (params) {
     for (const k in params) {
@@ -72,11 +143,21 @@ async function apiFetch(path, opts = {}) {
     // 幂等：存量令牌可能已带 "Bearer " 前缀（旧版后端签发），二次拼接会被网关按 40102 拒绝
     headers['Authorization'] = access.startsWith('Bearer ') ? access : 'Bearer ' + access;
   }
+  // 请求超时：15s 未响应按网络异常统一提示（AbortController 中止底层 fetch）
+  const controller = new AbortController();
+  const timeoutTimer = setTimeout(() => controller.abort(), 15000);
   let resp;
   try {
-    resp = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+    resp = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined, signal: controller.signal });
   } catch (e) {
+    if (e && e.name === 'AbortError') {
+      if (!silent) notifyError({ message: '请求超时，请检查网络后重试' });
+      throw { code: -1, message: '请求超时，请检查网络后重试' };
+    }
+    if (!silent) notifyError({ message: '网络异常，请检查连接后重试' });
     throw { code: -1, message: '网络异常，请检查连接后重试' };
+  } finally {
+    clearTimeout(timeoutTimer);
   }
   let parsed;
   try { parsed = await parseResult(resp); } catch (e) { parsed = e; }
@@ -91,6 +172,7 @@ async function apiFetch(path, opts = {}) {
         throw e2;
       }
     }
+    if (!silent) notifyError(parsed);
     throw parsed;
   }
   return parsed;
@@ -332,8 +414,48 @@ const app = createApp({
       avatarUrl: '', points: 0, createdAt: ''
     });
 
-    // ============ Navigation ============
+    // ============ Navigation（hash 路由 + 刷新保持） ============
     const currentPage = ref('dashboard');
+
+    const VALID_PAGES = ['dashboard', 'calendar', 'schedules', 'ai', 'reports', 'stats', 'mall', 'notifications', 'profile'];
+    const SS_PREFIX = 'sorts.ss.';
+    function parseHash() {
+      const h = location.hash.replace(/^#\/?/, '');
+      const [pagePart, queryPart] = h.split('?');
+      const page = VALID_PAGES.indexOf(pagePart) >= 0 ? pagePart : '';
+      const params = {};
+      if (queryPart) new URLSearchParams(queryPart).forEach((v, k) => { params[k] = v; });
+      return { page, params };
+    }
+    /** 页面跳转：设置当前页 + 写入 hash（刷新后由 parseHash 恢复，天然避免刷新 404） */
+    function navigateTo(page, params = {}) {
+      currentPage.value = page;
+      const q = new URLSearchParams(params);
+      location.hash = q.toString() ? `#/${page}?${q}` : `#/${page}`;
+    }
+    /** 应用路由参数：织历 → 织程跳转带 date、织历深链带 year/month */
+    function applyRouteParams(params) {
+      if (params.date) {
+        scheduleFilter.preset = 'custom';
+        scheduleFilter.startDate = params.date;
+        scheduleFilter.endDate = params.date;
+        selectedDayLabel.value = params.date;
+        selectedDayDate.value = params.date;
+      }
+      if (params.year) calYear.value = parseInt(params.year, 10) || new Date().getFullYear();
+      if (params.month) calMonth.value = Math.min(12, Math.max(1, parseInt(params.month, 10) || 1));
+    }
+    function savePageState(key, state) {
+      try { sessionStorage.setItem(SS_PREFIX + key, JSON.stringify(state)); } catch (e) { /* 隐私模式等场景忽略 */ }
+    }
+    function loadPageState(key) {
+      try { return JSON.parse(sessionStorage.getItem(SS_PREFIX + key) || 'null'); } catch (e) { return null; }
+    }
+    // 导航点击只改 currentPage → 同步 hash（带参数跳转走 navigateTo）
+    function syncHashFromPage() {
+      const { page } = parseHash();
+      if (page !== currentPage.value) location.hash = `#/${currentPage.value}`;
+    }
 
     // ============ Timer State ============
     // 注意：elapsedSeconds / timerInterval 定义在下方「计时状态机」段（自愈秒表）
@@ -376,8 +498,31 @@ const app = createApp({
     });
 
     // ============ Filter State ============
-    const scheduleFilter = reactive({ status: '', priority: '', keyword: '' });
+    const scheduleFilter = reactive({
+      status: '', priority: '', keyword: '',
+      preset: '', startDate: '', endDate: ''   // 日期范围：预设 + 自定义
+    });
     const mallTab = ref('all');
+
+    // ============ 织程多选 / 批量删除 ============
+    const selectedScheduleIds = ref([]);
+    const deletingSchedules = ref(false);
+
+    // ============ 织史多选 / 删除 ============
+    const selectedReportIds = ref([]);
+    const deletingReports = ref(false);
+
+    // ============ AI 会话持久化 ============
+    const conversations = ref([]);
+    const currentConversationId = ref(null);
+    const aiSaving = ref(false);
+    let aiDraftTimer = null;
+    // 规划面板：勾选 + 编辑
+    const aiSelectedIndices = ref([]);
+    const aiPlanRange = ref(null);
+    const aiEditIndex = ref(-1);
+    const aiEditForm = reactive({ title: '', suggestedStart: '', duration: 60 });
+    const convSelectedIds = ref([]);
 
     // ============ Modal State ============
     const showScheduleModal = ref(false);
@@ -431,8 +576,63 @@ const app = createApp({
         const kw = scheduleFilter.keyword.toLowerCase();
         list = list.filter(s => s.title.toLowerCase().includes(kw) || (s.description || '').toLowerCase().includes(kw));
       }
+      // 日期范围（闭区间）：按 plannedStartTime 的日期部分比较，杜绝跨日/其他日期混入
+      const start = scheduleFilter.startDate;
+      const end = scheduleFilter.endDate;
+      if (start || end) {
+        list = list.filter(s => {
+          const d = (s.plannedStartTime || '').slice(0, 10);
+          if (!d) return false;
+          if (start && d < start) return false;
+          if (end && d > end) return false;
+          return true;
+        });
+      }
       return list.sort((a, b) => (a.plannedStartTime || '').localeCompare(b.plannedStartTime || ''));
     });
+
+    /** 按日期分组展示（织历→织程跳转 / 日期范围查询的落地形态） */
+    const groupedSchedules = computed(() => {
+      const map = new Map();
+      filteredSchedules.value.forEach(s => {
+        const d = (s.plannedStartTime || '').slice(0, 10);
+        if (!map.has(d)) map.set(d, []);
+        map.get(d).push(s);
+      });
+      return [...map.entries()].map(([date, items]) => ({ date, items }));
+    });
+
+    // ============ 织程多选状态 ============
+    const allSchedulesChecked = computed(() => {
+      const list = filteredSchedules.value;
+      return list.length > 0 && list.every(s => selectedScheduleIds.value.includes(s.id));
+    });
+    const someSchedulesChecked = computed(() => {
+      const list = filteredSchedules.value;
+      return list.some(s => selectedScheduleIds.value.includes(s.id)) && !allSchedulesChecked.value;
+    });
+    function toggleAllSchedules() {
+      if (allSchedulesChecked.value) selectedScheduleIds.value = [];
+      else selectedScheduleIds.value = filteredSchedules.value.map(s => s.id);
+    }
+    function toggleScheduleSelect(id) {
+      const i = selectedScheduleIds.value.indexOf(id);
+      if (i >= 0) selectedScheduleIds.value.splice(i, 1);
+      else selectedScheduleIds.value.push(id);
+    }
+    // 织史多选状态
+    const allReportsChecked = computed(() => {
+      return aiReports.value.length > 0 && aiReports.value.every(r => selectedReportIds.value.includes(r.id));
+    });
+    function toggleAllReports() {
+      if (allReportsChecked.value) selectedReportIds.value = [];
+      else selectedReportIds.value = aiReports.value.map(r => r.id);
+    }
+    function toggleReportSelect(id) {
+      const i = selectedReportIds.value.indexOf(id);
+      if (i >= 0) selectedReportIds.value.splice(i, 1);
+      else selectedReportIds.value.push(id);
+    }
 
     const unreadNotifCount = computed(() => notifications.value.filter(n => !n.isRead).length);
 
@@ -517,7 +717,7 @@ const app = createApp({
     }
 
     function showError(e, fallback = '操作失败，请稍后再试') {
-      alert((e && e.message) ? e.message : fallback);
+      notifyError(e, fallback);
     }
 
     /** 会话彻底失效（续期也被拒）：清令牌回登录页 */
@@ -527,7 +727,7 @@ const app = createApp({
       stopTimer();
       activeSchedule.value = null;
       isLoggedIn.value = false;
-      alert('登录状态已失效，请重新登录');
+      notifyError({ message: '登录状态已失效，请重新登录' });
     }
 
     /* ============================================================
@@ -563,7 +763,8 @@ const app = createApp({
     }
 
     async function logout() {
-      if (!confirm('确定退出登录吗？')) return;
+      const ok = await notifyConfirm({ title: '退出登录', message: '确定退出登录吗？' });
+      if (!ok) return;
       stopTimer();
       try { await apiFetch('/auth/logout', { method: 'POST', skipAuth: false }); } catch (e) { /* 失败也继续清本地 */ }
       clearTokens();
@@ -576,6 +777,8 @@ const app = createApp({
       aiConversationId.value = '';
       aiWriteEnabled.value = false;
       currentPlanId = null;
+      currentConversationId.value = null;
+      conversations.value = [];
       activeSchedule.value = null;
     }
 
@@ -624,9 +827,22 @@ const app = createApp({
       return base + Math.max(0, Math.floor((timerNow.value - new Date(s.actualStartTime).getTime()) / 1000));
     });
 
+    /** 开启规则（前端第一道）：未到计划开始时间禁用开梭按钮（后端仍会二次校验） */
+    function canStartNow(s) {
+      if (!s || !canAct(s.status, 'start')) return false;
+      if (s.actualStartTime) return true;      // 已开过梭（PAUSED 恢复等），不再受时间约束
+      if (!s.plannedStartTime) return true;
+      return new Date(s.plannedStartTime).getTime() <= Date.now();
+    }
+
     async function startSchedule(s) {
       if (activeSchedule.value && activeSchedule.value.id !== s.id) {
-        alert('请先结束正在进行的日程');
+        notifyWarning('请先结束正在进行的日程');
+        return;
+      }
+      // 前端时间预检：未到开始时间直接提示，避免无谓请求（后端为权威）
+      if (!canStartNow(s)) {
+        notifyWarning(`未到计划开始时间（${s.plannedStartTime}），暂不可开启`);
         return;
       }
       try {
@@ -670,14 +886,15 @@ const app = createApp({
         } catch (e) { /* 积分拉取失败不阻塞主流程 */ }
         activeSchedule.value = null; // computed 自动归零
         await loadSchedules(); // 落梭后刷新列表状态与光阴砂余额
-        alert(earned > 0 ? `✅ 日程完成！获得 ${earned} 光阴砂` : '✅ 日程已完成');
+        notifySuccess(earned > 0 ? `日程完成！获得 ${earned} 光阴砂` : '日程已完成');
       } catch (e) {
         showError(e, '结束日程失败');
       }
     }
 
     async function cancelSchedule(s) {
-      if (!confirm('确定取消此日程吗？')) return;
+      const ok = await notifyConfirm({ title: '取消日程', message: '确定取消此日程吗？', confirmText: '取消日程' });
+      if (!ok) return;
       try {
         const updated = await apiFetch(`/schedules/${s.id}/cancel`, { method: 'POST' });
         Object.assign(s, updated);
@@ -699,6 +916,102 @@ const app = createApp({
       selectedDayLabel.value = day.dateStr;
       selectedDayDate.value = day.dateStr;
       selectedDaySchedules.value = schedules.value.filter(s => s.plannedStartTime && s.plannedStartTime.startsWith(day.dateStr));
+      // 织历 → 织程联动：携带 date 参数跳转（hash 路由，刷新后仍停留该日）
+      navigateTo('schedules', { date: day.dateStr });
+      // navigateTo 已提前置 currentPage，hashchange 分支不再触发 → 这里直接应用路由参数并同步数据
+      applyRouteParams({ date: day.dateStr });
+      syncSchedulesFromFilter();
+    }
+    /** 织历页面「在织程中查看」 */
+    function openDayInSchedules(dateStr) {
+      if (!dateStr) return;
+      navigateTo('schedules', { date: dateStr });
+      applyRouteParams({ date: dateStr });
+      syncSchedulesFromFilter();
+    }
+
+    /* ============================================================
+     * 织程日期范围查询（预设 + 自定义闭区间）
+     * ============================================================ */
+    function applyDatePreset() {
+      const today = getTodayStr();
+      const d = new Date();
+      switch (scheduleFilter.preset) {
+        case 'today':
+          scheduleFilter.startDate = today; scheduleFilter.endDate = today;
+          break;
+        case 'tomorrow':
+          const tm = new Date(d); tm.setDate(tm.getDate() + 1);
+          const ts = `${tm.getFullYear()}-${String(tm.getMonth() + 1).padStart(2, '0')}-${String(tm.getDate()).padStart(2, '0')}`;
+          scheduleFilter.startDate = ts; scheduleFilter.endDate = ts;
+          break;
+        case 'week': {
+          const day = d.getDay() === 0 ? 7 : d.getDay();
+          const mon = new Date(d); mon.setDate(d.getDate() - day + 1);
+          const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+          scheduleFilter.startDate = fmtYmd(mon);
+          scheduleFilter.endDate = fmtYmd(sun);
+          break;
+        }
+        case 'month': {
+          const first = new Date(d.getFullYear(), d.getMonth(), 1);
+          const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+          scheduleFilter.startDate = fmtYmd(first);
+          scheduleFilter.endDate = fmtYmd(last);
+          break;
+        }
+        case 'custom':
+          // 用户手动输入起止日期
+          break;
+        default:
+          scheduleFilter.startDate = ''; scheduleFilter.endDate = '';
+      }
+      syncSchedulesFromFilter();
+    }
+    function fmtYmd(dt) {
+      return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+    }
+    function clearDateFilter() {
+      scheduleFilter.preset = '';
+      scheduleFilter.startDate = '';
+      scheduleFilter.endDate = '';
+      syncSchedulesFromFilter();
+    }
+    /** 织程数据源随筛选刷新：有范围走后端闭区间查询，否则拉全量 */
+    async function syncSchedulesFromFilter() {
+      try {
+        const params = { view: 'all', pageSize: 500, sort: 'plannedStartTime', order: 'asc' };
+        if (scheduleFilter.startDate || scheduleFilter.endDate) {
+          if (scheduleFilter.startDate) params.startDate = scheduleFilter.startDate;
+          if (scheduleFilter.endDate) params.endDate = scheduleFilter.endDate;
+        }
+        const page = await apiFetch('/schedules', { params });
+        schedules.value = (page && page.list) || [];
+      } catch (e) {
+        if (!(e && e.code === 40103)) showError(e, '日程加载失败');
+      }
+    }
+
+    /* ============================================================
+     * 织程批量删除
+     * ============================================================ */
+    async function deleteSelectedSchedules() {
+      const count = selectedScheduleIds.value.length;
+      if (!count) { notifyWarning('请先勾选要删除的日程'); return; }
+      const ok = await notifyConfirm({
+        title: '批量删除日程', message: `确定删除选中的 ${count} 条日程吗？删除后可在数据中追溯（软删除），不可恢复。`,
+        confirmText: '删除', cancelText: '取消'
+      });
+      if (!ok) return;
+      deletingSchedules.value = true;
+      try {
+        await apiFetch('/schedules/batch-delete', { method: 'POST', body: { ids: selectedScheduleIds.value } });
+        selectedScheduleIds.value = [];
+        notifySuccess(`已删除 ${count} 条日程`);
+        await Promise.all([syncSchedulesFromFilter(), loadStats()]);
+      } catch (e) { /* apiFetch 已统一弹窗 */ } finally {
+        deletingSchedules.value = false;
+      }
     }
 
     /* ============================================================
@@ -710,7 +1023,7 @@ const app = createApp({
     }
 
     async function saveSchedule() {
-      if (!scheduleForm.title || !scheduleForm.plannedStartTime) { alert('请填写标题和计划时间'); return; }
+      if (!scheduleForm.title || !scheduleForm.plannedStartTime) { notifyWarning('请填写标题和计划时间'); return; }
       const tags = scheduleForm.tagsStr ? scheduleForm.tagsStr.split(',').map(t => t.trim()).filter(Boolean) : [];
       const data = {
         title: scheduleForm.title.trim(),
@@ -747,14 +1060,19 @@ const app = createApp({
     }
 
     async function deleteSchedule(s) {
-      if (!confirm(`确定删除日程"${s.title}"吗？`)) return;
+      const ok = await notifyConfirm({
+        title: '删除日程', message: `确定删除日程"${s.title}"吗？删除后可在数据中追溯（软删除），不可恢复。`,
+        confirmText: '删除'
+      });
+      if (!ok) return;
       try {
         await apiFetch(`/schedules/${s.id}`, { method: 'DELETE' });
         if (activeSchedule.value && activeSchedule.value.id === s.id) {
           stopTimer();
           activeSchedule.value = null;
         }
-        await loadSchedules();
+        notifySuccess('日程已删除');
+        await Promise.all([loadSchedules(), loadStats()]);
       } catch (e) { showError(e, '删除日程失败'); }
     }
 
@@ -817,21 +1135,23 @@ const app = createApp({
       aiLoading.value = true;
       aiScrollToBottom();
 
-      // 规划意图：走 /ai/plan JSON 通道（右侧结构化建议面板），保持原行为
+      // 规划意图：走 /ai/plan JSON 通道（右侧结构化建议面板），保持原行为。
+      // 相对时间范围（未来一周/下周/本周/明天等）由服务端注入解析，前端不再猜日期。
       const isPlanning = /规划|安排|计划|日程/.test(msg);
       if (isPlanning) {
         try {
-          const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-          const targetDate = tomorrow.toISOString().slice(0, 10);
-          const plan = await apiFetch('/ai/plan', { method: 'POST', body: { userPrompt: msg, targetDate } });
+          const plan = await apiFetch('/ai/plan', { method: 'POST', body: { userPrompt: msg } });
           currentPlanId = plan.planId || null;
           aiSuggestions.value = (plan.suggestions || []).map(sg => ({ ...sg, suggestedStart: sg.suggestedStart || '09:00' }));
+          aiSelectedIndices.value = aiSuggestions.value.map((_, i) => i); // 默认全选，用户可取消
+          aiPlanRange.value = plan.range || null;
           aiMessages.value.push({
             role: 'bot',
             content: aiSuggestions.value.length
-              ? `好的！我已经分析了你的需求，生成了 ${aiSuggestions.value.length} 条规划建议 👇\n\n你可以查看右侧面板，选择合适的建议一键采纳创建日程。`
+              ? `好的！我按你给的时间范围生成了 ${aiSuggestions.value.length} 条规划建议 👇\n\n可以查看右侧面板按天勾选，确认后一键批量添加到织程。`
               : '我没有生成到可用的规划建议，换一种说法再试试？'
           });
+          await saveConversation(true);
         } catch (e) {
           aiMessages.value.push({ role: 'bot', content: aiErrorMessage(e) });
         } finally {
@@ -869,6 +1189,7 @@ const app = createApp({
             if (payload && payload.conversationId) aiConversationId.value = payload.conversationId;
             // 建议操作：挂在当前消息上，渲染为气泡内快捷按钮
             botMsg.suggestedActions = (payload && Array.isArray(payload.suggestedActions)) ? payload.suggestedActions : [];
+            saveConversation(true); // AI 返回后落一次会话快照
           },
           onError: (e) => { botMsg.content = aiErrorMessage(e); },
           onAuthExpired: () => { sessionExpired(); }
@@ -890,32 +1211,266 @@ const app = createApp({
       sendAiMessage();
     }
 
-    async function adoptSuggestion(index) {
+    /* ============================================================
+     * 多日规划：勾选 / 编辑 / 批量采纳
+     * ============================================================ */
+    /** 按天分组（前端展示粒度：date → items） */
+    const aiGroupedSuggestions = computed(() => {
+      const map = new Map();
+      aiSuggestions.value.forEach((sg, i) => {
+        const d = sg.date || (aiPlanRange.value && aiPlanRange.value.startDate) || '';
+        if (!map.has(d)) map.set(d, []);
+        map.get(d).push({ sg, index: i });
+      });
+      return [...map.entries()].map(([date, items]) => ({ date, items }));
+    });
+    function toggleSuggestion(index) {
+      const i = aiSelectedIndices.value.indexOf(index);
+      if (i >= 0) aiSelectedIndices.value.splice(i, 1);
+      else aiSelectedIndices.value.push(index);
+      saveConversation(true);
+    }
+    function toggleDaySuggestions(indices) {
+      const allSelected = indices.every(i => aiSelectedIndices.value.includes(i));
+      if (allSelected) aiSelectedIndices.value = aiSelectedIndices.value.filter(i => !indices.includes(i));
+      else {
+        indices.forEach(i => { if (!aiSelectedIndices.value.includes(i)) aiSelectedIndices.value.push(i); });
+      }
+      saveConversation(true);
+    }
+    function toggleAllSuggestions() {
+      if (aiSelectedIndices.value.length === aiSuggestions.value.length) aiSelectedIndices.value = [];
+      else aiSelectedIndices.value = aiSuggestions.value.map((_, i) => i);
+      saveConversation(true);
+    }
+    function clearAiSelection() { aiSelectedIndices.value = []; saveConversation(true); }
+
+    // 采纳时的逐项覆盖（前端编辑后回传）
+    const aiEdits = {};
+    function startEditSuggestion(index) {
+      aiEditIndex.value = index;
       const sg = aiSuggestions.value[index];
+      if (sg) { aiEditForm.title = sg.title || ''; aiEditForm.suggestedStart = sg.suggestedStart || ''; aiEditForm.duration = sg.duration || 60; }
+    }
+    function saveSuggestionEdit() {
+      const i = aiEditIndex.value;
+      if (i < 0) return;
+      const sg = aiSuggestions.value[i];
       if (!sg) return;
+      if (!aiEditForm.title.trim()) { notifyWarning('标题不能为空'); return; }
+      sg.title = aiEditForm.title.trim();
+      if (aiEditForm.suggestedStart && /^\d{2}:\d{2}$/.test(aiEditForm.suggestedStart)) sg.suggestedStart = aiEditForm.suggestedStart;
+      if (aiEditForm.duration > 0) sg.duration = Math.min(480, Math.round(aiEditForm.duration));
+      aiEdits[i] = { title: sg.title, suggestedStart: sg.suggestedStart, duration: sg.duration };
+      aiEditIndex.value = -1;
+      saveConversation(true);
+    }
+    function cancelSuggestionEdit() { aiEditIndex.value = -1; }
+
+    function buildOverrides(indices) {
+      const list = [];
+      indices.forEach(i => { if (aiEdits[i]) list.push({ index: i, ...aiEdits[i] }); });
+      return list.length ? list : undefined;
+    }
+
+    /** 批量采纳当前勾选（带编辑覆盖） */
+    async function adoptSelectedSuggestions() {
+      const indices = [...aiSelectedIndices.value].sort((a, b) => a - b);
+      if (!indices.length) { notifyWarning('请先勾选要采纳的规划项'); return; }
+      const selected = indices.map(i => aiSuggestions.value[i]).filter(Boolean);
+      if (!selected.length) return;
       try {
         if (!currentPlanId) throw { message: '规划已失效，请重新让 AI 规划' };
+        const overrides = buildOverrides(indices);
         const created = await apiFetch(`/ai/plan/${encodeURIComponent(currentPlanId)}/adopt`, {
-          method: 'POST', body: { planId: currentPlanId, selectedIndices: [index] }
+          method: 'POST', body: { planId: currentPlanId, selectedIndices: indices, overrides }
         });
-        aiSuggestions.value.splice(index, 1);
-        aiMessages.value.push({ role: 'bot', content: `✅ 已采纳并创建日程：**${sg.title}**` });
+        const removeSet = new Set(indices);
+        aiSuggestions.value = aiSuggestions.value.filter((_, i) => !removeSet.has(i));
+        aiSelectedIndices.value = aiSelectedIndices.value.filter(i => !removeSet.has(i));
+        aiEditIndex.value = -1;
+        aiMessages.value.push({ role: 'bot', content: `✅ 已采纳并创建 ${selected.length} 条日程，织程已更新。` });
+        await saveConversation(true);
         if (Array.isArray(created) && created.length) await loadSchedules();
       } catch (e) { showError(e, '采纳失败'); }
+    }
+
+    async function adoptSuggestion(index) {
+      aiSelectedIndices.value = [index];
+      await adoptSelectedSuggestions();
     }
 
     async function adoptAllSuggestions() {
       const count = aiSuggestions.value.length;
       if (!count) return;
+      aiSelectedIndices.value = aiSuggestions.value.map((_, i) => i);
+      await adoptSelectedSuggestions();
+      if (aiSuggestions.value.length === 0) aiMessages.value.push({ role: 'bot', content: `✅ 已全部采纳！成功创建了 ${count} 个日程。` });
+    }
+
+    /* ============================================================
+     * AI 会话持久化（后端保存 + 前端自动快照）
+     * ============================================================ */
+    async function loadConversations() {
       try {
-        if (!currentPlanId) throw { message: '规划已失效，请重新让 AI 规划' };
-        await apiFetch(`/ai/plan/${encodeURIComponent(currentPlanId)}/adopt`, {
-          method: 'POST', body: { planId: currentPlanId, selectedIndices: aiSuggestions.value.map((_, i) => i) }
-        });
+        const page = await apiFetch('/ai/conversations', { params: { page: 1, pageSize: 50 } });
+        conversations.value = (page && page.list) || [];
+      } catch (e) { /* 会话列表失败保留空态 */ }
+    }
+    async function newConversation() {
+      try {
+        await flushConversationSave();
+        const conv = await apiFetch('/ai/conversations', { method: 'POST', body: { title: '新会话' } });
+        conversations.value.unshift(conv);
+        resetAiChatState();
+        currentConversationId.value = conv.id;
+        await saveConversation(true);
+        return conv;
+      } catch (e) { /* 已统一弹窗 */ }
+    }
+    async function switchConversation(id) {
+      if (currentConversationId.value && currentConversationId.value !== id) await flushConversationSave();
+      try {
+        const conv = await apiFetch(`/ai/conversations/${id}`);
+        currentConversationId.value = id;
+        applyConversation(conv);
+      } catch (e) { /* 已统一弹窗 */ }
+    }
+    function resetAiChatState() {
+      aiMessages.value = [welcomeAiMessage()];
+      aiSuggestions.value = [];
+      aiSelectedIndices.value = [];
+      aiPlanRange.value = null;
+      currentPlanId = null;
+      aiInput.value = '';
+      aiEditIndex.value = -1;
+      aiConversationId.value = '';
+    }
+    function welcomeAiMessage() {
+      return { role: 'bot', content: '你好！我是梭灵 🤖 我可以帮你：\n\n📅 **规划日程**：告诉我你的需求，我会生成结构化的日程安排\n📊 **效率分析**：分析你的时间使用情况\n📝 **生成总结**：每日/月度/年度智能总结\n\n试试对我说："帮我生成未来一周规划"' };
+    }
+    function applyConversation(conv) {
+      const msgs = (conv.messages || []).map(m => ({
+        role: m.role === 'user' ? 'user' : 'bot',
+        content: m.content || '',
+        suggestedActions: (m.structuredData && m.structuredData.suggestedActions) || []
+      }));
+      aiMessages.value = msgs.length ? msgs : [welcomeAiMessage()];
+      aiInput.value = conv.draft || '';
+      aiSelectedIndices.value = Array.isArray(conv.selectedPlanItems)
+        ? conv.selectedPlanItems.map(Number).filter(n => Number.isInteger(n) && n >= 0) : [];
+      if (conv.planSuggestions && Array.isArray(conv.planSuggestions)) {
+        aiSuggestions.value = conv.planSuggestions.map(s => ({ ...s, suggestedStart: s.suggestedStart || '09:00' }));
+      } else {
         aiSuggestions.value = [];
-        aiMessages.value.push({ role: 'bot', content: `✅ 已全部采纳！成功创建了 ${count} 个日程。` });
-        await loadSchedules();
-      } catch (e) { showError(e, '批量采纳失败'); }
+      }
+      aiPlanRange.value = conv.lastGeneratedRange || null;
+      currentPlanId = conv.planId || null;
+      aiEditIndex.value = -1;
+      aiConversationId.value = '';
+    }
+    function currentConvTitle() {
+      const firstUser = aiMessages.value.find(m => m.role === 'user');
+      const base = (firstUser && firstUser.content ? firstUser.content : '新会话');
+      return base.length > 20 ? base.slice(0, 20) : base;
+    }
+    function currentSnapshot() {
+      return {
+        title: currentConvTitle(),
+        messages: aiMessages.value.map(m => ({
+          id: 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+          role: m.role === 'user' ? 'user' : 'assistant',
+          content: m.content || '',
+          timestamp: new Date().toISOString(),
+          structuredData: (m.suggestedActions && m.suggestedActions.length) ? { suggestedActions: m.suggestedActions } : null
+        })),
+        draft: aiInput.value,
+        selectedPlanItems: [...aiSelectedIndices.value],
+        lastGeneratedRange: aiPlanRange.value || undefined,
+        planId: currentPlanId || undefined,
+        planSuggestions: aiSuggestions.value.length ? aiSuggestions.value : undefined
+      };
+    }
+    /** 会话快照保存：immediate=true 立即落库，否则防抖（草稿场景） */
+    function saveConversation(immediate) {
+      const id = currentConversationId.value;
+      if (!id || !isLoggedIn.value) return;
+      if (!immediate) {
+        if (aiDraftTimer) clearTimeout(aiDraftTimer);
+        aiDraftTimer = setTimeout(() => doSaveConversation(), 800);
+        return;
+      }
+      if (aiDraftTimer) { clearTimeout(aiDraftTimer); aiDraftTimer = null; }
+      doSaveConversation();
+    }
+    async function flushConversationSave() {
+      if (aiDraftTimer) { clearTimeout(aiDraftTimer); aiDraftTimer = null; }
+      await doSaveConversation();
+    }
+    async function doSaveConversation() {
+      const id = currentConversationId.value;
+      if (!id || !isLoggedIn.value) return;
+      aiSaving.value = true;
+      try {
+        const body = currentSnapshot();
+        const updated = await apiFetch(`/ai/conversations/${id}`, { method: 'PUT', body, silent: true });
+        const c = conversations.value.find(x => x.id === id);
+        if (c) { c.title = updated.title; c.updatedAt = updated.updatedAt; }
+      } catch (e) { /* 会话保存失败不打断主流程（silent） */ } finally {
+        aiSaving.value = false;
+      }
+    }
+    async function renameConversation(c) {
+      const text = (prompt('请输入新的会话标题', c.title) || '').trim();
+      if (!text || text === c.title) return;
+      try {
+        await apiFetch(`/ai/conversations/${c.id}`, { method: 'PUT', body: { title: text }, silent: true });
+        c.title = text;
+        toast('会话已重命名', 'success');
+      } catch (e) { /* 已统一弹窗 */ }
+    }
+    async function deleteConversation(c) {
+      const ok = await notifyConfirm({ title: '删除会话', message: `确定删除会话"${c.title}"吗？`, confirmText: '删除' });
+      if (!ok) return;
+      try {
+        await apiFetch(`/ai/conversations/${c.id}`, { method: 'DELETE' });
+        conversations.value = conversations.value.filter(x => x.id !== c.id);
+        if (currentConversationId.value === c.id) resetAiChatState();
+        notifySuccess('会话已删除');
+      } catch (e) { /* 已统一弹窗 */ }
+    }
+    function toggleConvSelect(id) {
+      const i = convSelectedIds.value.indexOf(id);
+      if (i >= 0) convSelectedIds.value.splice(i, 1);
+      else convSelectedIds.value.push(id);
+    }
+    const allConversationsChecked = computed(() => {
+      return conversations.value.length > 0 && conversations.value.every(c => convSelectedIds.value.includes(c.id));
+    });
+    function toggleAllConversations() {
+      if (allConversationsChecked.value) convSelectedIds.value = [];
+      else convSelectedIds.value = conversations.value.map(c => c.id);
+    }
+    async function deleteSelectedConversations() {
+      const count = convSelectedIds.value.length;
+      if (!count) { notifyWarning('请先勾选要删除的会话'); return; }
+      const ok = await notifyConfirm({ title: '批量删除会话', message: `确定删除选中的 ${count} 个会话吗？`, confirmText: '删除' });
+      if (!ok) return;
+      try {
+        await apiFetch('/ai/conversations/batch-delete', { method: 'POST', body: { ids: convSelectedIds.value } });
+        const removed = new Set(convSelectedIds.value);
+        conversations.value = conversations.value.filter(x => !removed.has(x.id));
+        if (currentConversationId.value && removed.has(currentConversationId.value)) resetAiChatState();
+        convSelectedIds.value = [];
+        notifySuccess(`已删除 ${count} 个会话`);
+      } catch (e) { /* 已统一弹窗 */ }
+    }
+    async function clearCurrentConversation() {
+      const ok = await notifyConfirm({ title: '清空当前会话', message: '确定清空当前会话的消息记录吗？（会话本身保留）', confirmText: '清空' });
+      if (!ok) return;
+      resetAiChatState();
+      await saveConversation(true);
+      notifySuccess('当前会话已清空');
     }
 
     /* ============================================================
@@ -969,7 +1524,7 @@ const app = createApp({
         userInfo.points = result.remainingPoints;
         purchaseConfirm.value = null;
         await loadMallData();
-        alert(`✅ 成功购买 "${item.name}"！`);
+        notifySuccess(`成功购买 "${item.name}"！`);
       } catch (e) {
         purchaseConfirm.value = null;
         showError(e, '购买失败（可能光阴砂不足或已拥有）');
@@ -1023,7 +1578,7 @@ const app = createApp({
           method: 'PUT',
           body: { defaultAdvanceMinutes: reminderSettings.defaultAdvanceMinutes, quietHoursEnabled: reminderSettings.quietHoursEnabled }
         });
-        alert('✅ 提醒设置已保存');
+        notifySuccess('提醒设置已保存');
       } catch (e) { showError(e, '保存失败'); }
     }
 
@@ -1031,12 +1586,7 @@ const app = createApp({
      * 数据加载
      * ============================================================ */
     async function loadSchedules() {
-      try {
-        const page = await apiFetch('/schedules', { params: { view: 'all', pageSize: 500, sort: 'plannedStartTime', order: 'asc' } });
-        schedules.value = (page && page.list) || [];
-      } catch (e) {
-        if (!(e && e.code === 40103)) showError(e, '日程加载失败');
-      }
+      await syncSchedulesFromFilter();
     }
 
     async function loadNotifications() {
@@ -1083,6 +1633,31 @@ const app = createApp({
         const page = await apiFetch('/ai/reports', { params: { page: 1, pageSize: 50 } });
         aiReports.value = (page && page.list) || [];
       } catch (e) { /* AI 报告列表失败保留空态 */ }
+    }
+
+    async function deleteReport(r) {
+      const ok = await notifyConfirm({ title: '删除织史', message: `确定删除「${r.title || '该条织史'}」吗？删除后不可恢复。`, confirmText: '删除' });
+      if (!ok) return;
+      try {
+        await apiFetch('/ai/reports/' + r.id, { method: 'DELETE' });
+        notifySuccess('已删除织史');
+        await loadReports();
+      } catch (e) { /* 已由 apiFetch 统一弹窗 */ }
+    }
+
+    async function deleteSelectedReports() {
+      const ids = selectedReportIds.value;
+      if (!ids.length) { notifyWarning('未选择任何织史'); return; }
+      const ok = await notifyConfirm({ title: '批量删除织史', message: `确定删除选中的 ${ids.length} 条织史吗？删除后不可恢复。`, confirmText: '删除' });
+      if (!ok) return;
+      deletingReports.value = true;
+      try {
+        await apiFetch('/ai/reports/batch-delete', { method: 'POST', body: { ids } });
+        notifySuccess(`已删除 ${ids.length} 条织史`);
+        selectedReportIds.value = [];
+        await loadReports();
+      } catch (e) { /* 已由 apiFetch 统一弹窗 */ }
+      finally { deletingReports.value = false; }
     }
 
     async function loadStats() {
@@ -1150,10 +1725,89 @@ const app = createApp({
     }
 
     /* ============================================================
+     * 页面状态持久化与恢复（刷新保持）
+     * ============================================================ */
+    function restorePageContext() {
+      // 路由参数（织历 → 织程跳转等）
+      const { params } = parseHash();
+      applyRouteParams(params);
+      // 织程：日期筛选 + 选中项
+      const s = loadPageState('schedules');
+      if (s) {
+        scheduleFilter.preset = s.preset || '';
+        scheduleFilter.startDate = s.startDate || '';
+        scheduleFilter.endDate = s.endDate || '';
+        selectedScheduleIds.value = Array.isArray(s.selectedIds) ? s.selectedIds : [];
+      }
+      // 织历：月份 + 选中日期
+      const c = loadPageState('calendar');
+      if (c) {
+        if (c.year) calYear.value = c.year;
+        if (c.month) calMonth.value = c.month;
+        if (c.selectedDate) {
+          selectedDayDate.value = c.selectedDate;
+          selectedDayLabel.value = c.selectedDate;
+          selectedDaySchedules.value = schedules.value.filter(x => x.plannedStartTime && x.plannedStartTime.startsWith(c.selectedDate));
+        }
+      }
+      // 织史：选中项
+      const r = loadPageState('reports');
+      if (r) selectedReportIds.value = Array.isArray(r.selectedIds) ? r.selectedIds : [];
+    }
+
+    async function restoreAiSession() {
+      await loadConversations();
+      const saved = loadPageState('ai');
+      if (saved && saved.currentId && conversations.value.some(x => x.id === saved.currentId)) {
+        await switchConversation(saved.currentId);
+      } else if (conversations.value.length) {
+        await switchConversation(conversations.value[0].id);
+      } else {
+        await newConversation();
+      }
+    }
+
+    // 导航与 hash 双向同步：nav 点击改 currentPage → hash；hashchange（前进后退/手改）→ currentPage
+    window.addEventListener('hashchange', () => {
+      const { page, params } = parseHash();
+      if (page && page !== currentPage.value) {
+        currentPage.value = page;
+        applyRouteParams(params);
+      }
+    });
+    watch(currentPage, () => syncHashFromPage());
+
+    // 页面关键状态 → sessionStorage（会话级：关闭标签页即失效，不残留跨账号数据）
+    watch(() => [scheduleFilter.preset, scheduleFilter.startDate, scheduleFilter.endDate, selectedScheduleIds.value], () => {
+      savePageState('schedules', { preset: scheduleFilter.preset, startDate: scheduleFilter.startDate, endDate: scheduleFilter.endDate, selectedIds: selectedScheduleIds.value });
+    }, { deep: true });
+    watch([calYear, calMonth, selectedDayDate], () => {
+      savePageState('calendar', { year: calYear.value, month: calMonth.value, selectedDate: selectedDayDate.value });
+    });
+    watch(selectedReportIds, () => {
+      savePageState('reports', { selectedIds: selectedReportIds.value });
+    }, { deep: true });
+    watch(currentConversationId, (id) => {
+      savePageState('ai', { currentId: id });
+    });
+    // AI 草稿防抖保存（800ms）
+    watch(aiInput, () => {
+      if (currentConversationId.value && isLoggedIn.value) saveConversation(false);
+    });
+    // 勾选变化即保存（恢复时用抑制开关防回写）
+    watch([aiSelectedIndices, aiSuggestions], () => {
+      if (currentConversationId.value && isLoggedIn.value && !restoringAi) saveConversation(true);
+    }, { deep: true });
+    let restoringAi = false;
+
+    /* ============================================================
      * 生命周期
      * ============================================================ */
     onMounted(async () => {
       resetScheduleForm();
+      // 刷新保持：优先恢复 hash 中的页面（在登录校验之前），登录后恢复路由参数与关键状态
+      const initialRoute = parseHash();
+      if (initialRoute.page) currentPage.value = initialRoute.page;
       // 皮肤：优先本地缓存即时生效（避免闪白），登录后由云裳阁服务端真源校准
       const cachedSkin = localStorage.getItem(SKIN_STORAGE_KEY);
       if (cachedSkin && SKIN_KEYS.indexOf(cachedSkin) >= 0) applySkin(cachedSkin);
@@ -1170,6 +1824,11 @@ const app = createApp({
           applyUser(me);
           isLoggedIn.value = true;
           await loadAllData();
+          restorePageContext();
+          // AI 会话恢复：后端会话列表 + 上次当前会话（失败回退新建，不阻塞主流程）
+          restoringAi = true;
+          try { await restoreAiSession(); } catch (e) { /* 已统一弹窗 */ }
+          restoringAi = false;
           return;
         } catch (e) {
           if (!(e && (e.code === 40101 || e.code === 40102 || e.code === 40103))) {
@@ -1180,6 +1839,7 @@ const app = createApp({
                 Object.assign(userInfo, JSON.parse(savedUser));
                 isLoggedIn.value = true;
                 await loadAllData();
+                restorePageContext();
                 return;
               } catch (err) { /* 继续走登录页 */ }
             }
@@ -1204,31 +1864,48 @@ const app = createApp({
       authMode, authForm, authLoading, isLoggedIn, userInfo,
       handleAuth, logout,
       // Nav
-      currentPage,
+      currentPage, navigateTo,
       // Timer（状态机动作合法性 + 自愈秒表）
-      activeSchedule, elapsedSeconds, canAct,
+      activeSchedule, elapsedSeconds, canAct, canStartNow,
       startSchedule, pauseSchedule, resumeSchedule, endSchedule, cancelSchedule,
       formatTimer,
       // Data
       schedules, notifications, mallItems, wardrobe, aiReports,
       // Calendar
       calYear, calMonth, calendarDays, dayHeaders,
-      prevMonth, nextMonth, goToToday, selectCalendarDay,
+      prevMonth, nextMonth, goToToday, selectCalendarDay, openDayInSchedules,
       selectedDaySchedules, selectedDayLabel, selectedDayDate,
       // AI（流式 + Markdown + 双钥匙写权限）
       aiInput, aiMessages, aiLoading, aiSuggestions,
       aiStreaming, aiConversationId, aiWriteEnabled,
       sendAiMessage, aiQuickPrompt, stopAiReply, runSuggestedAction,
-      adoptSuggestion, adoptAllSuggestions,
+      // AI 多日规划（勾选 / 编辑 / 批量采纳）
+      aiGroupedSuggestions, aiPlanRange, aiSelectedIndices, aiEditIndex, aiEditForm,
+      toggleSuggestion, toggleDaySuggestions, toggleAllSuggestions, clearAiSelection,
+      adoptSuggestion, adoptAllSuggestions, adoptSelectedSuggestions,
+      startEditSuggestion, saveSuggestionEdit, cancelSuggestionEdit,
+      // AI 会话持久化
+      conversations, currentConversationId, aiSaving, convSelectedIds,
+      allConversationsChecked, toggleConvSelect, toggleAllConversations,
+      newConversation, switchConversation, renameConversation, deleteConversation,
+      deleteSelectedConversations, clearCurrentConversation,
       // Stats
       stats, todayStats, todaySchedules, upcomingSchedules,
-      filteredSchedules, filteredMallItems,
+      filteredSchedules, groupedSchedules, filteredMallItems,
       trendData, tagStats,
-      // Filters
-      scheduleFilter, mallTab,
+      // Filters（织程日期范围）
+      scheduleFilter, mallTab, applyDatePreset, clearDateFilter,
+      // 织程多选 / 批量删除
+      selectedScheduleIds, allSchedulesChecked, someSchedulesChecked,
+      toggleAllSchedules, toggleScheduleSelect, deleteSelectedSchedules, deletingSchedules,
+      // 织史多选 / 删除
+      selectedReportIds, allReportsChecked, toggleAllReports, toggleReportSelect,
+      deleteReport, deleteSelectedReports, deletingReports,
       // Modals
       showScheduleModal, editingSchedule, scheduleDetail,
       purchaseConfirm, viewingReport, generatingReport,
+      // 统一提示
+      notify, notifyOk, notifyCancel, copyNotifyDetail, toasts, dismissToast,
       // Forms
       scheduleForm, reminderSettings, profileSaved,
       // Mall

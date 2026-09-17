@@ -8,10 +8,14 @@ import com.sorts.ai.dto.AIReportInfo;
 import com.sorts.ai.dto.AISummaryRequest;
 import com.sorts.ai.dto.AdoptPlanRequest;
 import com.sorts.ai.dto.AsyncReportResponse;
+import com.sorts.ai.dto.BatchDeleteRequest;
 import com.sorts.ai.dto.ChatRequest;
 import com.sorts.ai.dto.ChatResponse;
+import com.sorts.ai.dto.ConversationSaveRequest;
+import com.sorts.ai.dto.ConversationVO;
 import com.sorts.ai.dto.PeriodSummaryRequest;
 import com.sorts.ai.service.ChatService;
+import com.sorts.ai.service.ConversationService;
 import com.sorts.ai.service.PlanService;
 import com.sorts.ai.service.ReportService;
 import com.sorts.ai.support.SseStream;
@@ -24,9 +28,11 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -72,6 +78,8 @@ public class AiController {
 
     private final ReportService reportService;
 
+    private final ConversationService conversationService;
+
     private final ToolJsonCodec jsonCodec;
 
     private final Executor aiTaskExecutor;
@@ -79,11 +87,13 @@ public class AiController {
     public AiController(ChatService chatService,
                         PlanService planService,
                         ReportService reportService,
+                        ConversationService conversationService,
                         ToolJsonCodec jsonCodec,
                         @Qualifier(AsyncConfig.AI_EXECUTOR) Executor aiTaskExecutor) {
         this.chatService = chatService;
         this.planService = planService;
         this.reportService = reportService;
+        this.conversationService = conversationService;
         this.jsonCodec = jsonCodec;
         this.aiTaskExecutor = aiTaskExecutor;
     }
@@ -190,6 +200,66 @@ public class AiController {
     public Result<AIReportInfo> report(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
                                        @PathVariable("id") Long id) {
         return Result.success(reportService.get(userId, id));
+    }
+
+    /** 删除指定织史（软删除 + 审计时间） */
+    @DeleteMapping("/reports/{id}")
+    public Result<Void> deleteReport(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
+                                     @PathVariable("id") Long id) {
+        reportService.delete(userId, id);
+        return Result.success();
+    }
+
+    /** 批量删除织史：事务内全部成功或全部失败 */
+    @PostMapping("/reports/batch-delete")
+    public Result<Void> deleteReportsBatch(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
+                                           @Valid @RequestBody BatchDeleteRequest request) {
+        reportService.deleteBatch(userId, request.getIds());
+        return Result.success();
+    }
+
+    // ==================== 会话持久化 ====================
+
+    @GetMapping("/conversations")
+    public Result<PageData<ConversationVO>> conversations(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
+                                                          @RequestParam(value = "page", defaultValue = "1") int page,
+                                                          @RequestParam(value = "pageSize", defaultValue = "20") int pageSize) {
+        return Result.success(conversationService.list(userId, page, pageSize));
+    }
+
+    @PostMapping("/conversations")
+    public Result<ConversationVO> createConversation(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
+                                                     @Valid @RequestBody(required = false) ConversationSaveRequest request) {
+        return Result.success(conversationService.create(userId, request == null ? null : request.getTitle()));
+    }
+
+    @GetMapping("/conversations/{id}")
+    public Result<ConversationVO> conversation(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
+                                               @PathVariable("id") Long id) {
+        return Result.success(conversationService.get(userId, id));
+    }
+
+    /** 全量快照保存：标题 / 消息 / 草稿 / 勾选项 / 最近生成区间 */
+    @PutMapping("/conversations/{id}")
+    public Result<ConversationVO> saveConversation(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
+                                                   @PathVariable("id") Long id,
+                                                   @Valid @RequestBody ConversationSaveRequest request) {
+        return Result.success(conversationService.update(userId, id, request));
+    }
+
+    @DeleteMapping("/conversations/{id}")
+    public Result<Void> deleteConversation(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
+                                           @PathVariable("id") Long id) {
+        conversationService.delete(userId, id);
+        return Result.success();
+    }
+
+    /** 批量删除会话 */
+    @PostMapping("/conversations/batch-delete")
+    public Result<Void> deleteConversationsBatch(@RequestHeader(AuthConstants.HEADER_USER_ID) Long userId,
+                                                 @Valid @RequestBody BatchDeleteRequest request) {
+        conversationService.deleteBatch(userId, request.getIds());
+        return Result.success();
     }
 
     /**

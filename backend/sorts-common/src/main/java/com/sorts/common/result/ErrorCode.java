@@ -28,6 +28,9 @@ public enum ErrorCode {
     METHOD_NOT_ALLOWED(405, "请求方式不被允许"),
     CONFLICT(409, "资源状态冲突"),
 
+    // ========== 41x 业务规则 ==========
+    PLAN_NOT_STARTED(41010, "未到计划开始时间，暂不可开启"),
+
     // ========== 42x 流量控制 ==========
     RATE_LIMITED(429, "操作过于频繁，请稍后再试"),
 

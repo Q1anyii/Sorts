@@ -7,6 +7,7 @@ import com.sorts.ai.dto.AISummaryRequest;
 import com.sorts.ai.dto.ChatRequest;
 import com.sorts.ai.dto.ChatResponse;
 import com.sorts.ai.service.ChatService;
+import com.sorts.ai.service.ConversationService;
 import com.sorts.ai.service.PlanService;
 import com.sorts.ai.service.ReportService;
 import com.sorts.ai.tool.support.ToolJsonCodec;
@@ -44,6 +45,7 @@ class AiControllerMappingTest {
     private final ChatService chatService = mock(ChatService.class);
     private final PlanService planService = mock(PlanService.class);
     private final ReportService reportService = mock(ReportService.class);
+    private final ConversationService conversationService = mock(ConversationService.class);
     private final ToolJsonCodec jsonCodec = new ToolJsonCodec();
 
     private MockMvc mvc;
@@ -53,7 +55,7 @@ class AiControllerMappingTest {
         // 同步执行器：让 SSE 的异步任务在断言前跑完，避免用例偶发
         Executor sameThread = Runnable::run;
         AiController controller =
-                new AiController(chatService, planService, reportService, jsonCodec, sameThread);
+                new AiController(chatService, planService, reportService, conversationService, jsonCodec, sameThread);
         mvc = MockMvcBuilders.standaloneSetup(controller).build();
 
         when(chatService.chat(any(), any(), any())).thenReturn(mock(ChatResponse.class));

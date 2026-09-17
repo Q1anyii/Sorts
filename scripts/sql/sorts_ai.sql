@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS t_ai_report (
     error_msg        VARCHAR(512)  DEFAULT NULL COMMENT '失败原因（status=FAILED 时填写）',
     generated_at     DATETIME      DEFAULT NULL COMMENT '生成完成时间',
     deleted          TINYINT       NOT NULL DEFAULT 0 COMMENT '逻辑删除：0否 1是',
+    deleted_at       DATETIME      DEFAULT NULL COMMENT '逻辑删除时间（删除操作写入，配合 deleted 做审计）',
     created_at       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     -- 报告列表按「用户 + 类型 + 时间倒序」翻页，该索引覆盖
@@ -37,6 +38,24 @@ CREATE TABLE IF NOT EXISTS t_ai_report (
     -- 月度/年度为异步生成，需按「用户 + 类型 + 周期」定位同周期是否已生成
     KEY idx_user_period (user_id, type, period_key)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '周期总结报告表';
+
+-- AI 会话表（梭灵会话持久化：登录用户会话由后端保存，刷新不丢）
+CREATE TABLE IF NOT EXISTS t_ai_conversation (
+    id                    BIGINT        PRIMARY KEY AUTO_INCREMENT COMMENT '会话ID',
+    user_id               BIGINT        NOT NULL COMMENT '所属用户ID',
+    title                 VARCHAR(100)  NOT NULL DEFAULT '新会话' COMMENT '会话标题',
+    messages              MEDIUMTEXT    NOT NULL COMMENT '消息列表 JSON 数组：[{id,role,content,timestamp,structuredData}]',
+    draft                 TEXT          DEFAULT NULL COMMENT '输入框草稿',
+    selected_plan_items   MEDIUMTEXT    DEFAULT NULL COMMENT '已勾选规划项 JSON 数组',
+    last_generated_range  VARCHAR(512)  DEFAULT NULL COMMENT '最近生成区间 JSON：{startDate,endDate}',
+    plan_id               VARCHAR(64)   DEFAULT NULL COMMENT '最近一次规划快照 planId（恢复规划面板）',
+    plan_suggestions      MEDIUMTEXT    DEFAULT NULL COMMENT '最近一次规划的建议快照 JSON 数组',
+    deleted               TINYINT       NOT NULL DEFAULT 0 COMMENT '逻辑删除：0否 1是',
+    created_at            DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at            DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    -- 会话列表按用户 + 更新时间倒序，容量清理按「最旧未更新」删除
+    KEY idx_user_updated (user_id, updated_at)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = 'AI 会话表';
 
 -- AI 日程规划表
 CREATE TABLE IF NOT EXISTS t_schedule_plan (

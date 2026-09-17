@@ -36,4 +36,10 @@ public interface ReportService {
 
     /** 报告详情 */
     AIReportInfo get(Long userId, Long reportId);
+
+    /** 逻辑删除指定织史 */
+    void delete(Long userId, Long reportId);
+
+    /** 批量逻辑删除织史：事务内全部成功或全部失败 */
+    void deleteBatch(Long userId, java.util.List<Long> reportIds);
 }

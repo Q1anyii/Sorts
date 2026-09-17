@@ -26,6 +26,12 @@ public interface ScheduleService {
     /** 逻辑删除日程 */
     void delete(Long userId, Long scheduleId);
 
+    /**
+     * 批量逻辑删除：事务内逐条软删除，任意一条不存在/越权即整体回滚，
+     * 保证全部成功或全部失败。
+     */
+    void deleteBatch(Long userId, java.util.List<Long> scheduleIds);
+
     /** 查询详情（含属主校验） */
     ScheduleVO get(Long userId, Long scheduleId);
 

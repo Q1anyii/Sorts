@@ -49,18 +49,34 @@ public final class AiPrompts {
     }
 
     /**
-     * 规划生成的用户提示。
-     *
-     * <p>关键约束是「只输出 JSON」与「时间不重叠」：前者保证可解析，
-     * 后者是模型最容易忽略、而用户一眼就能看出错的地方。</p>
-     *
-     * <p>参数刻意用原子值而不是 {@code PlanPreferences}：提示词构造属于领域内层的表达，
-     * 不该反向依赖外层的传输对象，否则 DTO 一改就要动提示词（而提示词是最不该被随手改的东西）。</p>
+     * 规划生成的用户提示（单日：兼容旧调用，等价于 start=end=targetDate 的多日版本）。
      */
     public static String planPrompt(String userPrompt, LocalDate targetDate,
                                     int startHour, int endHour, int defaultDuration) {
+        return planPrompt(userPrompt, targetDate, targetDate, startHour, endHour, defaultDuration);
+    }
+
+    /**
+     * 规划生成的用户提示（多日：覆盖 [start, end] 闭区间）。
+     *
+     * <p>关键约束：日期由服务端注入（今天是几号、允许落在哪几天），模型不得自行推断；
+     * 每条建议必须带 {@code date}；多日时按天均匀分布，不允许把整周计划堆在一天。</p>
+     */
+    public static String planPrompt(String userPrompt, LocalDate start, LocalDate end,
+                                    int startHour, int endHour, int defaultDuration) {
+        LocalDate today = LocalDate.now();
+        boolean multiDay = !start.equals(end);
+        String dateRule = multiDay
+                ? """
+                  - 每天 2-5 条，按天均匀分布，禁止把整周计划全部堆在第一天；
+                  - 建议总条数控制在 7-30 条，覆盖从 %s 到 %s 的每一天。
+                  """.formatted(start.format(DAY), end.format(DAY))
+                : """
+                  - 共 3-8 条，全部安排在 %s 这一天。
+                  """.formatted(start.format(DAY));
         return """
-                目标日期：%s
+                今天是 %s（服务器时间）。
+                目标日期区间：%s 至 %s（含首尾两天）。
                 可安排时段：%02d:00 - %02d:00
                 用户未说明时长时，单条按 %d 分钟安排。
 
@@ -71,16 +87,21 @@ public final class AiPrompts {
 
                 请把描述拆解为具体的日程建议。严格只输出一个 JSON 对象，不要输出解释文字，
                 不要使用 Markdown 代码块包裹：
-                {"suggestions":[{"title":"日程标题","description":"简短说明","suggestedStart":"HH:mm",
-                "duration":60,"priority":"MEDIUM","tags":["标签"],"reason":"这样安排的理由"}]}
+                {"suggestions":[{"date":"yyyy-MM-dd","title":"日程标题","description":"简短说明",
+                "suggestedStart":"HH:mm","duration":60,"priority":"MEDIUM","tags":["标签"],"reason":"这样安排的理由"}]}
 
                 硬性要求：
-                - suggestions 为 3-8 条，按 suggestedStart 升序排列；
+                - 每条建议必须给出 date，格式 yyyy-MM-dd，且只能落在上述目标日期区间内；
+                - %s；
                 - suggestedStart 必须是 HH:mm（24 小时制），且全部落在可安排时段内；
-                - 相邻两条时间不得重叠，请为转场预留余量；
+                - 同一天内相邻两条时间不得重叠，请为转场预留余量；
                 - duration 为分钟整数；priority 只能是 LOW、MEDIUM、HIGH 之一；
                 - title 不超过 30 字，直接说做什么，不要出现「建议」「可能」等字样。
-                """.formatted(targetDate.format(DAY), startHour, endHour, defaultDuration, userPrompt);
+                """.formatted(today.format(DAY), start.format(DAY), end.format(DAY),
+                startHour, endHour, defaultDuration, userPrompt,
+                multiDay
+                        ? "今天是 " + today.format(DAY) + "，也在区间内，可正常安排任务"
+                        : "今天是 " + today.format(DAY) + "，是唯一可安排的一天");
     }
 
     /** 周期总结的系统提示 */

@@ -64,10 +64,19 @@ public class TimerServiceImpl implements TimerService {
         assertNoOtherRunning(userId, scheduleId);
 
         LocalDateTime now = LocalDateTime.now();
+        // 开启规则：首次开梭（尚未产生任何实际开始时间）且未到计划开始时间 → 拒绝。
+        // 用服务器本地时间（容器 TZ=Asia/Shanghai）做唯一权威，客户端时间篡改无效；
+        // PAUSED 恢复不受此限——该计划此前已开始过，恢复不产生新的开启语义。
+        if (schedule.getActualStartTime() == null && schedule.getPlannedStartTime() != null
+                && now.isBefore(schedule.getPlannedStartTime())) {
+            throw new BizException(ErrorCode.PLAN_NOT_STARTED,
+                    "未到计划开始时间（" + schedule.getPlannedStartTime() + "），暂不可开启");
+        }
         if (schedule.getActualStartTime() == null) {
             schedule.setActualStartTime(now);
         }
         schedule.setStatus(ScheduleStatus.IN_PROGRESS.name());
+        schedule.setLastOperatorId(userId);
         scheduleMapper.updateById(schedule);
         openSegment(userId, scheduleId, now);
         return ScheduleVO.from(schedule);
@@ -83,6 +92,7 @@ public class TimerServiceImpl implements TimerService {
         }
         settleSegment(userId, schedule, LocalDateTime.now());
         schedule.setStatus(ScheduleStatus.PAUSED.name());
+        schedule.setLastOperatorId(userId);
         scheduleMapper.updateById(schedule);
         return ScheduleVO.from(schedule);
     }
@@ -99,6 +109,7 @@ public class TimerServiceImpl implements TimerService {
 
         LocalDateTime now = LocalDateTime.now();
         schedule.setStatus(ScheduleStatus.IN_PROGRESS.name());
+        schedule.setLastOperatorId(userId);
         scheduleMapper.updateById(schedule);
         openSegment(userId, scheduleId, now);
         return ScheduleVO.from(schedule);
@@ -118,6 +129,7 @@ public class TimerServiceImpl implements TimerService {
         }
         schedule.setActualEndTime(now);
         schedule.setStatus(ScheduleStatus.COMPLETED.name());
+        schedule.setLastOperatorId(userId);
         scheduleMapper.updateById(schedule);
 
         // 落梭奖励（失败仅告警，不回滚主流程）
@@ -139,6 +151,7 @@ public class TimerServiceImpl implements TimerService {
         }
         activeTimerStore.clearSegment(userId, scheduleId);
         schedule.setStatus(ScheduleStatus.CANCELLED.name());
+        schedule.setLastOperatorId(userId);
         scheduleMapper.updateById(schedule);
         return ScheduleVO.from(schedule);
     }

@@ -133,6 +133,32 @@ public class ReportServiceImpl implements ReportService {
         return assembler.toInfo(report);
     }
 
+    @Override
+    public void delete(Long userId, Long reportId) {
+        int affected = reportMapper.softDeleteOwned(userId, reportId);
+        if (affected != 1) {
+            throw new BizException(ErrorCode.NOT_FOUND, "报告不存在或无权删除");
+        }
+        log.info("删除织史 userId={}, reportId={}", userId, reportId);
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+    public void deleteBatch(Long userId, List<Long> reportIds) {
+        if (reportIds == null || reportIds.isEmpty()) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "请选择要删除的织史");
+        }
+        List<Long> distinct = reportIds.stream().distinct().toList();
+        if (distinct.size() > 200) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "单次最多删除 200 条织史");
+        }
+        int affected = reportMapper.softDeleteBatchOwned(userId, distinct);
+        if (affected != distinct.size()) {
+            throw new BizException(ErrorCode.NOT_FOUND, "部分织史不存在或无权删除，已整体回滚");
+        }
+        log.info("批量删除织史 userId={}, count={}", userId, distinct.size());
+    }
+
     /**
      * 落一条 GENERATING 记录 → 提交异步任务 → 立即返回 reportId。
      *

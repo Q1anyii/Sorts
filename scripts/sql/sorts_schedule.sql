@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS t_schedule (
     tags               VARCHAR(255) DEFAULT NULL COMMENT '标签，逗号分隔（如：学习,Java）',
     color              VARCHAR(16)  DEFAULT NULL COMMENT '显示颜色（十六进制）',
     deleted            TINYINT      NOT NULL DEFAULT 0 COMMENT '逻辑删除：0否 1是',
+    deleted_at         DATETIME     DEFAULT NULL COMMENT '逻辑删除时间（删除操作写入，配合 deleted 做审计）',
+    last_operator_id   BIGINT       DEFAULT NULL COMMENT '最近一次计时状态变更的操作人（网关 X-User-Id）',
     created_at         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     -- 列表 / 日历 / 统计都以「用户 + 计划时间」为入口，覆盖索引避免回表排序

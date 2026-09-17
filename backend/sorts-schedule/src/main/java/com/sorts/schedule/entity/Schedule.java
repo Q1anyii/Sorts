@@ -61,6 +61,12 @@ public class Schedule {
 
     private Integer deleted;
 
+    /** 逻辑删除时间（删除操作写入，配合 deleted 做审计） */
+    private LocalDateTime deletedAt;
+
+    /** 最近一次计时状态变更的操作人（网关 X-User-Id，写操作审计） */
+    private Long lastOperatorId;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

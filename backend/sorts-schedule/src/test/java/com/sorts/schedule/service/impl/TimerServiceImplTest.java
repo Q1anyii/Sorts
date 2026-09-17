@@ -321,4 +321,59 @@ class TimerServiceImplTest {
         record.setDuration(seconds);
         return record;
     }
+
+    // ================= 开启规则：未到计划开始时间禁止开梭（41010） =================
+
+    @Test
+    @DisplayName("start：未到计划开始时间时，即使状态为 PENDING 也拒绝（服务端权威校验）")
+    void startRejectsBeforePlannedStartTime() {
+        schedule.setPlannedStartTime(LocalDateTime.now().plusHours(1));
+
+        BizException e = assertThrows(BizException.class, () -> timerService.start(USER_ID, SCHEDULE_ID));
+
+        assertEquals(41010, e.getCode());
+        assertTrue(e.getMessage().contains("未到计划开始时间"));
+        // 不允许产生任何计时副作用
+        verify(timeRecordMapper, never()).insert(ArgumentMatchers.<TimeRecord>any());
+        verify(scheduleMapper, never()).updateById(any(Schedule.class));
+    }
+
+    @Test
+    @DisplayName("start：到达计划开始时间（含已过时）允许开梭")
+    void startAllowedAfterPlannedStartTime() {
+        schedule.setPlannedStartTime(LocalDateTime.now().minusMinutes(1));
+
+        ScheduleVO vo = timerService.start(USER_ID, SCHEDULE_ID);
+
+        assertEquals(ScheduleStatus.IN_PROGRESS.name(), vo.getStatus());
+        assertNotNull(schedule.getActualStartTime());
+        verify(timeRecordMapper).insert(ArgumentMatchers.<TimeRecord>any());
+    }
+
+    @Test
+    @DisplayName("start：计划开始时间为空时不限制（向后兼容老数据）")
+    void startAllowedWhenNoPlannedTime() {
+        assertEquals(ScheduleStatus.IN_PROGRESS.name(), timerService.start(USER_ID, SCHEDULE_ID).getStatus());
+    }
+
+    @Test
+    @DisplayName("start：PAUSED 续梭不受开始时间限制（此前已开始过，不产生新的开启语义）")
+    void resumeNotRestrictedByPlannedStartTime() {
+        schedule.setStatus(ScheduleStatus.PAUSED.name());
+        schedule.setActualStartTime(LocalDateTime.now().minusHours(1));
+        schedule.setPlannedStartTime(LocalDateTime.now().plusHours(1));
+
+        assertEquals(ScheduleStatus.IN_PROGRESS.name(), timerService.resume(USER_ID, SCHEDULE_ID).getStatus());
+    }
+
+    @Test
+    @DisplayName("状态机动作：写入操作人（审计字段）")
+    void stateChangesRecordOperator() {
+        timerService.start(USER_ID, SCHEDULE_ID);
+        assertEquals(USER_ID, schedule.getLastOperatorId());
+
+        schedule.setStatus(ScheduleStatus.IN_PROGRESS.name());
+        timerService.pause(USER_ID, SCHEDULE_ID);
+        assertEquals(USER_ID, schedule.getLastOperatorId());
+    }
 }

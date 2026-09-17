@@ -58,6 +58,9 @@ public class AiReport {
     /** 逻辑删除：0否 1是（全局配置生效，无需注解） */
     private Integer deleted;
 
+    /** 逻辑删除时间（删除操作写入，配合 deleted 做审计） */
+    private LocalDateTime deletedAt;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

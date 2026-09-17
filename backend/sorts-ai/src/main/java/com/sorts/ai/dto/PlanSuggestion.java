@@ -10,8 +10,9 @@ import java.util.List;
 /**
  * 单条规划建议（对应 api-spec.json 的 AIPlanResponse.suggestions 项）。
  *
- * <p>{@code suggestedStart} 只有时分（HH:mm），日期由规划的目标日期决定——
- * 这样模型不必处理「今天是几号」，也就不会算错日期。</p>
+ * <p>{@code suggestedStart} 只有时分（HH:mm）。多日规划时由模型按注入的
+ * 「今天是几号 + 允许区间」自行输出 {@code date}（yyyy-MM-dd）；
+ * 单日规划可缺省 {@code date}，回落到规划的 targetDate。</p>
  *
  * @author sorts
  */
@@ -20,6 +21,9 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PlanSuggestion {
+
+    /** 建议日期 yyyy-MM-dd（多日规划必填；单日规划缺省时回落到计划目标日期） */
+    private String date;
 
     private String title;
 

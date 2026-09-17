@@ -10,6 +10,9 @@ import java.util.List;
 /**
  * AI 规划生成响应（对应 api-spec.json 的 AIPlanResponse）。
  *
+ * <p>{@code range} 描述本次规划覆盖的日期区间（单日规划 startDate=endDate），
+ * 前端据此按天分组展示。</p>
+ *
  * @author sorts
  */
 @Data
@@ -21,6 +24,9 @@ public class AIPlanResponse {
     private String planId;
 
     private List<PlanSuggestion> suggestions;
+
+    /** 规划覆盖的日期区间（yyyy-MM-dd） */
+    private PlanRange range;
 
     /** 是否已被采纳 */
     private Boolean adopted;

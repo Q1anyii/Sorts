@@ -28,7 +28,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -146,13 +148,14 @@ class ScheduleServiceImplTest {
     }
 
     @Test
-    @DisplayName("delete：走逻辑删除而非物理删除")
+    @DisplayName("delete：走自定义软删除 UPDATE（属主条件一次完成），而非物理删除")
     void deleteUsesLogicDelete() {
-        when(scheduleMapper.selectById(100L)).thenReturn(owned);
+        when(scheduleMapper.softDeleteOwned(USER_ID, 100L)).thenReturn(1);
 
         scheduleService.delete(USER_ID, 100L);
 
-        verify(scheduleMapper).deleteById(100L);
+        // 不再走 selectById + deleteById 两段式，避免中间态
+        verify(scheduleMapper).softDeleteOwned(USER_ID, 100L);
     }
 
     @Test
@@ -312,5 +315,65 @@ class ScheduleServiceImplTest {
         when(scheduleMapper.selectList(any())).thenReturn(List.of());
         assertTrue(scheduleService.listReminderCandidates(
                 LocalDateTime.now(), LocalDateTime.now().plusMinutes(30), 10).isEmpty());
+    }
+
+    // ================= 删除：单条 + 批量（软删除 + 属主校验 + 整体回滚） =================
+
+    @Test
+    @DisplayName("delete：命中属主时软删除成功")
+    void deleteSucceedsWhenOwned() {
+        when(scheduleMapper.softDeleteOwned(USER_ID, 100L)).thenReturn(1);
+        scheduleService.delete(USER_ID, 100L);
+        verify(scheduleMapper).softDeleteOwned(USER_ID, 100L);
+    }
+
+    @Test
+    @DisplayName("delete：不属于该用户或已删除时抛 NOT_FOUND，不静默")
+    void deleteThrowsNotFoundWhenNotOwned() {
+        when(scheduleMapper.softDeleteOwned(USER_ID, 100L)).thenReturn(0);
+        BizException ex = assertThrows(BizException.class, () -> scheduleService.delete(USER_ID, 100L));
+        assertEquals(404, ex.getCode());
+        assertTrue(ex.getMessage().contains("日程不存在"));
+    }
+
+    @Test
+    @DisplayName("deleteBatch：全部命中时一次性软删除")
+    void deleteBatchSucceedsWhenAllOwned() {
+        when(scheduleMapper.softDeleteBatchOwned(eq(USER_ID), anyList())).thenReturn(2);
+        scheduleService.deleteBatch(USER_ID, List.of(1L, 2L));
+        verify(scheduleMapper).softDeleteBatchOwned(eq(USER_ID), eq(List.of(1L, 2L)));
+    }
+
+    @Test
+    @DisplayName("deleteBatch：空选择直接拒绝，不触碰数据库")
+    void deleteBatchRejectsEmptySelection() {
+        assertThrows(BizException.class, () -> scheduleService.deleteBatch(USER_ID, List.of()));
+        verify(scheduleMapper, never()).softDeleteBatchOwned(anyLong(), anyList());
+    }
+
+    @Test
+    @DisplayName("deleteBatch：超过 200 条上限直接拒绝")
+    void deleteBatchRejectsOverLimit() {
+        List<Long> ids = java.util.stream.IntStream.rangeClosed(1, 201).mapToObj(Long::valueOf).toList();
+        BizException ex = assertThrows(BizException.class, () -> scheduleService.deleteBatch(USER_ID, ids));
+        assertTrue(ex.getMessage().contains("200"));
+        verify(scheduleMapper, never()).softDeleteBatchOwned(anyLong(), anyList());
+    }
+
+    @Test
+    @DisplayName("deleteBatch：部分记录不存在或无权时整体回滚（全部成功或全部失败）")
+    void deleteBatchRollsBackWhenAffectedMismatch() {
+        when(scheduleMapper.softDeleteBatchOwned(eq(USER_ID), anyList())).thenReturn(1);
+        BizException ex = assertThrows(BizException.class,
+                () -> scheduleService.deleteBatch(USER_ID, List.of(1L, 2L)));
+        assertTrue(ex.getMessage().contains("整体回滚"));
+    }
+
+    @Test
+    @DisplayName("deleteBatch：重复 id 先去重，避免影响行数误判")
+    void deleteBatchDistinctsIds() {
+        when(scheduleMapper.softDeleteBatchOwned(eq(USER_ID), anyList())).thenReturn(2);
+        scheduleService.deleteBatch(USER_ID, List.of(1L, 1L, 2L));
+        verify(scheduleMapper).softDeleteBatchOwned(eq(USER_ID), eq(List.of(1L, 2L)));
     }
 }

@@ -20,4 +20,10 @@ public class AdoptPlanRequest {
     private List<Integer> selectedIndices;
 
     private PlanAdjustments adjustments;
+
+    /**
+     * 逐条覆盖（前端编辑后采纳）：按下标覆盖标题 / 开始时间 / 时长；
+     * 未覆盖的字段保持模型原值。
+     */
+    private List<PlanOverride> overrides;
 }

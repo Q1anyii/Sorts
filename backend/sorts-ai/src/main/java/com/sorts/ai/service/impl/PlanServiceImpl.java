@@ -12,7 +12,9 @@ import com.sorts.ai.dto.AIPlanRequest;
 import com.sorts.ai.dto.AIPlanResponse;
 import com.sorts.ai.dto.AdoptPlanRequest;
 import com.sorts.ai.dto.PlanAdjustments;
+import com.sorts.ai.dto.PlanOverride;
 import com.sorts.ai.dto.PlanPreferences;
+import com.sorts.ai.dto.PlanRange;
 import com.sorts.ai.dto.PlanSuggestion;
 import com.sorts.ai.entity.SchedulePlan;
 import com.sorts.ai.enums.PlanStatus;
@@ -24,6 +26,7 @@ import com.sorts.ai.mapper.SchedulePlanMapper;
 import com.sorts.ai.service.PlanService;
 import com.sorts.ai.support.AiPrompts;
 import com.sorts.ai.support.JsonPayloads;
+import com.sorts.ai.support.PlanRangeDetector;
 import com.sorts.ai.tool.support.DateTimes;
 import com.sorts.ai.tool.support.Results;
 import com.sorts.ai.tool.support.ToolJsonCodec;
@@ -38,7 +41,9 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -66,8 +71,8 @@ public class PlanServiceImpl implements PlanService {
     /** 规划有效期：一天。日程规划有强时效，隔天采纳往往已与实际情况冲突 */
     private static final int VALID_HOURS = 24;
 
-    /** 单次采纳上限，与下游批量接口一致 */
-    private static final int MAX_ADOPT = 20;
+    /** 单次采纳上限，与下游批量接口一致；多日规划（最多 7 天 × 每日上限）放宽到 40 */
+    private static final int MAX_ADOPT = 40;
 
     /** 用户未指定时间偏好时的默认可安排时段与时长 */
     private static final int DEFAULT_START_HOUR = 9;
@@ -89,9 +94,22 @@ public class PlanServiceImpl implements PlanService {
     @Override
     public AIPlanResponse generate(Long userId, AIPlanRequest request, boolean stream, Consumer<String> onDelta) {
         requireConfigured();
-        LocalDate targetDate = request.getTargetDate() == null
-                ? LocalDate.now().plusDays(1)
-                : request.getTargetDate();
+        LocalDate today = LocalDate.now();
+        // 相对时间范围解析：服务端注入「今天是几号 + 允许区间」，模型不得自行推断日期
+        PlanRangeDetector.Range detected = PlanRangeDetector.parse(request.getUserPrompt(), today);
+        LocalDate startDate;
+        LocalDate endDate;
+        if (detected.matched()) {
+            startDate = detected.startDate();
+            endDate = detected.endDate();
+        } else {
+            LocalDate target = request.getTargetDate() == null ? today.plusDays(1) : request.getTargetDate();
+            startDate = target;
+            endDate = target;
+        }
+        if (startDate.isAfter(endDate)) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "规划日期区间非法：起始日期晚于结束日期");
+        }
         PlanPreferences preferences = request.getPreferences();
         int startHour = preferences == null || preferences.getPreferredStartHour() == null
                 ? DEFAULT_START_HOUR : preferences.getPreferredStartHour();
@@ -102,7 +120,7 @@ public class PlanServiceImpl implements PlanService {
 
         List<ChatMessage> messages = List.of(
                 ChatMessage.system(AiPrompts.planSystem()),
-                ChatMessage.user(AiPrompts.planPrompt(request.getUserPrompt(), targetDate,
+                ChatMessage.user(AiPrompts.planPrompt(request.getUserPrompt(), startDate, endDate,
                         startHour, endHour, defaultDuration)));
 
         ChatCompletionRequest completion = new ChatCompletionRequest();
@@ -121,6 +139,12 @@ public class PlanServiceImpl implements PlanService {
         }
 
         List<PlanSuggestion> suggestions = parseSuggestions(result.getContent());
+        // 越界/缺省日期：单日规划补 targetDate；多日规划剔除越界项（宁可少给，不可把日程排错天）
+        LocalDate planStart = startDate;
+        LocalDate planEnd = endDate;
+        suggestions = suggestions.stream()
+                .filter(s -> normalizeSuggestionDate(s, planStart, planEnd))
+                .toList();
         if (suggestions.isEmpty()) {
             throw new BizException(ErrorCode.SERVICE_UNAVAILABLE,
                     "梭灵没能给出可用的规划建议，请把安排说得再具体一些（时间、事项、时长）");
@@ -129,7 +153,7 @@ public class PlanServiceImpl implements PlanService {
         SchedulePlan plan = new SchedulePlan();
         plan.setPlanId(UUID.randomUUID().toString());
         plan.setUserId(userId);
-        plan.setTargetDate(targetDate);
+        plan.setTargetDate(startDate);
         plan.setUserPrompt(request.getUserPrompt());
         plan.setSuggestions(jsonCodec.write(suggestions));
         plan.setStatus(PlanStatus.DRAFT);
@@ -140,9 +164,35 @@ public class PlanServiceImpl implements PlanService {
         return AIPlanResponse.builder()
                 .planId(plan.getPlanId())
                 .suggestions(suggestions)
+                .range(PlanRange.builder().startDate(startDate).endDate(endDate).build())
                 .adopted(Boolean.FALSE)
                 .createdScheduleIds(List.of())
                 .build();
+    }
+
+    /**
+     * 规整建议的日期：无 date 时补计划起始日；date 不在 [start, end] 闭区间内则剔除。
+     *
+     * @return true 表示保留该条建议
+     */
+    private boolean normalizeSuggestionDate(PlanSuggestion suggestion, LocalDate start, LocalDate end) {
+        if (suggestion.getDate() == null || suggestion.getDate().isBlank()) {
+            suggestion.setDate(start.toString());
+            return true;
+        }
+        LocalDate date;
+        try {
+            date = LocalDate.parse(suggestion.getDate().trim());
+        } catch (Exception e) {
+            log.warn("规划建议日期无法解析，已剔除：{}", suggestion.getDate());
+            return false;
+        }
+        if (date.isBefore(start) || date.isAfter(end)) {
+            log.warn("规划建议日期超出允许区间（{} ~ {}），已剔除：{}", start, end, date);
+            return false;
+        }
+        suggestion.setDate(date.toString());
+        return true;
     }
 
     @Override
@@ -180,8 +230,11 @@ public class PlanServiceImpl implements PlanService {
         int offsetMinutes = adjustments != null && adjustments.getStartOffset() != null
                 ? adjustments.getStartOffset() : 0;
 
+        // 逐条覆盖（前端编辑后回传）：越界下标直接拒绝，防止静默改错条目
+        List<PlanSuggestion> finalized = applyOverrides(selected, request.getOverrides());
+
         List<ScheduleSaveDto> payload = new ArrayList<>();
-        for (PlanSuggestion suggestion : selected) {
+        for (PlanSuggestion suggestion : finalized) {
             payload.add(toRequest(suggestion, date, offsetMinutes));
         }
 
@@ -201,13 +254,14 @@ public class PlanServiceImpl implements PlanService {
     /**
      * 建议 → 日程创建请求。
      *
-     * <p>{@code suggestedStart} 只有时分，日期由这里补上——模型不接触日期就不会算错日期。
-     * 缺省开始时间兜到 09:00，避免因为模型漏字段就整批失败。</p>
+     * <p>日期优先级：建议自带 {@code date}（多日规划）→ 采纳时 adjustments.date
+     * → 规划的 targetDate。{@code suggestedStart} 只有时分，日期由这里补全。</p>
      */
-    private ScheduleSaveDto toRequest(PlanSuggestion suggestion, LocalDate date, int offsetMinutes) {
+    private ScheduleSaveDto toRequest(PlanSuggestion suggestion, LocalDate fallbackDate, int offsetMinutes) {
         ScheduleSaveDto dto = new ScheduleSaveDto();
         dto.setTitle(StringUtils.hasText(suggestion.getTitle()) ? suggestion.getTitle() : "未命名日程");
         dto.setDescription(suggestion.getDescription());
+        LocalDate date = parseSuggestionDate(suggestion.getDate(), fallbackDate);
         LocalDateTime start = DateTimes.atTimeOn(date, suggestion.getSuggestedStart());
         if (start == null) {
             start = date.atTime(9, 0);
@@ -218,6 +272,49 @@ public class PlanServiceImpl implements PlanService {
         dto.setPriority(normalizePriority(suggestion.getPriority()));
         dto.setTags(suggestion.getTags());
         return dto;
+    }
+
+    private LocalDate parseSuggestionDate(String date, LocalDate fallback) {
+        if (date == null || date.isBlank()) {
+            return fallback;
+        }
+        try {
+            return LocalDate.parse(date.trim());
+        } catch (Exception e) {
+            return fallback;
+        }
+    }
+
+    /** 应用逐条覆盖；覆盖下标越界即整体拒绝 */
+    private List<PlanSuggestion> applyOverrides(List<PlanSuggestion> suggestions,
+                                                List<PlanOverride> overrides) {
+        if (overrides == null || overrides.isEmpty()) {
+            return suggestions;
+        }
+        Map<Integer, PlanOverride> byIndex = new HashMap<>();
+        for (PlanOverride override : overrides) {
+            if (override.getIndex() == null || override.getIndex() < 0
+                    || override.getIndex() >= suggestions.size()) {
+                throw new BizException(ErrorCode.PARAM_ERROR, "覆盖项下标超出范围：" + override.getIndex());
+            }
+            byIndex.put(override.getIndex(), override);
+        }
+        List<PlanSuggestion> result = new ArrayList<>(suggestions);
+        for (Map.Entry<Integer, PlanOverride> entry : byIndex.entrySet()) {
+            PlanSuggestion suggestion = result.get(entry.getKey());
+            PlanOverride override = entry.getValue();
+            if (StringUtils.hasText(override.getTitle())) {
+                suggestion.setTitle(override.getTitle().trim());
+            }
+            if (StringUtils.hasText(override.getSuggestedStart())
+                    && DateTimes.atTimeOn(LocalDate.now(), override.getSuggestedStart()) != null) {
+                suggestion.setSuggestedStart(override.getSuggestedStart().trim());
+            }
+            if (override.getDuration() != null && override.getDuration() > 0) {
+                suggestion.setDuration(override.getDuration());
+            }
+        }
+        return result;
     }
 
     /** 规划只产出 LOW/MEDIUM/HIGH；落到日程侧统一映射到合法的四档枚举 */

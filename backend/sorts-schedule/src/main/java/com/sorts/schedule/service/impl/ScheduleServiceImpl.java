@@ -118,11 +118,30 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     public void delete(Long userId, Long scheduleId) {
-        requireOwned(userId, scheduleId);
-        // 交给 MyBatis-Plus 逻辑删除：生成 UPDATE ... SET deleted = 1，数据可追溯。
-        // 注意不能自己 setDeleted(1) 再 updateById——逻辑删除字段会被排除在 SET 之外。
-        scheduleMapper.deleteById(scheduleId);
+        // 自定义 UPDATE 一次完成：属主校验 + deleted=1 + 审计时间，避免两步操作留中间态
+        int affected = scheduleMapper.softDeleteOwned(userId, scheduleId);
+        if (affected != 1) {
+            throw new BizException(ErrorCode.NOT_FOUND, "日程不存在");
+        }
         log.info("删除日程 userId={}, scheduleId={}", userId, scheduleId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteBatch(Long userId, List<Long> scheduleIds) {
+        if (scheduleIds == null || scheduleIds.isEmpty()) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "请选择要删除的日程");
+        }
+        List<Long> distinct = scheduleIds.stream().distinct().toList();
+        if (distinct.size() > 200) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "单次最多删除 200 条日程");
+        }
+        int affected = scheduleMapper.softDeleteBatchOwned(userId, distinct);
+        // 影响行数 < 请求数说明存在不属于该用户或已删除的记录：整体回滚，全部成功或全部失败
+        if (affected != distinct.size()) {
+            throw new BizException(ErrorCode.NOT_FOUND, "部分日程不存在或无权删除，已整体回滚");
+        }
+        log.info("批量删除日程 userId={}, count={}", userId, distinct.size());
     }
 
     @Override
