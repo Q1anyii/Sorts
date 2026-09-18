@@ -1,7 +1,7 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
+!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="E09O6BDP3yfxHXHR7Hxeqf">
+<head data-page-node-id="Yau97ttRthGjknegacsQny">
+<meta charset="UTF-8" data-page-node-id="KNgm4hF1G6iqYtBMh86GK7">
 <title>梭子 SORTS · 整体架构图</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -111,208 +111,208 @@
   .legend .dot { width: 9px; height: 9px; border-radius: 2px; border: 1.2px solid; }
 </style>
 </head>
-<body>
+<body data-page-node-id="FPwpvKhUSFLGWd2601MCNx">
 
-<div class="header">
-  <h1>梭子 SORTS · 整体架构图</h1>
-  <span class="meta">Spring Boot 3.3.4 · Spring Cloud 2023.0.3 · Spring Cloud Alibaba 2023.0.3.2 · 微服务 · 2026-09</span>
+<div class="header" data-page-node-id="78VL1iSjm0meEAhVYyTzzP">
+  <h1 data-page-node-id="0cKI8k9USdF4tC89PhfQGB">梭子 SORTS · 整体架构图</h1>
+  <span class="meta" data-page-node-id="meLPxHCm4PCA3PShvzXLfN">Spring Boot 3.3.4 · Spring Cloud 2023.0.3 · Spring Cloud Alibaba 2023.0.3.2 · 微服务 · 2026-09</span>
 </div>
-<div class="tagline">
-  「<b>光阴似箭，日月如梭</b>」—— 把时间当作织机：一次专注是「<b>开梭 → 续梭 → 落梭</b>」，一条日程是一根线，织出的是自己的织锦。<br>
-  请求统一经网关鉴权限流后分发；服务间走 OpenFeign + <b>X-Internal-Token</b>，<b>禁止跨库直连</b>。
+<div class="tagline" data-page-node-id="eKsoOtkMzCKeBt41VWPFQD">
+  「<b data-page-node-id="6CPwtHpwYzKqnAoYRe9uDp">光阴似箭，日月如梭</b>」—— 把时间当作织机：一次专注是「<b data-page-node-id="J7HKyMF0YvhvF5jZ3jRO6r">开梭 → 续梭 → 落梭</b>」，一条日程是一根线，织出的是自己的织锦。<br data-page-node-id="sjBiHGCHkHFpkeUndzNeTp">
+  请求统一经网关鉴权限流后分发；服务间走 OpenFeign + <b data-page-node-id="wUE53nFvEz4WUElrYPA5aD">X-Internal-Token</b>，<b data-page-node-id="t3fTqlXxuKfqnTToj2BliW">禁止跨库直连</b>。
 </div>
 
 <!-- L1 接入层 -->
-<div class="layer l1">
-  <div class="layer-title"><span class="num">L1</span>接入层 <span class="sub">浏览器 → Nginx</span></div>
-  <div class="row">
-    <div class="box" style="flex:1.15">
-      <div class="bt">客户端 SPA · 织机界面</div>
-      <div class="bl">Vue 3.5 + Vite 6 + Pinia 3<br>运行态：index.html 模板 + <em>src/legacy/app-logic.ts</em><br>10 页：今日经纬 / 织历 / 织程 / 主线·主计划 / 梭灵 / 梭影报告 / 纹谱 / 锦市 / 飞鸽传书 / 云裳阁</div>
-      <div class="chips"><span class="chip cool">axios 1.8</span><span class="chip cool">marked 12</span><span class="chip cool">highlight.js 11</span><span class="chip cool">vue-router 4</span></div>
+<div class="layer l1" data-page-node-id="OVB04beWqm3p8EDajNKvdz">
+  <div class="layer-title" data-page-node-id="AlZXjX8t3ZEfHZDJzAIHmv"><span class="num" data-page-node-id="w2a0u7ReXPimqZ6LvihWBr">L1</span>接入层 <span class="sub" data-page-node-id="aGqXDHtfLhx2ojZKg8gGti">浏览器 → Nginx</span></div>
+  <div class="row" data-page-node-id="ZpWzIE3eWIf8S1t0R5H2p9">
+    <div class="box" style="flex:1.15" data-page-node-id="JlTAAyBmEKBWssKfvyMqDo">
+      <div class="bt" data-page-node-id="hwvESwWPTqTFc5cF3DC5e4">客户端 SPA · 织机界面</div>
+      <div class="bl" data-page-node-id="17ERXsX4jo5NbaeMSvTPsa">Vue 3.5 + Vite 6 + Pinia 3<br data-page-node-id="h7VXIlQHyUb6icfRUJe5s4">运行态：index.html 模板 + <em data-page-node-id="Tu6URE3Gl5gzdPADgyh51w">src/legacy/app-logic.ts</em><br data-page-node-id="ESPKjrfYep9gS9zjBk2a5B">10 页：今日经纬 / 织历 / 织程 / 主线·主计划 / 梭灵 / 梭影报告 / 纹谱 / 锦市 / 飞鸽传书 / 云裳阁</div>
+      <div class="chips" data-page-node-id="E1pq3ORdzDXacEtnsLP8kF"><span class="chip cool" data-page-node-id="uJVQu0iAZXwrLcXVcEJg1H">axios 1.8</span><span class="chip cool" data-page-node-id="xRKjzYh0libZiBCzGXDvGv">marked 12</span><span class="chip cool" data-page-node-id="S8xPZOgIS9FBZ5yZnbXGab">highlight.js 11</span><span class="chip cool" data-page-node-id="Mz1iyBNMUADT6yJZ7OpuDa">vue-router 4</span></div>
     </div>
-    <div class="box" style="flex:.62">
-      <div class="bt">Nginx 1.27 <span style="font-weight:400;color:#8b949e">:8088</span></div>
-      <div class="bl">静态托管 dist + SPA 兜底<br><em>resolver 127.0.0.11</em>（动态 DNS）<br><i>proxy_buffering off</i>（SSE 不缓冲）</div>
-      <div class="chips"><span class="chip warm">/api/ 反代网关</span><span class="chip warm">assets 长缓存</span></div>
+    <div class="box" style="flex:.62" data-page-node-id="igajcdEQn2f30Y2luzEm3T">
+      <div class="bt" data-page-node-id="bvDvBTi7r4tVuWJlAid7xu">Nginx 1.27 <span style="font-weight:400;color:#8b949e" data-page-node-id="i6TsLyVFH5w0Q6tWPrUAH3">:8088</span></div>
+      <div class="bl" data-page-node-id="FyH21fulCU9UTaHKyOl8RE">静态托管 dist + SPA 兜底<br data-page-node-id="xQq4HCcAuA47J3lvgXFJDV"><em data-page-node-id="3rIDbRVBCzadGSejXKKHxr">resolver 127.0.0.11</em>（动态 DNS）<br data-page-node-id="yczElBWrgAXQM00xygkuUF"><i data-page-node-id="Vs7ODtJKbbqKMD2sLML8FE">proxy_buffering off</i>（SSE 不缓冲）</div>
+      <div class="chips" data-page-node-id="AeGIxY5EPkCAFN5rSycksG"><span class="chip warm" data-page-node-id="VlENaIeYWSLeeMFoUgZ6e5">/api/ 反代网关</span><span class="chip warm" data-page-node-id="tDAPcnM0qiBurIBxb7MueC">assets 长缓存</span></div>
     </div>
-    <div class="box" style="flex:.5">
-      <div class="bt">401 续期单飞</div>
-      <div class="bl">refreshPromise 去重<br>并发 401 只续期一次<br>SSE 手写 splitFrames 跨包半帧</div>
+    <div class="box" style="flex:.5" data-page-node-id="Fjki8b8MLKlobCzqD7iVPk">
+      <div class="bt" data-page-node-id="oeApc3pahRqO9DikTSU2Lj">401 续期单飞</div>
+      <div class="bl" data-page-node-id="yxaEMfmhBHM1FUKmNrXlF4">refreshPromise 去重<br data-page-node-id="eknCXqb91O3v07Sz6vZb4s">并发 401 只续期一次<br data-page-node-id="iMEcKXYWlHHWHxrPcRxYSl">SSE 手写 splitFrames 跨包半帧</div>
     </div>
   </div>
 </div>
 
 <!-- L2 网关层 -->
-<div class="layer l2">
-  <div class="layer-title"><span class="num">L2</span>接入网关 <span class="sub">sorts-gateway :8080 · Spring Cloud Gateway (WebFlux · 响应式)</span></div>
-  <div class="flow">
-    <span class="ar">①</span>路由匹配（顺序即优先级）
-    <span class="ar">→</span><span class="ar">②</span>JWT 校验 · 注入 X-User-Id
-    <span class="ar">→</span><span class="ar">③</span>Redis 令牌桶限流
-    <span class="ar">→</span><span class="ar">④</span>剥离伪造内部凭证
-    <span class="ar">→</span>lb://service-name
+<div class="layer l2" data-page-node-id="DCO8XMlEZjD6UrKlLNr0Z5">
+  <div class="layer-title" data-page-node-id="1VxXUHTv71pmmyz30Rbxk9"><span class="num" data-page-node-id="7DDh2xuxGNN60njeOK7Azz">L2</span>接入网关 <span class="sub" data-page-node-id="sNetRjnAZMiyIm4fbmLJDE">sorts-gateway :8080 · Spring Cloud Gateway (WebFlux · 响应式)</span></div>
+  <div class="flow" data-page-node-id="kkTLP4HPxp1aqtgWcyFbgF">
+    <span class="ar" data-page-node-id="Jup4nG4wgm9GgRY2aqsgDh">①</span>路由匹配（顺序即优先级）
+    <span class="ar" data-page-node-id="EXiWgExUOsGiyKWk7WG9u5">→</span><span class="ar" data-page-node-id="WmQouUQj1F9A09DAe6Fx8W">②</span>JWT 校验 · 注入 X-User-Id
+    <span class="ar" data-page-node-id="Vdl0xPTxww4yCwPCyXPpmM">→</span><span class="ar" data-page-node-id="BGMis5D7fefkTvXM57Hjbb">③</span>Redis 令牌桶限流
+    <span class="ar" data-page-node-id="avVqsdO3nzlj0UP8yvb7Mx">→</span><span class="ar" data-page-node-id="mK6zAbnXxFX6jbMmhMSGu6">④</span>剥离伪造内部凭证
+    <span class="ar" data-page-node-id="0w1oVriad0yUrmjy2yoVPG">→</span>lb://service-name
   </div>
-  <div class="row">
-    <div class="box gate" style="flex:1.02">
-      <div class="bt">AuthGlobalFilter</div>
-      <div class="bl">先 remove 再 set（杜绝外部伪造 X-User-Id）<br>白名单：登录 / 注册 / 头像回读<br>剥离伪造 X-Internal-Token</div>
+  <div class="row" data-page-node-id="YqopBgqcezOC3kdxU06Tai">
+    <div class="box gate" style="flex:1.02" data-page-node-id="zWRAAnBgDKGKCX9oKOWSTP">
+      <div class="bt" data-page-node-id="Yd7jzRAtDcSkGZXUIBEDuG">AuthGlobalFilter</div>
+      <div class="bl" data-page-node-id="1DGdPfbdbYWcT2EswtrMK6">先 remove 再 set（杜绝外部伪造 X-User-Id）<br data-page-node-id="nFi5r5wEvXCASeMbTis8fs">白名单：登录 / 注册 / 头像回读<br data-page-node-id="1h4aMeoovrb7VMvH65RaIa">剥离伪造 X-Internal-Token</div>
     </div>
-    <div class="box gate" style="flex:.88">
-      <div class="bt">RedisRateLimiter</div>
-      <div class="bl">令牌桶：replenishRate <i>20/s</i><br>burstCapacity <i>40</i> · requestedTokens 1<br>userKeyResolver 按用户维度</div>
+    <div class="box gate" style="flex:.88" data-page-node-id="seEbyAeMemLU1BUJZorelN">
+      <div class="bt" data-page-node-id="mF7WnSPh0XgPiTS1ObJ1jd">RedisRateLimiter</div>
+      <div class="bl" data-page-node-id="ATysNYBhIjFKWnDnqR4fD4">令牌桶：replenishRate <i data-page-node-id="fagbGMwFnZAauopbglUghR">20/s</i><br data-page-node-id="CO0uK9YsyCO6IdeqpymCbM">burstCapacity <i data-page-node-id="Eauth2F7ZIdC9lE2gjwzkS">40</i> · requestedTokens 1<br data-page-node-id="FSEDaLrBPrbHutZlUl5NA8">userKeyResolver 按用户维度</div>
     </div>
-    <div class="box gate" style="flex:1.38">
-      <div class="bt">路由表 <span style="font-weight:400;color:#8b949e">顺序即优先级</span></div>
-      <div class="bl"><i>mall 必须先于 user</i>（装扮接口同时命中两条）<br>/mall/** · /users/wardrobe/** → mall<br>/auth/** · /users/** → user<br>/schedules|calendar|statistics|parent-plans/** → schedule<br>/ai/** → ai　·　/notifications/** → notification</div>
+    <div class="box gate" style="flex:1.38" data-page-node-id="gUupJWMxOIyvBlVrVDPDk8">
+      <div class="bt" data-page-node-id="1lHOigI0ocSJdcVBaqmMem">路由表 <span style="font-weight:400;color:#8b949e" data-page-node-id="5cgB8BlUTHUFiCcgYFIQ0L">顺序即优先级</span></div>
+      <div class="bl" data-page-node-id="1sANfEfzBZ7z64bG44N1G7"><i data-page-node-id="OpfEYMuKzCuyOqseiiKtcw">mall 必须先于 user</i>（装扮接口同时命中两条）<br data-page-node-id="wajGQkOAsJN9UyPI69Nv1q">/mall/** · /users/wardrobe/** → mall<br data-page-node-id="KTjnJCP3KWunJ7MunEVOMS">/auth/** · /users/** → user<br data-page-node-id="2C4IOsnt4tnxm3RlvZFc0d">/schedules|calendar|statistics|parent-plans/** → schedule<br data-page-node-id="J7wLAsbSHijBZ8dnHIqUS5">/ai/** → ai　·　/notifications/** → notification</div>
     </div>
-    <div class="box gate" style="flex:.8">
-      <div class="bt">RateLimitResponseFilter</div>
-      <div class="bl">限流响应统一包装<br>返回 Result&lt;T&gt; 而非 WebFlux 裸 429</div>
+    <div class="box gate" style="flex:.8" data-page-node-id="GBgHkSephqqaPfjORiYRlg">
+      <div class="bt" data-page-node-id="URHPE4JF12l0g5LEpkcEfB">RateLimitResponseFilter</div>
+      <div class="bl" data-page-node-id="OwJwVqgW9YQz3DHEvOUU4s">限流响应统一包装<br data-page-node-id="revc4H26RzLCq6S2dRYtzP">返回 Result&lt;T&gt; 而非 WebFlux 裸 429</div>
     </div>
   </div>
-  <div class="flow" style="margin:8px 0 0">
-    <span class="ar">↳</span>服务发现：Nacos 2.4.3 :8848（单机免鉴权）　·　<i>discovery.locator 已关闭</i>（防内部接口被自动暴露）
+  <div class="flow" style="margin:8px 0 0" data-page-node-id="CaLp2lYUSkMArTWPluAd3X">
+    <span class="ar" data-page-node-id="Aax7TCwUHdf38UCCLpjsdV">↳</span>服务发现：Nacos 2.4.3 :8848（单机免鉴权）　·　<i data-page-node-id="9I69Vi0KEb0SdRooghdSxi">discovery.locator 已关闭</i>（防内部接口被自动暴露）
   </div>
 </div>
 
 <!-- L3 业务服务层 -->
-<div class="layer l3">
-  <div class="layer-title"><span class="num">L3</span>业务服务层 <span class="sub">5 个微服务 · 每服务独立库 · spring.application.name = sorts-*</span></div>
-  <div class="row">
-    <div class="svc">
-      <div class="sn">sorts-user</div><div class="sp">:8081 · sorts_user</div>
-      <div class="sd">注册登录 · JWT 双令牌签发与轮换 · 资料/头像 · 光阴砂与流水<br><span style="color:#8b949e">RefreshTokenStore 服务端留存校验</span></div>
+<div class="layer l3" data-page-node-id="DblPqkogGbnWk1EykvSq5k">
+  <div class="layer-title" data-page-node-id="Hn33YD9ihSycrz2VBR5UxL"><span class="num" data-page-node-id="FDt7DDxbS02eb538avaJsQ">L3</span>业务服务层 <span class="sub" data-page-node-id="GMXGE7LdxA81lo7viNaY6C">5 个微服务 · 每服务独立库 · spring.application.name = sorts-*</span></div>
+  <div class="row" data-page-node-id="YjDFoWlaiEIt5Z5VIrjaGb">
+    <div class="svc" data-page-node-id="hYaTOnAyPtQTGHLurPFJZs">
+      <div class="sn" data-page-node-id="GcCFfPNyJrIhVfNVE5FdTx">sorts-user</div><div class="sp" data-page-node-id="4BKZ2pUpVPmw7BAnZ5GCto">:8081 · sorts_user</div>
+      <div class="sd" data-page-node-id="DvBtLdRD2xcn6Krnh0PtcP">注册登录 · JWT 双令牌签发与轮换 · 资料/头像 · 光阴砂与流水<br data-page-node-id="zei7BKne8DDU7JbcmAO1b4"><span style="color:#8b949e" data-page-node-id="WECITJA99Pl4iboLa5nbB5">RefreshTokenStore 服务端留存校验</span></div>
     </div>
-    <div class="svc">
-      <div class="sn">sorts-schedule</div><div class="sp">:8082 · sorts_schedule</div>
-      <div class="sd">日程 CRUD · 计时状态机 · 织历聚合 · 纹谱统计 · <b>主线·主计划</b><br><span style="color:#8b949e">6 状态 / 分段计时 / 落梭发砂</span></div>
+    <div class="svc" data-page-node-id="anwwuqu9IyChzDvNBQcxeG">
+      <div class="sn" data-page-node-id="87oLGAc8sjpiqcwVR7rDM7">sorts-schedule</div><div class="sp" data-page-node-id="P75F5Rz4K7eCTbNSlkWcxs">:8082 · sorts_schedule</div>
+      <div class="sd" data-page-node-id="dFvjy1b4FUSRXwYiKNzSEx">日程 CRUD · 计时状态机 · 织历聚合 · 纹谱统计 · <b data-page-node-id="REB5g3997KaHtE5c2uHMfn">主线·主计划</b><br data-page-node-id="gpjT1RmgXRkB91dGLqGKRH"><span style="color:#8b949e" data-page-node-id="3EbmEOR3MazJqFsHhAggMM">6 状态 / 分段计时 / 落梭发砂</span></div>
     </div>
-    <div class="svc">
-      <div class="sn">sorts-ai</div><div class="sp">:8083 · sorts_ai</div>
-      <div class="sd">梭灵对话（SSE 流式）· 规划与采纳 · 梭影报告 · 文件解析<br><span style="color:#8b949e">7 工具（4 读 3 写）· 双钥匙写权限</span></div>
+    <div class="svc" data-page-node-id="G7q4a7jlFQYv3KaqLKyrH0">
+      <div class="sn" data-page-node-id="POMNFmGcQB7bR2wFYdiY9j">sorts-ai</div><div class="sp" data-page-node-id="Sv5E6XwYknjSRDgp9DDA8e">:8083 · sorts_ai</div>
+      <div class="sd" data-page-node-id="WTIS13lBOqnYTrTCMBnAwL">梭灵对话（SSE 流式）· 规划与采纳 · 梭影报告 · 文件解析<br data-page-node-id="ZxsdD0TDANqDypAm26mrXV"><span style="color:#8b949e" data-page-node-id="txmbjggZD2DwFHMpLoG3I5">7 工具（4 读 3 写）· 双钥匙写权限</span></div>
     </div>
-    <div class="svc">
-      <div class="sn">sorts-notification</div><div class="sp">:8084 · sorts_notification</div>
-      <div class="sd">飞鸽传书 · 提醒扫描 · 免打扰时段<br><span style="color:#8b949e">INSERT IGNORE 幂等（at-most-once）</span></div>
+    <div class="svc" data-page-node-id="Cs2ndE8XrJH7tuh8jepHwi">
+      <div class="sn" data-page-node-id="1mcMThVGuYrzfYsMcGmRhN">sorts-notification</div><div class="sp" data-page-node-id="XmiH5NB85XjxFrC8dK0KK0">:8084 · sorts_notification</div>
+      <div class="sd" data-page-node-id="eOsNfVSzA55vPH5rIARwzo">飞鸽传书 · 提醒扫描 · 免打扰时段<br data-page-node-id="Bhork9A1Qq8HJJB1FRNo5f"><span style="color:#8b949e" data-page-node-id="WqC8yFXePSHFfEO2j8GCCt">INSERT IGNORE 幂等（at-most-once）</span></div>
     </div>
-    <div class="svc">
-      <div class="sn">sorts-mall</div><div class="sp">:8085 · sorts_mall</div>
-      <div class="sd">锦市 · 购买链路 · 云裳阁装扮<br><span style="color:#8b949e">Redisson 锁 + 条件更新防超卖</span></div>
-    </div>
-  </div>
-  <div class="row" style="margin-top:8px">
-    <div class="box" style="border-color:#d1c4e9">
-      <div class="bt">sorts-common · 公共库（无端口，被全体依赖）</div>
-      <div class="bl">Result&lt;T&gt; / PageData&lt;T&gt; / ErrorCode / BizException / GlobalExceptionHandler · JwtUtil 自动装配<br>内部接口双拦截器：<em>InternalFeignInterceptor</em>（出站自动附加）· <em>InternalApiInterceptor</em>（入站 fail-closed）</div>
-      <div class="chips"><span class="chip hot">/internal/** 网关不路由</span><span class="chip hot">X-Internal-Token</span><span class="chip">jjwt 0.12.6</span><span class="chip">Hutool 5.8.32</span></div>
+    <div class="svc" data-page-node-id="7sl9MQUtTfjyeaNNeJAKrr">
+      <div class="sn" data-page-node-id="wDhZyviCHRw1yBPoh9K2MC">sorts-mall</div><div class="sp" data-page-node-id="GIqRUrp1tEbLLi7KCThDeH">:8085 · sorts_mall</div>
+      <div class="sd" data-page-node-id="mxzMQ8qdkWQ4KcmGnoSLBi">锦市 · 购买链路 · 云裳阁装扮<br data-page-node-id="gVUI6LP8IMk4abDVHbYAUD"><span style="color:#8b949e" data-page-node-id="ABI4tryWzWx2AcyJxCRreg">Redisson 锁 + 条件更新防超卖</span></div>
     </div>
   </div>
-  <div class="flow" style="margin:8px 0 0">
-    <span class="ar">Feign 链路</span>schedule→user（落梭发砂）· mall→user（扣砂/退砂）· mall|schedule|ai→notification（投递）· notification→schedule（拉取待提醒）
+  <div class="row" style="margin-top:8px" data-page-node-id="xQFRGEnN0hUsmdaDxSbQgf">
+    <div class="box" style="border-color:#d1c4e9" data-page-node-id="p15iKdRLcescXKpULofWSR">
+      <div class="bt" data-page-node-id="xaOJSPLHke6LFseuDI7ez8">sorts-common · 公共库（无端口，被全体依赖）</div>
+      <div class="bl" data-page-node-id="oRn7broVLDbWB760dGn5b9">Result&lt;T&gt; / PageData&lt;T&gt; / ErrorCode / BizException / GlobalExceptionHandler · JwtUtil 自动装配<br data-page-node-id="rWifnk59AMaxMWMtFTXImy">内部接口双拦截器：<em data-page-node-id="vi3GZJk9txllOmXHtj1ELr">InternalFeignInterceptor</em>（出站自动附加）· <em data-page-node-id="gaJBIXDOKiLScBVwHG3vmZ">InternalApiInterceptor</em>（入站 fail-closed）</div>
+      <div class="chips" data-page-node-id="hlK2VfyfZMWVUF5zHnuIHG"><span class="chip hot" data-page-node-id="IgbtnbVfI2qErqKUApoZhI">/internal/** 网关不路由</span><span class="chip hot" data-page-node-id="WouKnCElAUrFAcDModKrhV">X-Internal-Token</span><span class="chip" data-page-node-id="1GXgpqoeObpBrZxgrPZbtS">jjwt 0.12.6</span><span class="chip" data-page-node-id="NZRV22ivCJZfKvleHMy8yB">Hutool 5.8.32</span></div>
+    </div>
+  </div>
+  <div class="flow" style="margin:8px 0 0" data-page-node-id="ksO5ZXSHEO6A0llA3qRXzI">
+    <span class="ar" data-page-node-id="wEXWnsghOgt4nKC7y0ojkE">Feign 链路</span>schedule→user（落梭发砂）· mall→user（扣砂/退砂）· mall|schedule|ai→notification（投递）· notification→schedule（拉取待提醒）
   </div>
 </div>
 
 <!-- L4 AI 链路 -->
-<div class="layer l4">
-  <div class="layer-title"><span class="num">L4</span>AI 链路 <span class="sub">梭灵 · sorts-ai 内部</span></div>
-  <div class="row">
-    <div class="box acc" style="flex:1.08">
-      <div class="bt">ChatModelClient（薄客户端）</div>
-      <div class="bl">DeepSeek（OpenAI 兼容协议）<br><i>不用 Spring AI</i>：<br>1.0.0 锁 Boot 3.4.5，与本项目 Boot 3.3.4 冲突<br>JDK HttpClient 自实现 · 密钥走环境变量</div>
+<div class="layer l4" data-page-node-id="f2OB4Pmg3eSNCfH3m655eM">
+  <div class="layer-title" data-page-node-id="aNq2kpzif3ZpdRqXeoRKHf"><span class="num" data-page-node-id="KK85x9ZNNsYmZtdmkdbk0C">L4</span>AI 链路 <span class="sub" data-page-node-id="mtPQWBf6dUhUQJ5tXTYFSq">梭灵 · sorts-ai 内部</span></div>
+  <div class="row" data-page-node-id="SXNIoBZJ1oaqinfrNSo9vK">
+    <div class="box acc" style="flex:1.08" data-page-node-id="EEg9uRNHwiKJoeYUfLXGkY">
+      <div class="bt" data-page-node-id="p3qBm3ZxXRGGbFcXbkZw7I">ChatModelClient（薄客户端）</div>
+      <div class="bl" data-page-node-id="oGOmDAtS7pe3K3ZdgMSUrG">DeepSeek（OpenAI 兼容协议）<br data-page-node-id="jvKJED6Qc4wWrsTm44eT5t"><i data-page-node-id="W2IIpMpdWs0AE8HB4PI2sz">不用 Spring AI</i>：<br data-page-node-id="JWquqiKACJ3KnDnV5JdHFF">1.0.0 锁 Boot 3.4.5，与本项目 Boot 3.3.4 冲突<br data-page-node-id="M2kLUDjvTEwG9ENUQ85HBQ">JDK HttpClient 自实现 · 密钥走环境变量</div>
     </div>
-    <div class="box acc" style="flex:.96">
-      <div class="bt">SSE 流式解析</div>
-      <div class="bl"><em>SseDataParser</em> 拆 data: 帧<br><em>ToolCallAccumulator</em> 按 index 归并<br>arguments 分片<b>追加</b>而非覆盖<br>事件：delta / done / error</div>
+    <div class="box acc" style="flex:.96" data-page-node-id="1mrhGXapdHYBV9ynW9Anud">
+      <div class="bt" data-page-node-id="UsHIWfzWhWqdXNAJuDle59">SSE 流式解析</div>
+      <div class="bl" data-page-node-id="F738jw1oK4nU4QIF80ENXz"><em data-page-node-id="umLrH3rOlroXIGtpEFYHuP">SseDataParser</em> 拆 data: 帧<br data-page-node-id="GU2gKNgBATuJt6345ivx2V"><em data-page-node-id="IuRk3dVqOhsXtVX6xtvBHD">ToolCallAccumulator</em> 按 index 归并<br data-page-node-id="t23pbQSZTuHrN5lsCkMxVh">arguments 分片<b data-page-node-id="AQEyY42KKwFh4q7zKejWNL">追加</b>而非覆盖<br data-page-node-id="gyJGRJx8FnIj5UkqUEvWRK">事件：delta / done / error</div>
     </div>
-    <div class="box acc" style="flex:1.15">
-      <div class="bt">ToolRegistry（工具三件事）</div>
-      <div class="bl">① 声明过滤 ② 执行前复核 ③ 异常兜底（错误文本回灌为观察结果）<br><b>双钥匙写权限</b>：服务端 sorts.ai.tool.allow-write 且 请求 allowWrite=true</div>
-      <div class="chips">
-        <span class="chip cool">querySchedules</span><span class="chip cool">queryStatistics</span><span class="chip cool">queryPoints</span><span class="chip cool">getProfile</span><span class="chip hot">createSchedule</span><span class="chip hot">createSchedules</span><span class="chip hot">updateSchedule</span>
+    <div class="box acc" style="flex:1.15" data-page-node-id="S0RdYhZZAKMiCnQleXvKHH">
+      <div class="bt" data-page-node-id="KxmRGsu7zFMEQ5fNc8tfma">ToolRegistry（工具三件事）</div>
+      <div class="bl" data-page-node-id="WLfOrtFSve2KgAPCGz6Vvv">① 声明过滤 ② 执行前复核 ③ 异常兜底（错误文本回灌为观察结果）<br data-page-node-id="cv0QEyaibooYwKqjVrpw8P"><b data-page-node-id="jeA9HYvc8ACTVRBQjx7QXg">双钥匙写权限</b>：服务端 sorts.ai.tool.allow-write 且 请求 allowWrite=true</div>
+      <div class="chips" data-page-node-id="Tco3V6hUACeIp3oTB5OScQ">
+        <span class="chip cool" data-page-node-id="fQqyywNcrpqFRjVGkL6hlO">querySchedules</span><span class="chip cool" data-page-node-id="AI9c7SpupgqCklXHO39M6S">queryStatistics</span><span class="chip cool" data-page-node-id="X4dqcFpecFvoQ144PDippD">queryPoints</span><span class="chip cool" data-page-node-id="62gbzdpRK40b58PUlQoRMA">getProfile</span><span class="chip hot" data-page-node-id="cv0Wj6jrYUHDNEyIaEQH31">createSchedule</span><span class="chip hot" data-page-node-id="bxvfPmmYcUbhKrM7mTgm82">createSchedules</span><span class="chip hot" data-page-node-id="IybeqhwyP4ACeKxoZqLWTh">updateSchedule</span>
       </div>
     </div>
   </div>
-  <div class="row" style="margin-top:8px">
-    <div class="box acc" style="flex:1.18">
-      <div class="bt">文件解析 → 临时记忆</div>
-      <div class="bl">/api/v1/ai/files/parse 支持 md / docx / doc / txt（POI 解析）<br>单文件 2MB · 文本上限 20000 字符 · <b>不落库</b>，仅本轮上下文<br>无可执行计划则不落记忆，禁止编造日程</div>
+  <div class="row" style="margin-top:8px" data-page-node-id="4Iert9O9x5BR6P5eevlBpX">
+    <div class="box acc" style="flex:1.18" data-page-node-id="xirfdctm3kx1kqrw9ybM5b">
+      <div class="bt" data-page-node-id="RkiU8RCLTlsFBuHSGnQca7">文件解析 → 临时记忆</div>
+      <div class="bl" data-page-node-id="EXMDV21hPS0Om5oeCBinA3">/api/v1/ai/files/parse 支持 md / docx / doc / txt（POI 解析）<br data-page-node-id="LtjToFC53NFYr4d1IGWXV7">单文件 2MB · 文本上限 20000 字符 · <b data-page-node-id="RwGpw6uM2kAbrTADw9SiUV">不落库</b>，仅本轮上下文<br data-page-node-id="2yooGHhAC8BOaDY2sOH6y7">无可执行计划则不落记忆，禁止编造日程</div>
     </div>
-    <div class="box acc" style="flex:.95">
-      <div class="bt">多轮编排 · ChatServiceImpl</div>
-      <div class="bl">轮数上限 → 工具循环 → 收尾调用<br>权威日期锚点注入（writeToolsAvailable）<br>写能力事实随每次请求刷新</div>
+    <div class="box acc" style="flex:.95" data-page-node-id="tqmQ4bDUqpY1n8Imr2EkjU">
+      <div class="bt" data-page-node-id="xba3CC00ETtM4EP1LuxrUo">多轮编排 · ChatServiceImpl</div>
+      <div class="bl" data-page-node-id="9rB9FoyvcegOEwOD7wpo8Z">轮数上限 → 工具循环 → 收尾调用<br data-page-node-id="NMNSKaeFDnilWTZ2ZEvnaD">权威日期锚点注入（writeToolsAvailable）<br data-page-node-id="wV3UM8Ejgb3vkH8MpMewsA">写能力事实随每次请求刷新</div>
     </div>
-    <div class="box acc" style="flex:.95">
-      <div class="bt">双通道映射 · 报告幂等</div>
-      <div class="bl">同一路径 JSON + SSE，用 <i>params</i> 条件拆两个方法（返回类型不可为 Object）<br>报告 period_key + uk_user_period，同周期重复生成不重复落库</div>
+    <div class="box acc" style="flex:.95" data-page-node-id="qjkBJA2FXgWiqJTKbElBmE">
+      <div class="bt" data-page-node-id="D0DoySwJqIbOj9EmiK4H9U">双通道映射 · 报告幂等</div>
+      <div class="bl" data-page-node-id="QhaQUFF3O0WEME7ICyJqvT">同一路径 JSON + SSE，用 <i data-page-node-id="Pkh0vNL5GM5i33vf9EzDm3">params</i> 条件拆两个方法（返回类型不可为 Object）<br data-page-node-id="FSZjqBw1Cppe6n5HxfCA1w">报告 period_key + uk_user_period，同周期重复生成不重复落库</div>
     </div>
   </div>
 </div>
 
 <!-- L5 数据层 -->
-<div class="layer l5">
-  <div class="layer-title"><span class="num">L5</span>数据与中间件 <span class="sub">MySQL 8 :3307 · Redis-stack :6379 · RabbitMQ（预留）</span></div>
-  <div class="row">
-    <div class="box db" style="flex:1.55">
-      <div class="bt">MySQL 8 · 一服务一库（禁止跨库直连）</div>
-      <div class="bl">
-        sorts_user　→ t_user · t_points_log<br>
-        sorts_schedule　→ t_schedule · t_time_record · <b>t_parent_plan</b><br>
-        sorts_ai　→ t_schedule_plan · t_ai_report · t_ai_conversation<br>
-        sorts_notification　→ t_notification · t_reminder_setting · t_reminder_log<br>
+<div class="layer l5" data-page-node-id="XCLfSrcM93JQQlPIlqz9xi">
+  <div class="layer-title" data-page-node-id="GyugngjqJXzf0NPAo9JYE0"><span class="num" data-page-node-id="IdPAHOhBxMFtAuDohRLATt">L5</span>数据与中间件 <span class="sub" data-page-node-id="QHG2VtxFXhGmVhhewLVOLC">MySQL 8 :3307 · Redis-stack :6379 · RabbitMQ（预留）</span></div>
+  <div class="row" data-page-node-id="wcGParzPeloYGufRqIE3PA">
+    <div class="box db" style="flex:1.55" data-page-node-id="rbeHuYillAqasD061zCXfV">
+      <div class="bt" data-page-node-id="yVeU5fgDQqoOmUzpBCHskj">MySQL 8 · 一服务一库（禁止跨库直连）</div>
+      <div class="bl" data-page-node-id="ZDV7yjrPMi3oF6q0eAs8kQ">
+        sorts_user　→ t_user · t_points_log<br data-page-node-id="CnJ06I6g2RuQjmljhMtk5Z">
+        sorts_schedule　→ t_schedule · t_time_record · <b data-page-node-id="ztCcm9GAPkTomJaJAFtAIM">t_parent_plan</b><br data-page-node-id="xCZpEMqRNGnY54P0CbmiVT">
+        sorts_ai　→ t_schedule_plan · t_ai_report · t_ai_conversation<br data-page-node-id="RTFVz7lbHxTvejHDxxmGZk">
+        sorts_notification　→ t_notification · t_reminder_setting · t_reminder_log<br data-page-node-id="ChJRZx59nLaOcRRfC0NB16">
         sorts_mall　→ t_mall_item · t_purchase_record · t_wardrobe_item
       </div>
-      <div class="chips"><span class="chip">MyBatis-Plus 3.5.7</span><span class="chip">逻辑删除 deleted</span><span class="chip">PaginationInnerInterceptor</span></div>
+      <div class="chips" data-page-node-id="nOKFathjzJNG7unrOO8HBH"><span class="chip" data-page-node-id="eISUSEzE5g1DlZZiLDGIym">MyBatis-Plus 3.5.7</span><span class="chip" data-page-node-id="64JtwEcy5zhz4LRO6PgFZ4">逻辑删除 deleted</span><span class="chip" data-page-node-id="mVyMdfWjuCF6EkMfxsLtA5">PaginationInnerInterceptor</span></div>
     </div>
-    <div class="box db" style="flex:1.05">
-      <div class="bt">Redis（redis-stack 同镜像）</div>
-      <div class="bl">
-        <em>sorts:auth:refresh:</em>　令牌轮换留存<br>
-        <em>sorts:timer:segment:</em>　活跃计时片段<br>
-        <em>sorts:timer:active:</em>　用户进行中计时（TTL 24h）<br>
-        <em>sorts:ai:chat</em>　会话（12h）<br>
-        <em>sorts:mall:lock:item:</em>　Redisson 分布式锁
+    <div class="box db" style="flex:1.05" data-page-node-id="ITsGdYFheq8AcwjWdmvxqO">
+      <div class="bt" data-page-node-id="3esEu3kSUvSEtJLi5SIuIv">Redis（redis-stack 同镜像）</div>
+      <div class="bl" data-page-node-id="Mt9UFNQ1NkkhBEM3jC0hzq">
+        <em data-page-node-id="ZP7rDty1HxqsKE5p67nTMn">sorts:auth:refresh:</em>　令牌轮换留存<br data-page-node-id="RrXFPUpvpbNk8cKj3df76f">
+        <em data-page-node-id="TLCFBcB2pxdXAkuoR99Rng">sorts:timer:segment:</em>　活跃计时片段<br data-page-node-id="usYeJpx48ZkQ85J9qDMt0v">
+        <em data-page-node-id="3FA1BwRq5mvpaLeF591TQZ">sorts:timer:active:</em>　用户进行中计时（TTL 24h）<br data-page-node-id="EiyXWo6HfyuhXFEDAiM4BM">
+        <em data-page-node-id="UGi6pgByZoHcWqQ91krCje">sorts:ai:chat</em>　会话（12h）<br data-page-node-id="LB0d7lMyE5k5gST5O7116D">
+        <em data-page-node-id="qw4VbNqGUT8Q16cJYFoHlP">sorts:mall:lock:item:</em>　Redisson 分布式锁
       </div>
-      <div class="chips"><span class="chip">Redisson 3.36</span><span class="chip cool">限流桶</span><span class="chip cool">兜底重算源</span></div>
+      <div class="chips" data-page-node-id="siMHrQcMR9QHeFiJ6uXzu7"><span class="chip" data-page-node-id="AdCDYPrEDTFLez8MtD60XF">Redisson 3.36</span><span class="chip cool" data-page-node-id="iRXbnMDUyFmLnQqctIZI3B">限流桶</span><span class="chip cool" data-page-node-id="czGFI7gjxXkHfsHXeiyCOs">兜底重算源</span></div>
     </div>
-    <div class="box db" style="flex:.62">
-      <div class="bt">RabbitMQ 3.13</div>
-      <div class="bl">已部署未启用<br>当前提醒走 @Scheduled<br><span style="color:#8b949e">事务性消息 / outbox 技术债预留</span></div>
+    <div class="box db" style="flex:.62" data-page-node-id="AMQFGqNdRs6t2vObmZZ5K9">
+      <div class="bt" data-page-node-id="ZY5ZfDhVWgB2MlyFLBGo1a">RabbitMQ 3.13</div>
+      <div class="bl" data-page-node-id="30vE7C3UPeqWhW7UGyM7wd">已部署未启用<br data-page-node-id="Kw60XemMIHap2bWeVPOfYv">当前提醒走 @Scheduled<br data-page-node-id="vQ6gu4kxalH2JEgykhGK7D"><span style="color:#8b949e" data-page-node-id="b7NdAqljywQhuXeoNjE9Kn">事务性消息 / outbox 技术债预留</span></div>
     </div>
   </div>
 </div>
 
 <!-- L6 构建部署 -->
-<div class="layer l6">
-  <div class="layer-title"><span class="num">L6</span>构建 · 测试 · 部署 <span class="sub">一体化工程治理</span></div>
-  <div class="row">
-    <div class="box" style="flex:.88">
-      <div class="bt">构建</div>
-      <div class="bl">Maven Wrapper（backend/mvnw）<br>父 pom 版本矩阵统一收敛<br>AI 沙箱内用 scripts/mvn.sh<br>前端 Vite 6 构建 → dist</div>
+<div class="layer l6" data-page-node-id="XCYd0gQOXaPjH6CJAgonu3">
+  <div class="layer-title" data-page-node-id="kUKFunzHkvQDa9wWZj95BL"><span class="num" data-page-node-id="HRTMRqy9rAeBVvElFr8BhF">L6</span>构建 · 测试 · 部署 <span class="sub" data-page-node-id="AZiYiMIlvb4BuKjjnNpN3y">一体化工程治理</span></div>
+  <div class="row" data-page-node-id="LCorcQY2UgQeZ42m6TOksu">
+    <div class="box" style="flex:.88" data-page-node-id="9E17wiwJ35hCn9mbTxCHdY">
+      <div class="bt" data-page-node-id="OOhhCncnDenN4CAAR9rBNm">构建</div>
+      <div class="bl" data-page-node-id="nEPRE15OSkQTHPMBrsRqHN">Maven Wrapper（backend/mvnw）<br data-page-node-id="QrHs9QreQN7AtB1as3Kv9l">父 pom 版本矩阵统一收敛<br data-page-node-id="DI6PWMMkwVVPBV982K3Q3F">AI 沙箱内用 scripts/mvn.sh<br data-page-node-id="RcBbV0co9GIZXgo76Nva4Q">前端 Vite 6 构建 → dist</div>
     </div>
-    <div class="box" style="flex:.92">
-      <div class="bt">测试</div>
-      <div class="bl"><b>42 个测试类</b>（41 单测 + 1 集成）<br>JUnit 5 + Mockito + MockMvc<br>Testcontainers 1.20.4（真实 MySQL/Redis）<br>Vitest（前端）</div>
+    <div class="box" style="flex:.92" data-page-node-id="2K6wdjv6OWXaKrg10B7kkh">
+      <div class="bt" data-page-node-id="t03PVu8ORgufbaDykJND6J">测试</div>
+      <div class="bl" data-page-node-id="oP11G7wwiIIxzpQWR3SKas"><b data-page-node-id="GJh3JV2ImAC7KzVVkkMDYk">42 个测试类</b>（41 单测 + 1 集成）<br data-page-node-id="Y4hE5hrMgCrQIFdVTa72BZ">JUnit 5 + Mockito + MockMvc<br data-page-node-id="wupvELBRmXcozEZnP4hoVR">Testcontainers 1.20.4（真实 MySQL/Redis）<br data-page-node-id="1FM3xsrwExHhqN29j62VFh">Vitest（前端）</div>
     </div>
-    <div class="box" style="flex:1.05">
-      <div class="bt">容器化（单文件 compose + profiles）</div>
-      <div class="bl"><em>docker/compose.yml</em>：默认=中间件 · app=6 服务 · web=前端<br>Dockerfile.backend（多阶段 + ARG MODULE 复用 + BuildKit cache）<br>Nginx 托管 dist，healthcheck 必须 grep <i>"status":"UP"</i></div>
+    <div class="box" style="flex:1.05" data-page-node-id="zNaVLOfRdHuDOFoXSAOKG7">
+      <div class="bt" data-page-node-id="MDVXaDLAyob5DVweTNMHtd">容器化（单文件 compose + profiles）</div>
+      <div class="bl" data-page-node-id="PjxaHNciOuhxTKP32Bp2yl"><em data-page-node-id="quo2ZEYnpfMFMKBG1Tekfq">docker/compose.yml</em>：默认=中间件 · app=6 服务 · web=前端<br data-page-node-id="LvqNBTLvDcgPBcZXer1kqS">Dockerfile.backend（多阶段 + ARG MODULE 复用 + BuildKit cache）<br data-page-node-id="4ArIWobASyoDuQEUgDCv0N">Nginx 托管 dist，healthcheck 必须 grep <i data-page-node-id="TF2zWa1111X8W8IT4efZuB">"status":"UP"</i></div>
     </div>
-    <div class="box" style="flex:.88">
-      <div class="bt">CI/CD（GitHub Actions）</div>
-      <div class="bl">backend-test：构建 + 全量单测 + 集成测试<br>frontend-test：类型检查 + vitest + 构建<br>images：6 服务矩阵构建推镜像</div>
+    <div class="box" style="flex:.88" data-page-node-id="zrBMxjEugSkoXsHQwQFofA">
+      <div class="bt" data-page-node-id="fpevrivGwqzZePNfixnQZE">CI/CD（GitHub Actions）</div>
+      <div class="bl" data-page-node-id="Pjm9sHAC3GtnhZ3Z9licE3">backend-test：构建 + 全量单测 + 集成测试<br data-page-node-id="lDkA8YURCMav2kkBXUI6pp">frontend-test：类型检查 + vitest + 构建<br data-page-node-id="kKh7ULN13xmkCsr45Q4qwT">images：6 服务矩阵构建推镜像</div>
     </div>
   </div>
 </div>
 
-<div class="legend">
-  <span><i class="dot" style="background:#f7fff8;border-color:#2e7d32"></i>接入</span>
-  <span><i class="dot" style="background:#f6fbff;border-color:#1565c0"></i>网关</span>
-  <span><i class="dot" style="background:#fbf9ff;border-color:#5e35b1"></i>业务服务</span>
-  <span><i class="dot" style="background:#fffdf7;border-color:#e65100"></i>AI 链路</span>
-  <span><i class="dot" style="background:#f5fffd;border-color:#00695c"></i>数据层</span>
-  <span><i class="dot" style="background:#fafbfc;border-color:#37474f"></i>工程治理</span>
-  <span style="color:#8b949e">— 内部接口走 /internal/**，网关不路由，外部网络不可达</span>
+<div class="legend" data-page-node-id="NjfEdxSUQFOYAlsJU3nKUT">
+  <span data-page-node-id="RgbVjTDr7GqpDO4FH0QvFj"><i class="dot" style="background:#f7fff8;border-color:#2e7d32" data-page-node-id="FvchjekxyBhSQF0bE9zeNl"></i>接入</span>
+  <span data-page-node-id="UjsMWSPFwGAUP2MepHTqCf"><i class="dot" style="background:#f6fbff;border-color:#1565c0" data-page-node-id="2MwyEkkNVOsVALdoWE873D"></i>网关</span>
+  <span data-page-node-id="ZHCJjV9VoCpcZmHBT58skR"><i class="dot" style="background:#fbf9ff;border-color:#5e35b1" data-page-node-id="i8vRxBp5efALhnggoB9j8X"></i>业务服务</span>
+  <span data-page-node-id="oGgxYmpf3zxcXxKWMtbkEr"><i class="dot" style="background:#fffdf7;border-color:#e65100" data-page-node-id="4sZrkVtj9kSQ9KXNHIhK7n"></i>AI 链路</span>
+  <span data-page-node-id="fJcfyFT4amGP4xGhp4grFF"><i class="dot" style="background:#f5fffd;border-color:#00695c" data-page-node-id="cUx6N6So02Io76zvQAWr04"></i>数据层</span>
+  <span data-page-node-id="TLP3nU35mESjJVGwz0anHj"><i class="dot" style="background:#fafbfc;border-color:#37474f" data-page-node-id="eL6zOSU1CyCYwBpfXECgRb"></i>工程治理</span>
+  <span style="color:#8b949e" data-page-node-id="6rzmCi3BFrh81yJAzAfgdA">— 内部接口走 /internal/**，网关不路由，外部网络不可达</span>
 </div>
 
 </body>

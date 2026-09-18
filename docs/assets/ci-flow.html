@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
+<html lang="zh-CN" data-page-node-id="QHr4M7UW9i7itVvubSFlJH">
+<head data-page-node-id="DCe46ia3MqP5HcIPxWwiFx">
+<meta charset="UTF-8" data-page-node-id="h5DAM5ttpheKQfkYN4hA5s">
 <title>梭子 SORTS · CI/CD 流程图</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -121,164 +121,164 @@
   .legend .dot { width: 9px; height: 9px; border-radius: 2px; border: 1.2px solid; }
 </style>
 </head>
-<body>
+<body data-page-node-id="Ybwv8fbrlvdUHbn1G79Q6W">
 
-<div class="header">
-  <h1>梭子 SORTS · CI/CD 流程图</h1>
-  <span class="meta">GitHub Actions · 后端全量单测 + 前端构建 + 6 服务镜像矩阵 · 2026-09</span>
+<div class="header" data-page-node-id="Je10WhHvuhywJgz5u3z8XG">
+  <h1 data-page-node-id="A4fwG59Ho5q1ASGgoAD44x">梭子 SORTS · CI/CD 流程图</h1>
+  <span class="meta" data-page-node-id="KfXEfs9X0flHxgEnkI1Fdy">GitHub Actions · 后端全量单测 + 前端构建 + 6 服务镜像矩阵 · 2026-09</span>
 </div>
-<div class="tagline">
-  默认链路：<b>测试 → 镜像构建</b>（不推镜像、不部署）。镜像推送与部署<b>默认关闭</b>，需手动触发 <code>workflow_dispatch</code> 并勾选开关；仓库当前无稳定的镜像仓库凭据与目标环境，打开开关即用 Secrets 走完整链路。
+<div class="tagline" data-page-node-id="lb4HTFOZ5H6SoFbSqnoIfb">
+  默认链路：<b data-page-node-id="i9RFvoZdNPIMbcyQxItqqb">测试 → 镜像构建</b>（不推镜像、不部署）。镜像推送与部署<b data-page-node-id="L5bMwSwytXjMhklubWQcOu">默认关闭</b>，需手动触发 <code data-page-node-id="tIPmNsOkKiuF8r8DpPXj9t">workflow_dispatch</code> 并勾选开关；仓库当前无稳定的镜像仓库凭据与目标环境，打开开关即用 Secrets 走完整链路。
 </div>
 
 <!-- 触发 -->
-<div class="stage s0">
-  <div class="stage-title"><span class="num">触发</span>触发条件 <span class="sub">on</span></div>
-  <div class="row">
-    <div class="box trig" style="flex:1">
-      <div class="bt">push <span class="badge" style="background:#eef6ff;color:#0969da">自动</span></div>
-      <div class="bl">branches: <em>main</em> · <em>feat/**</em> · <em>fix/**</em><br>功能分支推送即跑测试，早发现回归</div>
+<div class="stage s0" data-page-node-id="K38sGpkDaLLXWgDCojygeH">
+  <div class="stage-title" data-page-node-id="UbdbEYhfSj7IoC74wT4eGh"><span class="num" data-page-node-id="e60xdCRCPQieIdUkVkS7qs">触发</span>触发条件 <span class="sub" data-page-node-id="6iD3iTtH452MLQu6I10lDV">on</span></div>
+  <div class="row" data-page-node-id="p4sKWlVJZz1hQsrp8Z4sXE">
+    <div class="box trig" style="flex:1" data-page-node-id="RVP3lcS1yFpnnnHF1sXpfC">
+      <div class="bt" data-page-node-id="grNP9BZj7tUZVaG21ioGsC">push <span class="badge" style="background:#eef6ff;color:#0969da" data-page-node-id="AKCGrgYrpKKWgYLyTxqME6">自动</span></div>
+      <div class="bl" data-page-node-id="yTXljemPaLZMzUO8C2BejC">branches: <em data-page-node-id="rn2nJHqZTSCzH1vODyH7jk">main</em> · <em data-page-node-id="wQYy3RdajnJWK3kaRYKH5v">feat/**</em> · <em data-page-node-id="LhCqFWTe0zKj6i7ANwCcO1">fix/**</em><br data-page-node-id="iMuZQQ8lvDJAb6GvSc8YkN">功能分支推送即跑测试，早发现回归</div>
     </div>
-    <div class="box trig" style="flex:1">
-      <div class="bt">pull_request <span class="badge" style="background:#eef6ff;color:#0969da">自动</span></div>
-      <div class="bl">branches: <em>main</em><br>合入前以 PR 为闸门，阻断未通过测试的代码</div>
+    <div class="box trig" style="flex:1" data-page-node-id="dx24lCpwNqqmMiPguKtu31">
+      <div class="bt" data-page-node-id="qUNrfRbmVN190ZNmmFgR1K">pull_request <span class="badge" style="background:#eef6ff;color:#0969da" data-page-node-id="DpxHFyGKkes2kJGgDe9Fdf">自动</span></div>
+      <div class="bl" data-page-node-id="qWGT83hoqOWDI5scY9ZJze">branches: <em data-page-node-id="h9dDPhG2WfXWdtSoO3GpCf">main</em><br data-page-node-id="9ZXs016r5aH7kUcEw5Yprg">合入前以 PR 为闸门，阻断未通过测试的代码</div>
     </div>
-    <div class="box trig" style="flex:1.15">
-      <div class="bt">workflow_dispatch <span class="badge" style="background:#fff8e6;color:#9a6700">手动</span></div>
-      <div class="bl">输入开关（均默认 false）：<br><s>push_images</s> → 构建后推送镜像<br><s>deploy</s> → 部署到目标服务器<br>两个开关分别控制后续阶段是否启用</div>
+    <div class="box trig" style="flex:1.15" data-page-node-id="b3CeyetrDxI0mqXatfuvP7">
+      <div class="bt" data-page-node-id="Jws4hCf8fMOAT4WHAxg2PX">workflow_dispatch <span class="badge" style="background:#fff8e6;color:#9a6700" data-page-node-id="v8b0n0fqSkqHzAfU86k9Ev">手动</span></div>
+      <div class="bl" data-page-node-id="R3bYrusDs7zOia62uur2EF">输入开关（均默认 false）：<br data-page-node-id="OFkqMbiazTrFgSiVBJCHec"><s data-page-node-id="IkV4vB4XBqfUrkT7JqBnTe">push_images</s> → 构建后推送镜像<br data-page-node-id="Q3GozItPjHGJeUqe0T7poA"><s data-page-node-id="qn0kaoiZyyFsBi8p7fahI9">deploy</s> → 部署到目标服务器<br data-page-node-id="gj6fktbmAxa9nSB9IXB9cw">两个开关分别控制后续阶段是否启用</div>
     </div>
   </div>
 </div>
 
-<div class="arrow"><span class="ln">▼</span><span>检出代码 · 按需装配工具链（<span class="lbl">并行</span>两条流水线）</span></div>
+<div class="arrow" data-page-node-id="JnWwNcGS3VKTrO7l8CEiBk"><span class="ln" data-page-node-id="ib0zs9ZsMmDqKf8kzbPs5U">▼</span><span data-page-node-id="Kpb71iXOjnFOBRVwpTadok">检出代码 · 按需装配工具链（<span class="lbl" data-page-node-id="KRd7TchwFkfgnKWvzrXpEg">并行</span>两条流水线）</span></div>
 
 <!-- 测试阶段 -->
-<div class="stage s1">
-  <div class="stage-title"><span class="num">①</span>测试阶段 <span class="sub">parallel · ubuntu-latest · 两 job 无依赖，并行执行</span></div>
-  <div class="row">
-    <div class="box job" style="flex:1.06">
-      <div class="bt">backend-test <span class="badge" style="background:#eef6ff;color:#0969da">后端构建与单测</span></div>
-      <div class="bl">
-        ① <em>actions/checkout@v4</em><br>
-        ② setup-java 17（temurin · cache: maven）<br>
-        ③ <em>./mvnw -B -ntp clean verify</em> <s>← 7 模块全量构建 + 单测</s><br>
-        ④ <em>./mvnw -Pintegration test -Dtest='*IT'</em><br>
-        <s>　Testcontainers 真实 MySQL + Redis（本地无 Docker 自动跳过）</s><br>
-        ⑤ upload-artifact: <s>surefire-reports</s>（if: always · 7 天）
+<div class="stage s1" data-page-node-id="FXQbeYL13kYDGap4Ihzqx6">
+  <div class="stage-title" data-page-node-id="FKNGXjL7epfABkVQr68Lxv"><span class="num" data-page-node-id="F0QOuUchczNHrUlIbN4OCK">①</span>测试阶段 <span class="sub" data-page-node-id="TKGgHtlnvRocsAzppImig2">parallel · ubuntu-latest · 两 job 无依赖，并行执行</span></div>
+  <div class="row" data-page-node-id="mThKQ5rXGh2nNaQjF4PIQR">
+    <div class="box job" style="flex:1.06" data-page-node-id="HIdEtrisRgtc1LJeWnSc3X">
+      <div class="bt" data-page-node-id="EkzqTKkGLjwwdTf9LAv0M6">backend-test <span class="badge" style="background:#eef6ff;color:#0969da" data-page-node-id="P1PZhBUMSMYSEXS7pUqllw">后端构建与单测</span></div>
+      <div class="bl" data-page-node-id="h0pLJsAD0t85oUNnDr0AWJ">
+        ① <em data-page-node-id="H0POzzvyiUoZFe4qrzUuwF">actions/checkout@v4</em><br data-page-node-id="AkmMwIzyp5CuUjqSc9By9z">
+        ② setup-java 17（temurin · cache: maven）<br data-page-node-id="GjNveHPrY2CpeXzusGbfPd">
+        ③ <em data-page-node-id="QrE8e8ZqD0J2FpWUTR2utq">./mvnw -B -ntp clean verify</em> <s data-page-node-id="4MiEQ6EMGPdDxcjDy5peKS">← 7 模块全量构建 + 单测</s><br data-page-node-id="vsyUwko6Yg6TFw9lAgcXbx">
+        ④ <em data-page-node-id="HYqD0lBrfjVMtTvI8R2HQh">./mvnw -Pintegration test -Dtest='*IT'</em><br data-page-node-id="nFoMysBSmFKNksHBdUeDNR">
+        <s data-page-node-id="naCUFjez5wFW8K3cmzD2oF">　Testcontainers 真实 MySQL + Redis（本地无 Docker 自动跳过）</s><br data-page-node-id="HWM2uZmYbvlJ188PN8pIGX">
+        ⑤ upload-artifact: <s data-page-node-id="jJEXPVVsNPYPGyKfUapCDz">surefire-reports</s>（if: always · 7 天）
       </div>
-      <div class="chips"><span class="chip cool">JDK 17</span><span class="chip ok">42 测试类</span><span class="chip warm">Maven 缓存</span></div>
+      <div class="chips" data-page-node-id="p8YDdoXTEsof1SuBlAaOFG"><span class="chip cool" data-page-node-id="8G3E7H3EMf0EhwK1Ahrjop">JDK 17</span><span class="chip ok" data-page-node-id="cMppAEwrNHtsx8LZPDwVFR">42 测试类</span><span class="chip warm" data-page-node-id="9osl6CvWIWNZyqd9hsJDmI">Maven 缓存</span></div>
     </div>
-    <div class="box job" style="flex:.94">
-      <div class="bt">frontend-test <span class="badge" style="background:#eef6ff;color:#0969da">前端构建与单测</span></div>
-      <div class="bl">
-        ① <em>actions/checkout@v4</em><br>
-        ② setup-node 22（cache: npm · <b>frontend/vite-app</b>）<br>
-        ③ <em>npm ci --no-audit --no-fund</em><br>
-        ④ <em>npm test</em> <s>← vitest</s><br>
-        ⑤ <em>npm run build</em> <s>← Vite 6 生产构建</s><br>
-        ⑥ upload-artifact: <s>frontend-dist</s>（7 天）
+    <div class="box job" style="flex:.94" data-page-node-id="NT4FNNQICGWzoVVJP2zas5">
+      <div class="bt" data-page-node-id="migMhMhNbnthfYQgCNWISf">frontend-test <span class="badge" style="background:#eef6ff;color:#0969da" data-page-node-id="ASfCIb4ryNacySf2jWbZjn">前端构建与单测</span></div>
+      <div class="bl" data-page-node-id="KZ9TuBH9CLA960dR3t9HJ7">
+        ① <em data-page-node-id="xYesGmze05uJPC6l7I6yeU">actions/checkout@v4</em><br data-page-node-id="xolDeAhicrXN9jPQyovtWo">
+        ② setup-node 22（cache: npm · <b data-page-node-id="IcyRDkKQVmg86qkVOWe6SQ">frontend/vite-app</b>）<br data-page-node-id="OmzJn3dipxISHc2zRA8RAB">
+        ③ <em data-page-node-id="hFBbqC0iEcHU71TdQHYUvH">npm ci --no-audit --no-fund</em><br data-page-node-id="lwCmo7mkupOQmtpXYF9H05">
+        ④ <em data-page-node-id="inLCfNAy8HmDEr3Ut3GaI8">npm test</em> <s data-page-node-id="ypr2PXQtuAnL5BcJhli7tb">← vitest</s><br data-page-node-id="ULlZXxPuhrXdkkcusBwBD6">
+        ⑤ <em data-page-node-id="Godmg9PcXKawlmG4ATMLQ4">npm run build</em> <s data-page-node-id="vBpA5rI1YNZpXNNB3gHQmt">← Vite 6 生产构建</s><br data-page-node-id="quONS3E3oCEo8hE6i2qtyB">
+        ⑥ upload-artifact: <s data-page-node-id="R9MormjXP7VMHCLrH4bYwb">frontend-dist</s>（7 天）
       </div>
-      <div class="chips"><span class="chip cool">Node 22</span><span class="chip ok">Vitest</span><span class="chip">Vite 6 构建</span></div>
+      <div class="chips" data-page-node-id="X1dinZrcZ4ox8eQuiWSzXK"><span class="chip cool" data-page-node-id="YkElP6YKREhQGNtJ1i5O5E">Node 22</span><span class="chip ok" data-page-node-id="FfXHSbrVpMTV6YJiIc1nfy">Vitest</span><span class="chip" data-page-node-id="CDmK9fmeC5ZCB222bYcdck">Vite 6 构建</span></div>
     </div>
   </div>
 </div>
 
-<div class="arrow-split">
-  <span>两条均通过</span>
-  <span class="ln">▼&nbsp;&nbsp;&nbsp;&nbsp;▼</span>
-  <span class="gate-pill">needs: [backend-test, frontend-test]</span>
+<div class="arrow-split" data-page-node-id="Okllinp7ylxUgEFyMxfDNX">
+  <span data-page-node-id="mut2o8deXSpm6AJIVlyeOY">两条均通过</span>
+  <span class="ln" data-page-node-id="rNdRr3Wo9UqcrFExH8WTNY">▼&nbsp;&nbsp;&nbsp;&nbsp;▼</span>
+  <span class="gate-pill" data-page-node-id="DWyeLXx9vtb7bpbrFR5h7d">needs: [backend-test, frontend-test]</span>
 </div>
 
 <!-- 镜像阶段 -->
-<div class="stage s2">
-  <div class="stage-title"><span class="num">②</span>镜像构建阶段 <span class="sub">matrix · fail-fast: false · 6 个服务镜像并行</span></div>
-  <div class="row">
-    <div class="box par" style="flex:1.5">
-      <div class="bt">images <span class="badge" style="background:#eef6ff;color:#0969da">镜像构建 · 按模块矩阵展开</span></div>
-      <div class="bl">
-        ① setup-buildx-action@v3　② <em>docker/build-push-action@v6</em><br>
-        file: <em>docker/Dockerfile.backend</em>　build-args: <em>MODULE={模块名}</em><br>
-        <s>一份多阶段 Dockerfile 靠 ARG MODULE 复用，构建 6 个镜像</s><br>
-        tag: <s>sorts/{模块}:{short-sha}</s> + <s>:latest</s>（去 sorts- 前缀）<br>
-        cache: <em>type=gha, scope={模块}</em>（读写分离，按模块独立缓存）<br>
-        push: <b>仅当手动触发且勾选 push_images</b>
+<div class="stage s2" data-page-node-id="ZXqqbBsq3lzrO9LzqChCSK">
+  <div class="stage-title" data-page-node-id="tupOR7NfZkG9XroHbB2qF4"><span class="num" data-page-node-id="8A2n6jlnCwENSYnAqjMicI">②</span>镜像构建阶段 <span class="sub" data-page-node-id="RC3H9qJzi1jXfN1lZUunAA">matrix · fail-fast: false · 6 个服务镜像并行</span></div>
+  <div class="row" data-page-node-id="iaKsUeCO92vgcT0CTIOxua">
+    <div class="box par" style="flex:1.5" data-page-node-id="xy98eXkeBoJSsRA0KDJZ8O">
+      <div class="bt" data-page-node-id="oZjDJ5SHQuYtU8jkhnm4rF">images <span class="badge" style="background:#eef6ff;color:#0969da" data-page-node-id="uZyD58WggDIbv3NxXBi648">镜像构建 · 按模块矩阵展开</span></div>
+      <div class="bl" data-page-node-id="AWISRHmaCfdDX5N1Hl7ame">
+        ① setup-buildx-action@v3　② <em data-page-node-id="PCbE9mhX8MLKCTqkDfDn0y">docker/build-push-action@v6</em><br data-page-node-id="PQQcBouS9VKEW0UwWs7OW9">
+        file: <em data-page-node-id="JQ966DfRA5hpp4RyUgj95M">docker/Dockerfile.backend</em>　build-args: <em data-page-node-id="kGkb8R6mVJdsRLj1aEzN3F">MODULE={模块名}</em><br data-page-node-id="LjS57FOq3rxVa9DtWOm5rP">
+        <s data-page-node-id="OY3hotC1SFh33nt7bqICoA">一份多阶段 Dockerfile 靠 ARG MODULE 复用，构建 6 个镜像</s><br data-page-node-id="MQfMOghvpnVDbbbcZMsgYZ">
+        tag: <s data-page-node-id="QhCdHYvWFFhPNnTufEIx7L">sorts/{模块}:{short-sha}</s> + <s data-page-node-id="gjzeKe1gQpnrO93ldoIKUZ">:latest</s>（去 sorts- 前缀）<br data-page-node-id="e3Gilf3wZJOc8UoxTsS2XM">
+        cache: <em data-page-node-id="mKDd5ykMWaEH4Ro9gpYmSM">type=gha, scope={模块}</em>（读写分离，按模块独立缓存）<br data-page-node-id="sguk0HH1Ezh6jiQASbdDSI">
+        push: <b data-page-node-id="pbbD6DbtigvuYnLFoTCm9N">仅当手动触发且勾选 push_images</b>
       </div>
-      <div class="chips"><span class="chip warm">Buildx</span><span class="chip warm">GHA 缓存</span><span class="chip">push 受开关控制</span></div>
+      <div class="chips" data-page-node-id="3o4GcfWeOCXHSFIyfT6S5P"><span class="chip warm" data-page-node-id="CyHD7zuuRIj0BOWUwa2A3K">Buildx</span><span class="chip warm" data-page-node-id="BLBJKyGmHydBVIOeHUj8kt">GHA 缓存</span><span class="chip" data-page-node-id="oIn4O8PKfgqPXUt5sdwShC">push 受开关控制</span></div>
     </div>
-    <div class="box par" style="flex:1">
-      <div class="bt">矩阵：6 个服务镜像</div>
-      <div class="matrix">
-        <div class="mod">gateway<span class="im">:8080</span></div>
-        <div class="mod">user<span class="im">:8081</span></div>
-        <div class="mod">schedule<span class="im">:8082</span></div>
-        <div class="mod">ai<span class="im">:8083</span></div>
-        <div class="mod">notification<span class="im">:8084</span></div>
-        <div class="mod">mall<span class="im">:8085</span></div>
+    <div class="box par" style="flex:1" data-page-node-id="4hXb2cMc35QccnGLncbGlN">
+      <div class="bt" data-page-node-id="4XZe6yc8OfzNWgqA5Pg6lj">矩阵：6 个服务镜像</div>
+      <div class="matrix" data-page-node-id="BuShyxmPrkOa6Mgz4wa8QL">
+        <div class="mod" data-page-node-id="TXXZ5pFwGlrB14FLA1kzkd">gateway<span class="im" data-page-node-id="po5Dnem6hifpDPF7FgUr9g">:8080</span></div>
+        <div class="mod" data-page-node-id="jTrWWdcV6ptq7RR0QrFFOx">user<span class="im" data-page-node-id="AoTyN1cZDf1QCTCGE665Fn">:8081</span></div>
+        <div class="mod" data-page-node-id="wQkOt4cLl2gi372lzvHDMJ">schedule<span class="im" data-page-node-id="O68MxGVz9808ysrHHsZopF">:8082</span></div>
+        <div class="mod" data-page-node-id="Yg7OGO6vKk1ho1qpY4vOtU">ai<span class="im" data-page-node-id="f9zgQAD70QrMkvVZfDn4rH">:8083</span></div>
+        <div class="mod" data-page-node-id="K6Jjj5DSBJyShXQPJYr7GT">notification<span class="im" data-page-node-id="lXjpZD5nD0sABn66hP16aW">:8084</span></div>
+        <div class="mod" data-page-node-id="GUETr7WF8mcBpglRHFhvs7">mall<span class="im" data-page-node-id="xuyLGRdAUZ8BsTqycrFaGG">:8085</span></div>
       </div>
-      <div class="bl" style="margin-top:6px">
-        <s>sorts-common 是库，不产出镜像</s> → 7 模块 → <b>6 镜像</b>
+      <div class="bl" style="margin-top:6px" data-page-node-id="WhoIbfLmwsjYO9bKc8MrhA">
+        <s data-page-node-id="AGCY3agYAJHTSYDFHO08Dd">sorts-common 是库，不产出镜像</s> → 7 模块 → <b data-page-node-id="RbV7F3HhDHJ0B7QEuMEJAd">6 镜像</b>
       </div>
     </div>
   </div>
 </div>
 
-<div class="arrow-gate">
-  <span class="ln">▼</span>
-  <span class="gate-pill">needs: images</span>
-  <span class="gate-pill">if: dispatch && inputs.deploy</span>
+<div class="arrow-gate" data-page-node-id="liAkuRMlB3Q4rbf7Q1YIIg">
+  <span class="ln" data-page-node-id="7GSoG2ZFLuHy4GMUAczy6C">▼</span>
+  <span class="gate-pill" data-page-node-id="BYT1dLMlckiv6xJ7CZDhMO">needs: images</span>
+  <span class="gate-pill" data-page-node-id="jFjuUOycP0ITQH2lzWDCKO">if: dispatch && inputs.deploy</span>
 </div>
 
 <!-- 部署阶段 -->
-<div class="stage s4">
-  <div class="stage-title"><span class="num">③</span>部署阶段 <span class="sub">默认关闭 · 仅手动触发且勾选 deploy 时执行</span></div>
-  <div class="row">
-    <div class="box dep" style="flex:1.25">
-      <div class="bt">deploy <span class="badge" style="background:#fff8e6;color:#9a6700">部署到目标服务器</span></div>
-      <div class="bl">
-        appleboy/ssh-action@v1.0.3 → ECS（host / user / SSH key 走 Secrets）<br>
-        cd /opt/sorts → <em>docker login</em><br>
-        <em>compose pull</em> + <em>up -d</em> <s>（中间件）</s><br>
-        <em>compose --profile app pull</em> + <em>up -d --no-build</em> <s>（6 服务）</s><br>
-        <s>--no-build：服务器只拉镜像不构建</s>
+<div class="stage s4" data-page-node-id="f53GA8vfaNTIlta90GLBo4">
+  <div class="stage-title" data-page-node-id="tHzUYVcd39oDptRhyRFcKA"><span class="num" data-page-node-id="2Nz9g5mLEHFWaVIoIzm0qO">③</span>部署阶段 <span class="sub" data-page-node-id="a70YFECRqS9uCfSDwOh3uj">默认关闭 · 仅手动触发且勾选 deploy 时执行</span></div>
+  <div class="row" data-page-node-id="KKSsgdqWu0aUGzNZjj4Ee1">
+    <div class="box dep" style="flex:1.25" data-page-node-id="F7SIK32tkNPpG8mgC5qoKF">
+      <div class="bt" data-page-node-id="XOVmNKyewV3sXlmH3tWg1k">deploy <span class="badge" style="background:#fff8e6;color:#9a6700" data-page-node-id="x0SVLJWjyiRwV9wjhTCe3O">部署到目标服务器</span></div>
+      <div class="bl" data-page-node-id="FI7hwZfdEu3QiFpyPGWZcC">
+        appleboy/ssh-action@v1.0.3 → ECS（host / user / SSH key 走 Secrets）<br data-page-node-id="tyMYC6erch2w7FbJQEGwA8">
+        cd /opt/sorts → <em data-page-node-id="amGvmfTifRcBd9uNmgxzBb">docker login</em><br data-page-node-id="CLctlGsgpVOyAYcLCfwKpm">
+        <em data-page-node-id="Ib6c9Mvo56UKiek3Db6LBz">compose pull</em> + <em data-page-node-id="HfrAklpkjjewRAJOFnKJtL">up -d</em> <s data-page-node-id="urDRX1zsVGE0ylQWgv9LAJ">（中间件）</s><br data-page-node-id="989FJtsm9njjFLOpQfz6ij">
+        <em data-page-node-id="UGFkQMmZJQzEMb7tHcCCtv">compose --profile app pull</em> + <em data-page-node-id="94Xg78AzZaIhomDNHrlELJ">up -d --no-build</em> <s data-page-node-id="qmQEDNmNauZbMSkfuUOHfa">（6 服务）</s><br data-page-node-id="tBApG643yrF7Nx540Buhjx">
+        <s data-page-node-id="0goN2BbdLiBTdlCsYz6dUh">--no-build：服务器只拉镜像不构建</s>
       </div>
     </div>
-    <div class="box dep" style="flex:1">
-      <div class="bt">健康检查（就绪判定）</div>
-      <div class="bl">
-        轮询 <em>gateway:8080/actuator/health</em><br>
-        最多 <b>24 次 × 5s</b>（command_timeout 10m）<br>
-        必须 <em>grep '"status":"UP"'</em><br>
-        <s>不能只看 HTTP 200 —— 曾出现「假健康」：200 但 body 是业务 Result{code:500}</s><br>
+    <div class="box dep" style="flex:1" data-page-node-id="oFUz8nbKZhKR0CpSF3PhxY">
+      <div class="bt" data-page-node-id="o5TLYiWpASHxfqy7GYGK2x">健康检查（就绪判定）</div>
+      <div class="bl" data-page-node-id="wDefX2F47g2EhAzvXVYA4L">
+        轮询 <em data-page-node-id="9bGCKsiVBAu75AcMql1J78">gateway:8080/actuator/health</em><br data-page-node-id="nQCrgymxjreSvNK0OY9a9m">
+        最多 <b data-page-node-id="2Q2NEAO4AXuvseOBpNRXCy">24 次 × 5s</b>（command_timeout 10m）<br data-page-node-id="LXP8cYTZkjKWoF45hDDJUU">
+        必须 <em data-page-node-id="geTND8Vn7AO0MB7vopvKUI">grep '"status":"UP"'</em><br data-page-node-id="Q29hPJSmpeFmf2B5EFzTZh">
+        <s data-page-node-id="CARp1Rg3XHwMFx4Wb4Qe7J">不能只看 HTTP 200 —— 曾出现「假健康」：200 但 body 是业务 Result{code:500}</s><br data-page-node-id="GF7yD5cvU3kpcxlgBQIQ9o">
         失败 → 打印 sorts-gateway 日志 100 行 → exit 1
       </div>
     </div>
   </div>
 </div>
 
-<div class="stage s3" style="margin-top:2px">
-  <div class="stage-title"><span class="num">开关</span>两个开关决定的链路形态</div>
-  <div class="row">
-    <div class="box" style="flex:1; border-color:#bbdefb; background:#f6fbff">
-      <div class="bt">默认（push / PR 自动）</div>
-      <div class="bl">触发 → <b>测试</b> → <b>镜像构建（不推送）</b> → 结束<br><s>镜像只落在 Runner 本地缓存，验证「能不能构建出来」</s></div>
+<div class="stage s3" style="margin-top:2px" data-page-node-id="q7G2WcLGKQ6GFApIQtlXXs">
+  <div class="stage-title" data-page-node-id="PMl7IahTwxZTx5ejz3IPss"><span class="num" data-page-node-id="QVICyemBGTRtXp04Dk4FE6">开关</span>两个开关决定的链路形态</div>
+  <div class="row" data-page-node-id="IT8RC3F4SCyliNacu78wnh">
+    <div class="box" style="flex:1; border-color:#bbdefb; background:#f6fbff" data-page-node-id="n4iCXTtmWUPKZgXeAbWiQO">
+      <div class="bt" data-page-node-id="aoGs75biVIvaNK8P9GlKwH">默认（push / PR 自动）</div>
+      <div class="bl" data-page-node-id="v6cpjdtjeKJF53NCy06Xqv">触发 → <b data-page-node-id="EZM2LfNIqCA2IWtDC7IWYj">测试</b> → <b data-page-node-id="o5spIBcCOuGWjHWAEOMX64">镜像构建（不推送）</b> → 结束<br data-page-node-id="tj74cCZnmsfuIonZ0v2iyK"><s data-page-node-id="ABpq6wryBbjQskegtj7cYe">镜像只落在 Runner 本地缓存，验证「能不能构建出来」</s></div>
     </div>
-    <div class="box" style="flex:1; border-color:#c8e6c9; background:#f7fff8">
-      <div class="bt">勾选 push_images</div>
-      <div class="bl">触发 → 测试 → 镜像构建 → <b>登录 ACR 并推送</b> → 结束<br><s>tag 为 :{short-sha} 与 :latest，需 ACR_* Secrets</s></div>
+    <div class="box" style="flex:1; border-color:#c8e6c9; background:#f7fff8" data-page-node-id="o9awrDnsBWAQe7iwT4C5TS">
+      <div class="bt" data-page-node-id="bdxY0jCxIH2oUK9QqijWpJ">勾选 push_images</div>
+      <div class="bl" data-page-node-id="PFjMqRCkZAnjb7brMCfIJ3">触发 → 测试 → 镜像构建 → <b data-page-node-id="oCbveXZZi7iMlQoELHQ01W">登录 ACR 并推送</b> → 结束<br data-page-node-id="JEdpkPut1JAOvpRFemmD7x"><s data-page-node-id="tBK9zMeBYHseCEQt9CsISO">tag 为 :{short-sha} 与 :latest，需 ACR_* Secrets</s></div>
     </div>
-    <div class="box" style="flex:1.05; border-color:#ffcc80; background:#fffbf2">
-      <div class="bt">再勾选 deploy</div>
-      <div class="bl">触发 → 测试 → 镜像构建 → 推送 → <b>SSH 部署 + 健康检查</b><br><s>需 ECS_* Secrets；health 必须 UP 才算成功</s></div>
+    <div class="box" style="flex:1.05; border-color:#ffcc80; background:#fffbf2" data-page-node-id="c8Pgo6WmqYkxDSWgy6l5fT">
+      <div class="bt" data-page-node-id="LRvjrUs1GxxUXvA0q7H29n">再勾选 deploy</div>
+      <div class="bl" data-page-node-id="SrZk2BuIYxQaDUTDhbXNT8">触发 → 测试 → 镜像构建 → 推送 → <b data-page-node-id="DAvp6jGFDA36lcFefVygMa">SSH 部署 + 健康检查</b><br data-page-node-id="MRzcswCOiVlrpybHvV4j1m"><s data-page-node-id="EtmzgGwZDkfnOE1VKjWPQH">需 ECS_* Secrets；health 必须 UP 才算成功</s></div>
     </div>
   </div>
 </div>
 
-<div class="legend">
-  <span><i class="dot" style="background:#fffdf5;border-color:#b28704"></i>触发</span>
-  <span><i class="dot" style="background:#f6fbff;border-color:#1565c0"></i>测试</span>
-  <span><i class="dot" style="background:#f7fff8;border-color:#2e7d32"></i>镜像构建</span>
-  <span><i class="dot" style="background:#fffbf2;border-color:#e65100"></i>部署（默认关闭）</span>
-  <span style="color:#8b949e">— 蓝/绿为默认链路；橙色阶段需手动开启</span>
+<div class="legend" data-page-node-id="UABnYGppPZaIiVwNBVNKGT">
+  <span data-page-node-id="WU5dbDVvboOZ75BU8v5ACl"><i class="dot" style="background:#fffdf5;border-color:#b28704" data-page-node-id="qG3nOWI7JFRUYKtCjysf0d"></i>触发</span>
+  <span data-page-node-id="Om2y6ikITVqz9OwSsINw0s"><i class="dot" style="background:#f6fbff;border-color:#1565c0" data-page-node-id="YNA5cw1pCDi5QREQwiHexq"></i>测试</span>
+  <span data-page-node-id="swBKTO5chl36zdBHGrzSJz"><i class="dot" style="background:#f7fff8;border-color:#2e7d32" data-page-node-id="oGjXqisBRCwFNezXM4qtVS"></i>镜像构建</span>
+  <span data-page-node-id="93PkXP4ck9XStK5njCF5FN"><i class="dot" style="background:#fffbf2;border-color:#e65100" data-page-node-id="oSxlvgebfwztGIbbmRCcBi"></i>部署（默认关闭）</span>
+  <span style="color:#8b949e" data-page-node-id="OXQdoGqcNjgowrgUYmIqJQ">— 蓝/绿为默认链路；橙色阶段需手动开启</span>
 </div>
 
 </body>
