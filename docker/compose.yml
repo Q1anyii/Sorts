@@ -296,7 +296,7 @@ services:
     container_name: sorts-frontend
     restart: unless-stopped
     depends_on:
-      gateway: { condition: service_started }
+      gateway: { condition: service_healthy }
     ports:
       - "${FRONTEND_PORT:-8088}:80"
     networks: [sorts-net]
