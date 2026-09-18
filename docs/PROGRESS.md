@@ -2,7 +2,11 @@
 
 > **用法**：新会话开始前，把本文档 + `docs/theme-design.md` + `docs/dev-setup.md` + `docs/ide-setup.md` 丢给 AI，并粘贴文末的「接续 Prompt」，即可无缝继续开发。
 >   
-> 最后更新：2026-09-16 · 当前里程碑：**M0 / M1 / M2 / M3 / M4 / M5 完成**（构建通过，**321 个单测全绿**：common 19 + gateway 21 + user 16 + schedule 67 + ai 103 + notification 51 + mall 44）
+> 最后更新：2026-09-17 · 当前里程碑：**M0 / M1 / M2 / M3 / M4 / M5 / M6 完成**（构建通过，**367 个单测全绿**：
+> common 21 + gateway 21 + user 16 + schedule 79 + ai 135 + notification 51 + mall 44；另有 1 个 IT 类 5 个用例，合计 42 类 / 372 个 `@Test`）
+>
+> ⚠️ 本文档的「已完成明细」以 M0–M6 为界；**M6 之后新增的能力（主线·主计划、AI 会话持久化、`UpdateSchedule` 工具、前端 Vite 化收口）
+> 尚未在此建档**，请一并参考根 `README.md` 与 `docs/dev-setup.md`。
 
 ---
 
@@ -137,8 +141,30 @@
 - **日历/统计聚合策略**：一次 `listInRange` 取回区间内全部日程，内存按自然日分组，避免「每天一条 SQL」的 N+1；个人日程量级下最简且最稳，单测也无需 mock 复杂 SQL。
 - **边界防御**：`view`/`period` 非法直接 400（不静默返回全量）；`pageSize` 上限 200（MyBatis-Plus 分页插件 + `maxLimit` 双保险）；`month` 越界拒绝；日均口径只算「已过去天数」，避免月初看月统计被未来空白天数稀释；趋势点上限 365；脏状态数据（枚举非法）按 PENDING 兜底不让概览崩溃。
 - **越权隔离**：所有读写先 `requireOwned`，他人日程一律按「不存在」返回（不暴露存在性）。
-- 建表脚本：`scripts/sql/sorts_schedule.sql`（`t_schedule`、`t_time_record`）。
+- 建表脚本：`scripts/sql/sorts_schedule.sql`（`t_schedule`、`t_time_record`）+ `upgrade_2026-09-17-parent-plan.sql`（`t_parent_plan`、`t_schedule.parent_id`）。
 - 单测：**64 个**（`ScheduleServiceImplTest` 17 + `TimerServiceImplTest` 18 + `CalendarServiceImplTest` 10 + `StatisticsServiceImplTest` 11 + `DateRangeTest` 8）。
+
+**M3+ 主线 · 主计划（长时间计划容器，2026-09-17 新增）**
+
+| 方法     | 路径                                           | 说明                                                |
+| ------ | -------------------------------------------- | ------------------------------------------------- |
+| POST   | `/api/v1/parent-plans`                       | 创建（初始 `PENDING`）                                  |
+| GET    | `/api/v1/parent-plans`                       | 分页列表（带 `childCount` / `completedCount` / `progress`） |
+| GET    | `/api/v1/parent-plans/{id}`                  | 详情（含子日程明细）                                         |
+| PUT    | `/api/v1/parent-plans/{id}`                  | 更新                                                |
+| DELETE | `/api/v1/parent-plans/{id}`                  | 软删 + 解绑子日程（**不级联**）                                |
+| POST   | `/api/v1/parent-plans/{id}/{action}`         | 状态流转：`start` / `pause` / `resume` / `complete`     |
+| POST   | `/api/v1/parent-plans/{id}/children`         | 批量挂载子日程                                            |
+| DELETE | `/api/v1/parent-plans/{id}/children/{sid}`   | 移出子日程（置 `NULL`）                                    |
+
+关键实现：
+
+- **为什么独立建表**：主计划是天 / 月粒度的容器（如「秋招冲刺」），与分钟 / 小时粒度的日程在生命周期、字段、状态集合上都不同；复用 `t_schedule` 会产生大量 NULL 列与状态语义混淆。
+- **状态机 4 态 4 动作**：`PENDING → IN_PROGRESS ⇄ PAUSED → COMPLETED`，由 `ParentPlanServiceImpl.STATUS_TRANSITIONS` 声明式定义；校验用 `allowed.contains(current)`（字符串包含，取值域封闭且互不为子串）。
+- **不做分钟级穿梭结算**：主计划不参与计时，进度 = 已完成子日程数 ÷ 子日程总数 × 100。列表页用**一条** `GROUP BY parent_id` 聚合（`ParentPlanMapper.aggregateChildren(ids)`）取回整页统计，避免 N+1。
+- **删除不级联**：`delete` 只软删主计划并 `clearChildren`，子日程保留为独立日程 —— 用户已投入的计时数据不因容器删除而丢失。
+- 前端：主页「盒子模型」—— 子任务内嵌在主计划气泡内部，按子任务数量三档自适应（≤3 完整行 / 4–8 压缩行 / >8 任务点）。
+- ⚠️ 建表脚本不在 `sorts_schedule.sql` 基础 DDL 里，**必须执行** `upgrade_2026-09-17-parent-plan.sql`。
 
 > ⚠️ 踩坑记录：MyBatis-Plus 配置了 `logic-delete-field: deleted` 后，**不能**自己 `setDeleted(1)` 再 `updateById`（逻辑删除字段会被排除在 SET 之外），必须用 `deleteById` 触发生成的逻辑删除；另外分页插件必须显式注册 `PaginationInnerInterceptor`，否则 `selectPage` 不拼 LIMIT 会退化成全表查询。
 
@@ -320,7 +346,7 @@ event: error   data: {"code":503,"message":"..."}
 
 **一、工程化重写**
 
-- 技术栈：Vite 6 + Vue 3.5 + TypeScript（strict）+ Pinia + Vue Router 4 + axios；旧的单文件演示页 `git mv` 到 `frontend/legacy-demo/` 留作参考，不再参与构建。
+- 技术栈：Vite 6 + Vue 3.5 + TypeScript（strict）+ Pinia + Vue Router 4 + axios；旧的单文件演示页 `git mv` 到 `frontend/legacy-demo/` 留作参考，不再参与构建（**该目录现已删除**，当前主版为 `frontend/vite-app/`）。
 - 目录：`src/{api,components,layouts,router,stores,styles,types,utils,views}`，路由级懒加载，`vite build` 产物约 173 KB（gzip 67 KB）。
 - 主题「织锦流光」落地为 CSS 层：`tokens.css`（5 主色 × 10 阶 + 语义别名）、`theme-night.css`（夜梭）、`textures.css`（纸纹/经纬网格/冰裂）、`motion.css`（穿梭过场/流光描边/落梭压印/印章呼吸，全部支持 `prefers-reduced-motion` 降级）、`base.css`。
 
@@ -343,7 +369,7 @@ event: error   data: {"code":503,"message":"..."}
 **四、界面**
 
 - 布局：织机栏（9 项导航）+ 梭行条（主题切换 / 未读角标 / 登出）+ 移动端底部导航；页面切换用 `mode="out-in"` 的穿梭过场定位，避免新旧页面同屏闪烁。
-- 页面：入梭（登录/注册一体）、今日经纬、织历（月格 + 选中日明细）、日程清单（筛选/分页/CRUD/状态机动作）、穿梭计时（大表盘 + 状态机五连）、纹谱统计（纯 SVG 趋势 + 标签分布）、梭灵（对话/规划/梭影报告）、锦市、衣橱、飞鸽传书、设置。
+- 页面：入梭（登录/注册一体）、今日经纬、织历（月格 + 选中日明细）、日程清单（筛选/分页/CRUD/状态机动作）、穿梭计时（大表盘 + 状态机五连）、纹谱统计（纯 SVG 趋势 + 标签分布）、梭灵（对话/规划/**织史**）、锦市、**云裳阁**、飞鸽传书、设置。
 - 原子组件 15 个 + 24 枚内置图标（`SIcon`，currentColor 描边）；状态与优先级映射集中在 `utils/status.ts`，与后端状态机一一对应。
 - AI 写入走**双钥匙**：前端开关需弹窗确认后才置位 `allowWrite=true`。
 
@@ -546,7 +572,7 @@ D:\SORTS(梭子)/
 │   ├── Dockerfile.frontend  # 前端镜像（Node 构建 → nginx）
 │   ├── nginx.conf           # SPA 兜底 + /api 反代（SSE 关缓冲）
 │   └── .env.example         # 端口/口令模板（.env 不入库）
-├── backend/                 # Maven 多模块（8 模块，含 Wrapper）
+├── backend/                 # Maven 多模块（**7 个模块**：common + gateway + 5 个业务服务，含 Wrapper）
 │   ├── sorts-common/        # ✅ 公共模块（Result/异常/JWT/PageData/服务间凭证）
 │   ├── sorts-gateway/       # ✅ 网关（路由 + 鉴权 + 限流 + 剥离伪造内部凭证）
 │   ├── sorts-user/          # ✅ 用户服务
@@ -554,9 +580,11 @@ D:\SORTS(梭子)/
 │   ├── sorts-ai/            # ✅ AI 服务（llm / tool / service / controller）
 │   ├── sorts-notification/  # ✅ 通知服务（通知列表·已读 / 提醒设置 / 定时提醒扫描）
 │   └── sorts-mall/          # ✅ 商城服务（商品 / 购买防超卖 / 装扮仓库）
-├── frontend/                # ✅ Vue3 + Vite 工程（src/{api,components,layouts,router,stores,styles,types,utils,views}）
-│   ├── tests/               # vitest 单测
-│   └── legacy-demo/         # 早期单文件演示页（参考用，不参与构建）
+├── frontend/                # 前端（主版在 vite-app/）
+│   ├── vite-app/            # ✅ Vue3 + Vite 工程：index.html（运行态模板）+ src/legacy/（运行态逻辑）
+│   │   ├── src/             #     组件化储备：{api,components,layouts,router,stores,styles,types,utils,views}（未接线）
+│   │   └── tests/           #     vitest 单测
+│   └── （根目录残留）         # ⚠️ 早期 CDN 单页（index.html + js/ + css/），无 package.json，不参与构建
 ├── docs/
 │   ├── theme-design.md      # 主题设计规范
 │   ├── dev-setup.md         # 开发手册（中间件、端口、命令、内部凭证与购买一致性约定）
@@ -574,13 +602,17 @@ D:\SORTS(梭子)/
 │       ├── sorts_schedule.sql        # 日程库建表
 │       ├── sorts_ai.sql              # AI 库建表（报告表、规划表）
 │       ├── sorts_notification.sql    # 通知库建表（通知、提醒设置、提醒留痕）
-│       └── sorts_mall.sql            # 商城库建表（商品、购买记录、装扮仓库 + 种子商品）
+│       ├── sorts_mall.sql            # 商城库建表（商品、购买记录、装扮仓库 + 种子商品）
+│       ├── upgrade_2026-09-17-features.sql      # ⚠️ 增量：t_ai_conversation 等
+│       └── upgrade_2026-09-17-parent-plan.sql   # ⚠️ 增量：t_parent_plan + t_schedule.parent_id
 └── .workbuddy/              # 会话数据与构建日志（勿删）
 ```
 
 > M7 目录整理（2026-09-16）：删除了早期遗留的 `client/`（一个 5 行的 express 静态服务器，
 > 且把 node_modules 误提交进了仓库）与重复的根 `index.html`（与 `frontend/legacy-demo/index.html` 完全相同），
 > 空目录 `sorts/` 一并移除；容器相关文件集中到 `docker/`，脚本集中到 `scripts/`。
+> **后续（2026-09-17）**：`frontend/legacy-demo/` 亦已删除；仓库根 `frontend/` 下的早期 CDN 单页
+> （`index.html` + `js/app.js` + `css/`）保留但未接线，主版统一为 `frontend/vite-app/`。
 
 
 ---

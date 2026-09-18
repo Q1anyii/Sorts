@@ -167,9 +167,11 @@ backend/
 ├── sorts-common/        # 公共模块（自动装配）
 ├── sorts-gateway/       # 网关
 └── sorts-{user,schedule,ai,notification,mall}/   # 各业务服务
-frontend/                # Vue3 + Vite 工程（src/{api,components,layouts,router,stores,styles,types,utils,views}）
-├── tests/               # vitest 单测
-└── legacy-demo/         # 早期单文件演示页（参考用）
+frontend/                # 前端（主版在 vite-app/）
+├── vite-app/            # ★ Vue3 + Vite 工程：index.html（运行态模板）+ src/legacy/（运行态逻辑）
+│   ├── src/             #   组件化储备 {api,components,layouts,router,stores,styles,types,utils,views}（未接线）
+│   └── tests/           #   vitest 单测（命令都在 vite-app 目录下执行）
+└── （根目录残留）        # 早期 CDN 单页：index.html + js/ + css/，无 package.json，不参与构建
 docs/                    # 设计文档（PROGRESS / dev-setup / ide-setup / theme-design）
 scripts/                 # docker.sh（容器入口）、mvn.sh（沙箱构建）、sql/（建库建表）
 .github/workflows/ci.yml # CI：矩阵构建 6 个服务 + 前端，推镜像/部署默认关闭
