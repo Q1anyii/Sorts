@@ -501,6 +501,7 @@ bash scripts/docker.sh app-down  # 停服务
 | 层    | 命令                                        | 规模                       |
 | ---- | ----------------------------------------- | ------------------------ |
 | 后端单测 | `cd backend && ./mvnw test`               | 41 个测试类 / 367 个用例；另有 1 个 IT 类 5 个用例（共 42 类 / 372 个 `@Test`）        |
+| **指标测试** | `cd backend && ./mvnw test -pl sorts-metrics-tests -am` | **1 个独立测试类 / 25 个用例**（5 组 `@Nested`：双钥匙 / 状态机 / 多日规划 / 兑换并发 / 网关收口；4 份 JSON 数据集 + Surefire 结果） |
 | 前端单测 | `cd frontend/vite-app && npm test` | 4 个测试文件 / 19 个用例（时长工具 / 状态机映射 / SSE 帧 / 错误语义；与主版共用同一仓库，覆盖盲区从「非线上代码」收窄为「legacy 大函数未拆解」） |
 | 集成测试 | `cd backend && ./mvnw -Pintegration test` | Testcontainers（需 Docker） |
 
@@ -515,7 +516,25 @@ bash scripts/docker.sh app-down  # 停服务
 | sorts-ai           | 对话编排、规划生成与采纳、报告装配、工具注册与七种工具、SSE 帧、JSON 载荷 |
 | sorts-notification | 通知已读、提醒设置、提醒扫描幂等、免打扰时段                    |
 | sorts-mall         | 商品查询、购买加锁与一致性兜底、事务落库、装扮切换                   |
+| sorts-metrics-tests | **指标测试**：双钥匙声明过滤、状态机全矩阵、多日规划相对日期、兑换并发超卖=0、网关伪造头剥离（详见下方） |
 | frontend | 时长与时辰节气工具、状态机映射、SSE 帧切分、错误语义 |
+
+**指标测试工程（`backend/sorts-metrics-tests/`）**
+
+把 README 五段安全机制的"承诺"落成 25 个可执行断言（5 组 `@Nested`，直接引用真实实现类，不复制业务逻辑）：
+
+| 组 | 断言要点 | 用例 |
+| --- | --- | --- |
+| 双钥匙 | 2×2 矩阵仅 `(服务端开关=on, 用户授权=true)` 放行写工具；未授权写调用**写副作用 = 0** | 6 |
+| 状态机 | 30 格矩阵逐格校验：非法跃迁 100% 拒绝；终态冻结；TIMEOUT 仅保留取消入口 | 4 |
+| 多日规划 | 9 例相对日期全命中（含跨年「下周」→ 2027-01-04）；未来一周 7 天连续无断档 | 5 |
+| 兑换并发 | **50 并发抢 10 库存：成功 10、库存 0、超卖 = 0**（仿真锁恒可获取，压力全压给条件更新）；售罄扣砂/退砂成对 | 4 |
+| 网关收口 | 无/过期/错类型 token 100% 401；伪造 `X-Internal-Token` **剥离率 100%**；限流 key 登录按用户/未登录按 IP | 6 |
+
+数据集外置在 `datasets/*.json`（双钥匙矩阵 / 状态机矩阵 / 日期样例 / 并发参数），执行结果归档在 `results/`（`SUMMARY.md` + Surefire XML）。
+2026-09-18 实跑 **25/25 通过**（详见 `backend/sorts-metrics-tests/results/SUMMARY.md`）。
+
+> 复现：`cd backend && ./mvnw test -pl sorts-metrics-tests -am`（必须用 reactor，因服务模块 install 的是 fat jar）。
 
 **运行方式**
 
