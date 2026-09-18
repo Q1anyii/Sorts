@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>梭子 SORTS · CI/CD 流程图</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: #ffffff; color: #1f2328;
+    padding: 26px 22px 20px; width: 1080px;
+  }
+
+  .header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 6px; }
+  .header h1 { font-size: 27px; font-weight: 800; letter-spacing: .5px; }
+  .header .meta { font-size: 12px; color: #8b949e; }
+  .tagline {
+    font-size: 12.5px; color: #57606a; margin-bottom: 14px;
+    padding: 7px 12px; background: #f6f8fa; border-left: 3px solid #d0d7de;
+    border-radius: 0 5px 5px 0; line-height: 1.65;
+  }
+  .tagline b { color: #cf222e; }
+  .tagline code { font-family: ui-monospace, Menlo, Consolas, monospace;
+                  background: #eef2f6; padding: 0 4px; border-radius: 3px; font-size: 11.5px; }
+
+  /* ---------- 阶段容器 ---------- */
+  .stage {
+    border: 1.6px solid #dde3e9; border-radius: 9px;
+    margin-bottom: 9px; padding: 9px 11px 11px; background: #fcfdfe;
+  }
+  .stage-title {
+    font-size: 13px; font-weight: 700; margin-bottom: 8px;
+    letter-spacing: .3px; display: flex; align-items: center; gap: 7px;
+  }
+  .stage-title .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 20px; height: 20px; padding: 0 5px;
+    color: #fff; border-radius: 4px; font-size: 11px; font-weight: 700;
+  }
+  .stage-title .sub { font-weight: 400; color: #8b949e; font-size: 11.5px; }
+
+  .s0 { border-color: #ffe082; background: #fffdf5; } .s0 .stage-title { color: #b28704; } .s0 .stage-title .num { background: #b28704; }
+  .s1 { border-color: #bbdefb; background: #f6fbff; } .s1 .stage-title { color: #1565c0; } .s1 .stage-title .num { background: #1565c0; }
+  .s2 { border-color: #c8e6c9; background: #f7fff8; } .s2 .stage-title { color: #2e7d32; } .s2 .stage-title .num { background: #2e7d32; }
+  .s3 { border-color: #d1c4e9; background: #fbf9ff; } .s3 .stage-title { color: #5e35b1; } .s3 .stage-title .num { background: #5e35b1; }
+  .s4 { border-color: #ffcc80; background: #fffbf2; } .s4 .stage-title { color: #e65100; } .s4 .stage-title .num { background: #e65100; }
+
+  /* ---------- 方块 ---------- */
+  .row { display: flex; gap: 8px; }
+  .row + .row { margin-top: 8px; }
+  .box {
+    flex: 1 1 0; min-width: 0;
+    border: 1.2px solid #d0d7de; border-radius: 6px;
+    background: #fff; padding: 7px 9px;
+  }
+  .box .bt { font-size: 11.5px; font-weight: 700; color: #24292f;
+             margin-bottom: 4px; line-height: 1.35; }
+  .box .bt .badge {
+    font-size: 9.5px; font-weight: 600; padding: 1px 5px; border-radius: 8px;
+    margin-left: 4px; vertical-align: middle;
+  }
+  .box .bl {
+    font-size: 10.2px; color: #57606a; line-height: 1.62;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    word-break: break-word; overflow-wrap: anywhere;
+  }
+  .box .bl i { font-style: normal; color: #cf222e; font-weight: 600; }
+  .box .bl em { font-style: normal; color: #0969da; }
+  .box .bl s { text-decoration: none; color: #8b949e; }
+
+  .box.job   { border-color: #90caf9; background: #f2f8ff; }
+  .box.par   { border-color: #a5d6a7; background: #f4fff5; }
+  .box.img   { border-color: #b39ddb; background: #faf7ff; }
+  .box.dep   { border-color: #ffcc80; background: #fffbf2; }
+  .box.trig  { border-color: #ffe082; background: #fffdf5; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; align-items: flex-start; }
+  .chip {
+    font-size: 9.8px; padding: 1.5px 6px; border-radius: 10px;
+    background: #eef2f6; color: #444d56; border: 1px solid #dde3e9;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    flex: 0 0 auto; white-space: nowrap;
+  }
+  .chip.cool { background: #eef6ff; color: #0969da; border-color: #c4dcf5; }
+  .chip.hot  { background: #fff1f0; color: #cf222e; border-color: #ffcdd2; }
+  .chip.warm { background: #fff8e6; color: #9a6700; border-color: #f0e0b0; }
+  .chip.ok   { background: #f0fff4; color: #1a7f37; border-color: #b7e4c7; }
+
+  /* ---------- 箭头 ---------- */
+  .arrow, .arrow-split, .arrow-gate {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; margin: 7px 0; font-size: 10.5px; color: #57606a;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+  .arrow .ln, .arrow-split .ln, .arrow-gate .ln {
+    flex: 0 0 auto; color: #b0b8c0; font-size: 14px; line-height: 1;
+  }
+  .arrow .lbl { color: #cf222e; font-weight: 600; }
+  .gate-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 2px 9px; border-radius: 11px; font-size: 10.2px;
+    background: #fff8e6; color: #9a6700; border: 1px solid #f0e0b0;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+
+  /* ---------- 矩阵网格 ---------- */
+  .matrix { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; }
+  .mod {
+    border: 1.1px solid #cec2ec; border-radius: 5px; background: #fff;
+    padding: 5px 4px; text-align: center;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 9.6px; color: #4527a0; font-weight: 600;
+  }
+  .mod .im { display: block; font-size: 8.4px; color: #8b949e; font-weight: 400; margin-top: 2px; }
+
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 11px;
+            padding-top: 9px; border-top: 1px dashed #d8dee4;
+            font-size: 10.5px; color: #57606a; }
+  .legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .legend .dot { width: 9px; height: 9px; border-radius: 2px; border: 1.2px solid; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>梭子 SORTS · CI/CD 流程图</h1>
+  <span class="meta">GitHub Actions · 后端全量单测 + 前端构建 + 6 服务镜像矩阵 · 2026-09</span>
+</div>
+<div class="tagline">
+  默认链路：<b>测试 → 镜像构建</b>（不推镜像、不部署）。镜像推送与部署<b>默认关闭</b>，需手动触发 <code>workflow_dispatch</code> 并勾选开关；仓库当前无稳定的镜像仓库凭据与目标环境，打开开关即用 Secrets 走完整链路。
+</div>
+
+<!-- 触发 -->
+<div class="stage s0">
+  <div class="stage-title"><span class="num">触发</span>触发条件 <span class="sub">on</span></div>
+  <div class="row">
+    <div class="box trig" style="flex:1">
+      <div class="bt">push <span class="badge" style="background:#eef6ff;color:#0969da">自动</span></div>
+      <div class="bl">branches: <em>main</em> · <em>feat/**</em> · <em>fix/**</em><br>功能分支推送即跑测试，早发现回归</div>
+    </div>
+    <div class="box trig" style="flex:1">
+      <div class="bt">pull_request <span class="badge" style="background:#eef6ff;color:#0969da">自动</span></div>
+      <div class="bl">branches: <em>main</em><br>合入前以 PR 为闸门，阻断未通过测试的代码</div>
+    </div>
+    <div class="box trig" style="flex:1.15">
+      <div class="bt">workflow_dispatch <span class="badge" style="background:#fff8e6;color:#9a6700">手动</span></div>
+      <div class="bl">输入开关（均默认 false）：<br><s>push_images</s> → 构建后推送镜像<br><s>deploy</s> → 部署到目标服务器<br>两个开关分别控制后续阶段是否启用</div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow"><span class="ln">▼</span><span>检出代码 · 按需装配工具链（<span class="lbl">并行</span>两条流水线）</span></div>
+
+<!-- 测试阶段 -->
+<div class="stage s1">
+  <div class="stage-title"><span class="num">①</span>测试阶段 <span class="sub">parallel · ubuntu-latest · 两 job 无依赖，并行执行</span></div>
+  <div class="row">
+    <div class="box job" style="flex:1.06">
+      <div class="bt">backend-test <span class="badge" style="background:#eef6ff;color:#0969da">后端构建与单测</span></div>
+      <div class="bl">
+        ① <em>actions/checkout@v4</em><br>
+        ② setup-java 17（temurin · cache: maven）<br>
+        ③ <em>./mvnw -B -ntp clean verify</em> <s>← 7 模块全量构建 + 单测</s><br>
+        ④ <em>./mvnw -Pintegration test -Dtest='*IT'</em><br>
+        <s>　Testcontainers 真实 MySQL + Redis（本地无 Docker 自动跳过）</s><br>
+        ⑤ upload-artifact: <s>surefire-reports</s>（if: always · 7 天）
+      </div>
+      <div class="chips"><span class="chip cool">JDK 17</span><span class="chip ok">42 测试类</span><span class="chip warm">Maven 缓存</span></div>
+    </div>
+    <div class="box job" style="flex:.94">
+      <div class="bt">frontend-test <span class="badge" style="background:#eef6ff;color:#0969da">前端构建与单测</span></div>
+      <div class="bl">
+        ① <em>actions/checkout@v4</em><br>
+        ② setup-node 22（cache: npm · <b>frontend/vite-app</b>）<br>
+        ③ <em>npm ci --no-audit --no-fund</em><br>
+        ④ <em>npm test</em> <s>← vitest</s><br>
+        ⑤ <em>npm run build</em> <s>← Vite 6 生产构建</s><br>
+        ⑥ upload-artifact: <s>frontend-dist</s>（7 天）
+      </div>
+      <div class="chips"><span class="chip cool">Node 22</span><span class="chip ok">Vitest</span><span class="chip">Vite 6 构建</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow-split">
+  <span>两条均通过</span>
+  <span class="ln">▼&nbsp;&nbsp;&nbsp;&nbsp;▼</span>
+  <span class="gate-pill">needs: [backend-test, frontend-test]</span>
+</div>
+
+<!-- 镜像阶段 -->
+<div class="stage s2">
+  <div class="stage-title"><span class="num">②</span>镜像构建阶段 <span class="sub">matrix · fail-fast: false · 6 个服务镜像并行</span></div>
+  <div class="row">
+    <div class="box par" style="flex:1.5">
+      <div class="bt">images <span class="badge" style="background:#eef6ff;color:#0969da">镜像构建 · 按模块矩阵展开</span></div>
+      <div class="bl">
+        ① setup-buildx-action@v3　② <em>docker/build-push-action@v6</em><br>
+        file: <em>docker/Dockerfile.backend</em>　build-args: <em>MODULE={模块名}</em><br>
+        <s>一份多阶段 Dockerfile 靠 ARG MODULE 复用，构建 6 个镜像</s><br>
+        tag: <s>sorts/{模块}:{short-sha}</s> + <s>:latest</s>（去 sorts- 前缀）<br>
+        cache: <em>type=gha, scope={模块}</em>（读写分离，按模块独立缓存）<br>
+        push: <b>仅当手动触发且勾选 push_images</b>
+      </div>
+      <div class="chips"><span class="chip warm">Buildx</span><span class="chip warm">GHA 缓存</span><span class="chip">push 受开关控制</span></div>
+    </div>
+    <div class="box par" style="flex:1">
+      <div class="bt">矩阵：6 个服务镜像</div>
+      <div class="matrix">
+        <div class="mod">gateway<span class="im">:8080</span></div>
+        <div class="mod">user<span class="im">:8081</span></div>
+        <div class="mod">schedule<span class="im">:8082</span></div>
+        <div class="mod">ai<span class="im">:8083</span></div>
+        <div class="mod">notification<span class="im">:8084</span></div>
+        <div class="mod">mall<span class="im">:8085</span></div>
+      </div>
+      <div class="bl" style="margin-top:6px">
+        <s>sorts-common 是库，不产出镜像</s> → 7 模块 → <b>6 镜像</b>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow-gate">
+  <span class="ln">▼</span>
+  <span class="gate-pill">needs: images</span>
+  <span class="gate-pill">if: dispatch && inputs.deploy</span>
+</div>
+
+<!-- 部署阶段 -->
+<div class="stage s4">
+  <div class="stage-title"><span class="num">③</span>部署阶段 <span class="sub">默认关闭 · 仅手动触发且勾选 deploy 时执行</span></div>
+  <div class="row">
+    <div class="box dep" style="flex:1.25">
+      <div class="bt">deploy <span class="badge" style="background:#fff8e6;color:#9a6700">部署到目标服务器</span></div>
+      <div class="bl">
+        appleboy/ssh-action@v1.0.3 → ECS（host / user / SSH key 走 Secrets）<br>
+        cd /opt/sorts → <em>docker login</em><br>
+        <em>compose pull</em> + <em>up -d</em> <s>（中间件）</s><br>
+        <em>compose --profile app pull</em> + <em>up -d --no-build</em> <s>（6 服务）</s><br>
+        <s>--no-build：服务器只拉镜像不构建</s>
+      </div>
+    </div>
+    <div class="box dep" style="flex:1">
+      <div class="bt">健康检查（就绪判定）</div>
+      <div class="bl">
+        轮询 <em>gateway:8080/actuator/health</em><br>
+        最多 <b>24 次 × 5s</b>（command_timeout 10m）<br>
+        必须 <em>grep '"status":"UP"'</em><br>
+        <s>不能只看 HTTP 200 —— 曾出现「假健康」：200 但 body 是业务 Result{code:500}</s><br>
+        失败 → 打印 sorts-gateway 日志 100 行 → exit 1
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="stage s3" style="margin-top:2px">
+  <div class="stage-title"><span class="num">开关</span>两个开关决定的链路形态</div>
+  <div class="row">
+    <div class="box" style="flex:1; border-color:#bbdefb; background:#f6fbff">
+      <div class="bt">默认（push / PR 自动）</div>
+      <div class="bl">触发 → <b>测试</b> → <b>镜像构建（不推送）</b> → 结束<br><s>镜像只落在 Runner 本地缓存，验证「能不能构建出来」</s></div>
+    </div>
+    <div class="box" style="flex:1; border-color:#c8e6c9; background:#f7fff8">
+      <div class="bt">勾选 push_images</div>
+      <div class="bl">触发 → 测试 → 镜像构建 → <b>登录 ACR 并推送</b> → 结束<br><s>tag 为 :{short-sha} 与 :latest，需 ACR_* Secrets</s></div>
+    </div>
+    <div class="box" style="flex:1.05; border-color:#ffcc80; background:#fffbf2">
+      <div class="bt">再勾选 deploy</div>
+      <div class="bl">触发 → 测试 → 镜像构建 → 推送 → <b>SSH 部署 + 健康检查</b><br><s>需 ECS_* Secrets；health 必须 UP 才算成功</s></div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <span><i class="dot" style="background:#fffdf5;border-color:#b28704"></i>触发</span>
+  <span><i class="dot" style="background:#f6fbff;border-color:#1565c0"></i>测试</span>
+  <span><i class="dot" style="background:#f7fff8;border-color:#2e7d32"></i>镜像构建</span>
+  <span><i class="dot" style="background:#fffbf2;border-color:#e65100"></i>部署（默认关闭）</span>
+  <span style="color:#8b949e">— 蓝/绿为默认链路；橙色阶段需手动开启</span>
+</div>
+
+</body>
+</html>

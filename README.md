@@ -200,7 +200,7 @@ graph TD
 │   ├── dev-setup.md          # 开发手册（端口、命令、环境变量、约定）
 │   ├── ide-setup.md          # IDEA 运行手册（Maven 导入、JDK 17、报错速查）
 │   ├── theme-design.md       # 主题规范「织锦流光」
-│   └── assets/               # 架构图等静态资源（architecture.html 为可编辑源，architecture.png 为渲染产物）
+│   └── assets/               # 架构图 / CI 流程图（.html 为可编辑源，.png 为渲染产物，均由 scripts/png-trim.py 收边）
 ├── scripts/
 │   ├── docker.sh             # 容器统一入口（up/app/web/status/logs/sql/keepalive/shell/clean…）
 │   ├── mvn.sh                # AI 沙箱内的构建封装
@@ -545,14 +545,20 @@ cd backend && ./mvnw -Pintegration test -pl sorts-common,sorts-user
 
 ## 持续集成与部署（CI/CD）
 
-工作流位于 `.github/workflows/ci.yml`，push / PR 触发，分三个并行 job：
+![梭子 SORTS CI/CD 流程图](docs/assets/ci-flow.png)
 
-| job             | 内容                                                            |
-| --------------- | ------------------------------------------------------------- |
-| `backend-test`  | `./mvnw clean verify` 全量构建 + 单测，归档 surefire 报告                |
-| `frontend-test` |（存档 Vite 工程）`npm ci` → `npm test` → `npm run build`（于 frontend/vite-app） |
-| `images`        | 矩阵构建 6 个服务镜像（GitHub Actions 缓存加速），验证 Dockerfile 可用性           |
-| `deploy`（可选）    | `workflow_dispatch` 开关，**默认关闭**；开启后推镜像并做部署健康门禁（看 `status:UP`） |
+> 可编辑源文件见 [`docs/assets/ci-flow.html`](docs/assets/ci-flow.html)。
+
+工作流位于 `.github/workflows/ci.yml`，`push`（`main` / `feat/**` / `fix/**`）与 PR（`main`）触发：
+
+| job             | 依赖 | 内容                                                            |
+| --------------- | -- | ------------------------------------------------------------- |
+| `backend-test`  | —  | `./mvnw clean verify` 全量构建 + 单测 → `-Pintegration test -Dtest='*IT'`（Testcontainers 真实 MySQL + Redis）→ 归档 surefire 报告 |
+| `frontend-test` | —  | `npm ci` → `npm test`（Vitest）→ `npm run build`（于 `frontend/vite-app`）→ 归档 dist |
+| `images`        | `needs: [backend-test, frontend-test]` | 矩阵构建 6 个服务镜像（`fail-fast: false`，GHA 缓存按模块隔离），验证 Dockerfile 可用性 |
+| `deploy`（可选）    | `needs: images` | `workflow_dispatch` 开关，**默认关闭**；开启后推镜像并做部署健康门禁（轮询 `gateway:8080/actuator/health`，必须命中 `"status":"UP"`） |
+
+前两个 job **并行**执行，全部通过后才进入 `images` 矩阵（7 个 Maven 模块 → 6 个服务镜像，`sorts-common` 是库不产镜像）。
 
 **所需 Secrets**（仅在打开 `push_images` / `deploy` 开关后需要）：`ACR_*`（镜像仓库地址 / 用户名 / 密码）、`ECS_*`（服务器地址 / 用户 / SSH 私钥）。
 
