@@ -1,0 +1,22 @@
+{
+  "title": "五态状态机（开梭 → 暂停 → 续梭 → 落梭 → 取消）合法跃迁矩阵",
+  "desc": "非法跃迁由服务端判定并返回 409；终态（已完成/已取消/已超时）不可再流转。TIMEOUT 为第六态：计划时间已过未开始。",
+  "states": ["PENDING", "IN_PROGRESS", "PAUSED", "COMPLETED", "CANCELLED", "TIMEOUT"],
+  "actions": ["start", "pause", "resume", "end", "cancel"],
+  "transitionMatrix": {
+    "PENDING":     { "start": true,  "pause": false, "resume": false, "end": true,  "cancel": true  },
+    "IN_PROGRESS": { "start": false, "pause": true,  "resume": false, "end": true,  "cancel": true  },
+    "PAUSED":      { "start": true,  "pause": false, "resume": true,  "end": true,  "cancel": true  },
+    "COMPLETED":   { "start": false, "pause": false, "resume": false, "end": false, "cancel": false },
+    "CANCELLED":   { "start": false, "pause": false, "resume": false, "end": false, "cancel": false },
+    "TIMEOUT":     { "start": false, "pause": false, "resume": false, "end": false, "cancel": true  }
+  },
+  "finalStates": ["COMPLETED", "CANCELLED", "TIMEOUT"],
+  "legalChain": ["PENDING", "IN_PROGRESS", "PAUSED", "IN_PROGRESS", "COMPLETED"],
+  "indicator": {
+    "illegalTransitionRejectedRate": "非法跃迁 100% 被拒绝（服务端 409）",
+    "legalTransitionPassRate": "合法跃迁 100% 通过",
+    "finalStateFrozenRate": "终态任意动作 100% 被拒",
+    "focusSecondsAuthority": "专注秒数由服务端裁定，客户端传值被忽略"
+  }
+}

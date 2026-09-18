@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- 独立指标测试工程：只含测试代码，不产出业务构件 -->
+    <parent>
+        <groupId>com.sorts</groupId>
+        <artifactId>sorts-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>sorts-metrics-tests</artifactId>
+    <name>sorts-metrics-tests</name>
+    <description>梭子指标测试工程：双钥匙 / 五态状态机 / AI 多日规划 / 兑换并发扣减 / 网关收口 的独立指标验证</description>
+
+    <dependencies>
+        <!-- 被测模块（均以 test scope 引入，避免污染主构建产物） -->
+        <dependency>
+            <groupId>com.sorts</groupId>
+            <artifactId>sorts-common</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.sorts</groupId>
+            <artifactId>sorts-ai</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.sorts</groupId>
+            <artifactId>sorts-schedule</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.sorts</groupId>
+            <artifactId>sorts-mall</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.sorts</groupId>
+            <artifactId>sorts-gateway</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- 测试框架：JUnit5 / Mockito / AssertJ / spring-test（MockServerWebExchange） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- 该模块不参与 Spring Boot 打包 -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

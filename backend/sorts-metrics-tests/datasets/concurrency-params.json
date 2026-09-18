@@ -1,0 +1,24 @@
+{
+  "title": "锦市兑换并发扣减测试参数（Redisson 锁 + 条件更新兜底）",
+  "desc": "链路固定为「加锁 → 锁内重载 → 扣积分 → 事务落库 → 失败退积分」；库存扣减走 UPDATE ... WHERE stock > 0 条件更新，锁租期失效仍安全。",
+  "scenario": {
+    "concurrency": {
+      "threads": 50,
+      "stock": 10,
+      "price": 200,
+      "assert": { "successLe": 10, "oversell": 0, "stockGe": 0, "note": "50 并发抢 10 库存：成功数 ≤ 10 且库存不为负，超卖 = 0" }
+    },
+    "lockFailureSimulation": {
+      "note": "本测试将 Redisson 锁 mock 为恒可获取（模拟锁租期提前失效的最坏情况），并发正确性完全由 UPDATE ... WHERE stock > 0 条件更新兜底，验证最后一道防线。"
+    },
+    "soldOut": { "stock": 0, "expect": "deductStock 影响行数 0 → 抛「商品已售罄」，且不扣积分" },
+    "pointsInsufficient": { "expect": "扣积分失败 → 拒绝购买，库存不变" },
+    "persistFailureRefund": { "expect": "落库抛异常 → 原路退积分，补偿一致（记 ERROR 日志需人工对账）" },
+    "lockBusy": { "expect": "tryLock=false → RATE_LIMITED(429) 拒绝" }
+  },
+  "indicator": {
+    "oversellRate": 0,
+    "compensationConsistency": "落库失败 100% 退积分",
+    "lockOrderFixed": "lock → reload → deduct → txn → fallback 顺序恒定"
+  }
+}

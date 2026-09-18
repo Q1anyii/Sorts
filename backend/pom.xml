@@ -27,6 +27,8 @@
         <module>sorts-ai</module>
         <module>sorts-notification</module>
         <module>sorts-mall</module>
+        <!-- 独立指标测试工程（仅测试代码，不产出业务构件） -->
+        <module>sorts-metrics-tests</module>
     </modules>
 
     <properties>

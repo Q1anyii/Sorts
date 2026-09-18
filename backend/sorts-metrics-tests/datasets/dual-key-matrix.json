@@ -1,0 +1,17 @@
+{
+  "title": "双钥匙权限模型（AI 写工具声明级过滤）测试数据集",
+  "desc": "服务端开关 sorts.ai.tool.allow-write 与单次请求 allowWrite=true 必须同时到位，写工具才下发给模型。",
+  "readTools": ["QuerySchedules", "QueryStatistics", "QueryPoints", "GetProfile"],
+  "writeTools": ["CreateSchedule", "CreateSchedules"],
+  "matrix": [
+    { "serverAllowWrite": false, "requestAllowWrite": false, "expectWriteToolsDelivered": false, "note": "双关，读工具仍全量下发" },
+    { "serverAllowWrite": false, "requestAllowWrite": true,  "expectWriteToolsDelivered": false, "note": "服务端开关一票否决" },
+    { "serverAllowWrite": true,  "requestAllowWrite": false, "expectWriteToolsDelivered": false, "note": "用户授权缺失，不下发" },
+    { "serverAllowWrite": true,  "requestAllowWrite": true,  "expectWriteToolsDelivered": true,  "note": "唯一放行组合（2×2 中 1/4）" }
+  ],
+  "indicator": {
+    "writeToolDeliveredRate": "1/4 组合放行，其余 3/4 写工具下发数为 0",
+    "readToolAvailableRate": "4/4 组合读工具全部下发",
+    "sideEffectAfterFilter": "未授权写工具即使被模型调用也不执行，写副作用 0"
+  }
+}
