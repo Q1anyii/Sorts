@@ -70,7 +70,11 @@
 
 ## 系统架构
 
-![梭子 SORTS 整体架构图](docs/assets/architecture.png)
+<p align="center">
+  <img src="docs/assets/architecture.png" alt="梭子 SORTS 整体架构图" width="95%">
+  <br/>
+  <em>整体架构图（点击图片查看原图）</em>
+</p>
 
 > 分层总览：L1 接入层（SPA + Nginx）→ L2 接入网关（路由 / 鉴权 / 限流 / 剥离伪造头）→ L3 业务服务层（5 微服务 + common 公共库）→ L4 AI 链路（梭灵）→ L5 数据与中间件 → L6 构建测试部署。
 > 可编辑源文件见 [`docs/assets/architecture.html`](docs/assets/architecture.html)。
@@ -545,7 +549,11 @@ cd backend && ./mvnw -Pintegration test -pl sorts-common,sorts-user
 
 ## 持续集成与部署（CI/CD）
 
-![梭子 SORTS CI/CD 流程图](docs/assets/ci-flow.png)
+<p align="center">
+  <img src="docs/assets/ci-flow.png" alt="梭子 SORTS CI/CD 流程图" width="95%">
+  <br/>
+  <em>CI/CD 流程图（点击图片查看原图）</em>
+</p>
 
 > 可编辑源文件见 [`docs/assets/ci-flow.html`](docs/assets/ci-flow.html)。
 
