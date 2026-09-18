@@ -500,7 +500,7 @@ bash scripts/docker.sh app-down  # 停服务
 
 | 层    | 命令                                        | 规模                       |
 | ---- | ----------------------------------------- | ------------------------ |
-| 后端单测 | `cd backend && ./mvnw test`               | 41 个测试类 / 367 个用例；另有 1 个 IT 类 5 个用例（共 42 类 / 372 个 `@Test`）        |
+| 后端单测 | `cd backend && ./mvnw test`               | 41 个测试类 / 367 个用例；另有 1 个 IT 类 4 个用例（共 42 类 / 371 个 `@Test`，加指标测试后 43 类 / 396）        |
 | **指标测试** | `cd backend && ./mvnw test -pl sorts-metrics-tests -am` | **1 个独立测试类 / 25 个用例**（5 组 `@Nested`：双钥匙 / 状态机 / 多日规划 / 兑换并发 / 网关收口；4 份 JSON 数据集 + Surefire 结果） |
 | 前端单测 | `cd frontend/vite-app && npm test` | 4 个测试文件 / 19 个用例（时长工具 / 状态机映射 / SSE 帧 / 错误语义；与主版共用同一仓库，覆盖盲区从「非线上代码」收窄为「legacy 大函数未拆解」） |
 | 集成测试 | `cd backend && ./mvnw -Pintegration test` | Testcontainers（需 Docker） |
