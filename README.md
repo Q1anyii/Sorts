@@ -70,6 +70,11 @@
 
 ## 系统架构
 
+![梭子 SORTS 整体架构图](docs/assets/architecture.png)
+
+> 分层总览：L1 接入层（SPA + Nginx）→ L2 接入网关（路由 / 鉴权 / 限流 / 剥离伪造头）→ L3 业务服务层（5 微服务 + common 公共库）→ L4 AI 链路（梭灵）→ L5 数据与中间件 → L6 构建测试部署。
+> 可编辑源文件见 [`docs/assets/architecture.html`](docs/assets/architecture.html)。
+
 ### 请求链路
 
 ```mermaid
@@ -194,7 +199,8 @@ graph TD
 │   ├── PROGRESS.md           # 里程碑进度、关键决策、已知限制与技术债
 │   ├── dev-setup.md          # 开发手册（端口、命令、环境变量、约定）
 │   ├── ide-setup.md          # IDEA 运行手册（Maven 导入、JDK 17、报错速查）
-│   └── theme-design.md       # 主题规范「织锦流光」
+│   ├── theme-design.md       # 主题规范「织锦流光」
+│   └── assets/               # 架构图等静态资源（architecture.html 为可编辑源，architecture.png 为渲染产物）
 ├── scripts/
 │   ├── docker.sh             # 容器统一入口（up/app/web/status/logs/sql/keepalive/shell/clean…）
 │   ├── mvn.sh                # AI 沙箱内的构建封装

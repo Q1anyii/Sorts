@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>梭子 SORTS · 整体架构图</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: #ffffff;
+    color: #1f2328;
+    padding: 26px 22px 20px;
+    width: 1080px;
+  }
+
+  /* ---------- 页眉 ---------- */
+  .header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 6px; }
+  .header h1 { font-size: 27px; font-weight: 800; letter-spacing: .5px; }
+  .header .meta { font-size: 12px; color: #8b949e; }
+  .tagline {
+    font-size: 12.5px; color: #57606a; margin-bottom: 14px;
+    padding: 7px 12px; background: #f6f8fa; border-left: 3px solid #d0d7de;
+    border-radius: 0 5px 5px 0; line-height: 1.65;
+  }
+  .tagline b { color: #cf222e; }
+
+  /* ---------- 分层容器 ---------- */
+  .layer {
+    border: 1.6px solid #dde3e9; border-radius: 9px;
+    margin-bottom: 9px; padding: 9px 11px 11px;
+    background: #fcfdfe;
+  }
+  .layer-title {
+    font-size: 13px; font-weight: 700; color: #0d47a1;
+    margin-bottom: 8px; letter-spacing: .3px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .layer-title .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 20px; height: 20px; padding: 0 5px;
+    background: #0d47a1; color: #fff; border-radius: 4px;
+    font-size: 11px; font-weight: 700;
+  }
+  .layer-title .sub { font-weight: 400; color: #8b949e; font-size: 11.5px; }
+
+  /* 层配色 */
+  .l1 { border-color: #c8e6c9; background: #f7fff8; } .l1 .layer-title { color: #2e7d32; } .l1 .layer-title .num { background: #2e7d32; }
+  .l2 { border-color: #bbdefb; background: #f6fbff; } .l2 .layer-title { color: #1565c0; } .l2 .layer-title .num { background: #1565c0; }
+  .l3 { border-color: #d1c4e9; background: #fbf9ff; } .l3 .layer-title { color: #5e35b1; } .l3 .layer-title .num { background: #5e35b1; }
+  .l4 { border-color: #ffe0b2; background: #fffdf7; } .l4 .layer-title { color: #e65100; } .l4 .layer-title .num { background: #e65100; }
+  .l5 { border-color: #b2dfdb; background: #f5fffd; } .l5 .layer-title { color: #00695c; } .l5 .layer-title .num { background: #00695c; }
+  .l6 { border-color: #cfd8dc; background: #fafbfc; } .l6 .layer-title { color: #37474f; } .l6 .layer-title .num { background: #37474f; }
+
+  /* ---------- 方块行 ---------- */
+  .row { display: flex; gap: 8px; }
+  .row + .row { margin-top: 8px; }
+  .box {
+    flex: 1 1 0; min-width: 0;
+    border: 1.2px solid #d0d7de; border-radius: 6px;
+    background: #fff; padding: 7px 9px;
+  }
+  .box .bt {
+    font-size: 11.5px; font-weight: 700; color: #24292f;
+    margin-bottom: 4px; line-height: 1.35;
+  }
+  .box .bl {
+    font-size: 10.2px; color: #57606a; line-height: 1.62;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    word-break: break-word; overflow-wrap: anywhere;
+  }
+  .box .bl i { font-style: normal; color: #cf222e; font-weight: 600; }
+  .box .bl em { font-style: normal; color: #0969da; }
+
+  /* 强调色方块 */
+  .box.gate { border-color: #90caf9; background: #f2f8ff; }
+  .box.acc  { border-color: #ffcc80; background: #fffbf2; }
+  .box.db   { border-color: #80cbc4; background: #f2fffd; }
+
+  /* 内嵌小标签组 */
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; align-items: flex-start; }
+  .chip {
+    font-size: 9.8px; padding: 1.5px 6px; border-radius: 10px;
+    background: #eef2f6; color: #444d56; border: 1px solid #dde3e9;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    flex: 0 0 auto; white-space: nowrap;
+  }
+  .chip.hot { background: #fff1f0; color: #cf222e; border-color: #ffcdd2; }
+  .chip.cool{ background: #eef6ff; color: #0969da; border-color: #c4dcf5; }
+  .chip.warm{ background: #fff8e6; color: #9a6700; border-color: #f0e0b0; }
+
+  /* 微服务卡片 */
+  .svc { flex: 1 1 0; min-width: 0; min-height: 84px;
+         border: 1.4px solid #d1c4e9; border-radius: 6px;
+         background: #fff; padding: 7px 8px; }
+  .svc .sn { font-size: 11.2px; font-weight: 700; color: #4527a0; margin-bottom: 3px;
+             word-break: break-word; }
+  .svc .sp { font-size: 9.6px; color: #8b949e; font-family: ui-monospace, Menlo, monospace; }
+  .svc .sd { font-size: 9.9px; color: #57606a; line-height: 1.58; margin-top: 3px;
+             word-break: break-word; overflow-wrap: anywhere; }
+
+  /* 箭头说明 */
+  .flow { display: flex; align-items: center; gap: 7px; margin: 0 0 9px;
+          font-size: 10.5px; color: #57606a; font-family: ui-monospace, Menlo, monospace;
+          padding-left: 4px; }
+  .flow .ar { color: #cf222e; font-weight: 700; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 11px;
+            padding-top: 9px; border-top: 1px dashed #d8dee4;
+            font-size: 10.5px; color: #57606a; }
+  .legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .legend .dot { width: 9px; height: 9px; border-radius: 2px; border: 1.2px solid; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>梭子 SORTS · 整体架构图</h1>
+  <span class="meta">Spring Boot 3.3.4 · Spring Cloud 2023.0.3 · Spring Cloud Alibaba 2023.0.3.2 · 微服务 · 2026-09</span>
+</div>
+<div class="tagline">
+  「<b>光阴似箭，日月如梭</b>」—— 把时间当作织机：一次专注是「<b>开梭 → 续梭 → 落梭</b>」，一条日程是一根线，织出的是自己的织锦。<br>
+  请求统一经网关鉴权限流后分发；服务间走 OpenFeign + <b>X-Internal-Token</b>，<b>禁止跨库直连</b>。
+</div>
+
+<!-- L1 接入层 -->
+<div class="layer l1">
+  <div class="layer-title"><span class="num">L1</span>接入层 <span class="sub">浏览器 → Nginx</span></div>
+  <div class="row">
+    <div class="box" style="flex:1.15">
+      <div class="bt">客户端 SPA · 织机界面</div>
+      <div class="bl">Vue 3.5 + Vite 6 + Pinia 3<br>运行态：index.html 模板 + <em>src/legacy/app-logic.ts</em><br>10 页：今日经纬 / 织历 / 织程 / 主线·主计划 / 梭灵 / 梭影报告 / 纹谱 / 锦市 / 飞鸽传书 / 云裳阁</div>
+      <div class="chips"><span class="chip cool">axios 1.8</span><span class="chip cool">marked 12</span><span class="chip cool">highlight.js 11</span><span class="chip cool">vue-router 4</span></div>
+    </div>
+    <div class="box" style="flex:.62">
+      <div class="bt">Nginx 1.27 <span style="font-weight:400;color:#8b949e">:8088</span></div>
+      <div class="bl">静态托管 dist + SPA 兜底<br><em>resolver 127.0.0.11</em>（动态 DNS）<br><i>proxy_buffering off</i>（SSE 不缓冲）</div>
+      <div class="chips"><span class="chip warm">/api/ 反代网关</span><span class="chip warm">assets 长缓存</span></div>
+    </div>
+    <div class="box" style="flex:.5">
+      <div class="bt">401 续期单飞</div>
+      <div class="bl">refreshPromise 去重<br>并发 401 只续期一次<br>SSE 手写 splitFrames 跨包半帧</div>
+    </div>
+  </div>
+</div>
+
+<!-- L2 网关层 -->
+<div class="layer l2">
+  <div class="layer-title"><span class="num">L2</span>接入网关 <span class="sub">sorts-gateway :8080 · Spring Cloud Gateway (WebFlux · 响应式)</span></div>
+  <div class="flow">
+    <span class="ar">①</span>路由匹配（顺序即优先级）
+    <span class="ar">→</span><span class="ar">②</span>JWT 校验 · 注入 X-User-Id
+    <span class="ar">→</span><span class="ar">③</span>Redis 令牌桶限流
+    <span class="ar">→</span><span class="ar">④</span>剥离伪造内部凭证
+    <span class="ar">→</span>lb://service-name
+  </div>
+  <div class="row">
+    <div class="box gate" style="flex:1.02">
+      <div class="bt">AuthGlobalFilter</div>
+      <div class="bl">先 remove 再 set（杜绝外部伪造 X-User-Id）<br>白名单：登录 / 注册 / 头像回读<br>剥离伪造 X-Internal-Token</div>
+    </div>
+    <div class="box gate" style="flex:.88">
+      <div class="bt">RedisRateLimiter</div>
+      <div class="bl">令牌桶：replenishRate <i>20/s</i><br>burstCapacity <i>40</i> · requestedTokens 1<br>userKeyResolver 按用户维度</div>
+    </div>
+    <div class="box gate" style="flex:1.38">
+      <div class="bt">路由表 <span style="font-weight:400;color:#8b949e">顺序即优先级</span></div>
+      <div class="bl"><i>mall 必须先于 user</i>（装扮接口同时命中两条）<br>/mall/** · /users/wardrobe/** → mall<br>/auth/** · /users/** → user<br>/schedules|calendar|statistics|parent-plans/** → schedule<br>/ai/** → ai　·　/notifications/** → notification</div>
+    </div>
+    <div class="box gate" style="flex:.8">
+      <div class="bt">RateLimitResponseFilter</div>
+      <div class="bl">限流响应统一包装<br>返回 Result&lt;T&gt; 而非 WebFlux 裸 429</div>
+    </div>
+  </div>
+  <div class="flow" style="margin:8px 0 0">
+    <span class="ar">↳</span>服务发现：Nacos 2.4.3 :8848（单机免鉴权）　·　<i>discovery.locator 已关闭</i>（防内部接口被自动暴露）
+  </div>
+</div>
+
+<!-- L3 业务服务层 -->
+<div class="layer l3">
+  <div class="layer-title"><span class="num">L3</span>业务服务层 <span class="sub">5 个微服务 · 每服务独立库 · spring.application.name = sorts-*</span></div>
+  <div class="row">
+    <div class="svc">
+      <div class="sn">sorts-user</div><div class="sp">:8081 · sorts_user</div>
+      <div class="sd">注册登录 · JWT 双令牌签发与轮换 · 资料/头像 · 光阴砂与流水<br><span style="color:#8b949e">RefreshTokenStore 服务端留存校验</span></div>
+    </div>
+    <div class="svc">
+      <div class="sn">sorts-schedule</div><div class="sp">:8082 · sorts_schedule</div>
+      <div class="sd">日程 CRUD · 计时状态机 · 织历聚合 · 纹谱统计 · <b>主线·主计划</b><br><span style="color:#8b949e">6 状态 / 分段计时 / 落梭发砂</span></div>
+    </div>
+    <div class="svc">
+      <div class="sn">sorts-ai</div><div class="sp">:8083 · sorts_ai</div>
+      <div class="sd">梭灵对话（SSE 流式）· 规划与采纳 · 梭影报告 · 文件解析<br><span style="color:#8b949e">7 工具（4 读 3 写）· 双钥匙写权限</span></div>
+    </div>
+    <div class="svc">
+      <div class="sn">sorts-notification</div><div class="sp">:8084 · sorts_notification</div>
+      <div class="sd">飞鸽传书 · 提醒扫描 · 免打扰时段<br><span style="color:#8b949e">INSERT IGNORE 幂等（at-most-once）</span></div>
+    </div>
+    <div class="svc">
+      <div class="sn">sorts-mall</div><div class="sp">:8085 · sorts_mall</div>
+      <div class="sd">锦市 · 购买链路 · 云裳阁装扮<br><span style="color:#8b949e">Redisson 锁 + 条件更新防超卖</span></div>
+    </div>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <div class="box" style="border-color:#d1c4e9">
+      <div class="bt">sorts-common · 公共库（无端口，被全体依赖）</div>
+      <div class="bl">Result&lt;T&gt; / PageData&lt;T&gt; / ErrorCode / BizException / GlobalExceptionHandler · JwtUtil 自动装配<br>内部接口双拦截器：<em>InternalFeignInterceptor</em>（出站自动附加）· <em>InternalApiInterceptor</em>（入站 fail-closed）</div>
+      <div class="chips"><span class="chip hot">/internal/** 网关不路由</span><span class="chip hot">X-Internal-Token</span><span class="chip">jjwt 0.12.6</span><span class="chip">Hutool 5.8.32</span></div>
+    </div>
+  </div>
+  <div class="flow" style="margin:8px 0 0">
+    <span class="ar">Feign 链路</span>schedule→user（落梭发砂）· mall→user（扣砂/退砂）· mall|schedule|ai→notification（投递）· notification→schedule（拉取待提醒）
+  </div>
+</div>
+
+<!-- L4 AI 链路 -->
+<div class="layer l4">
+  <div class="layer-title"><span class="num">L4</span>AI 链路 <span class="sub">梭灵 · sorts-ai 内部</span></div>
+  <div class="row">
+    <div class="box acc" style="flex:1.08">
+      <div class="bt">ChatModelClient（薄客户端）</div>
+      <div class="bl">DeepSeek（OpenAI 兼容协议）<br><i>不用 Spring AI</i>：<br>1.0.0 锁 Boot 3.4.5，与本项目 Boot 3.3.4 冲突<br>JDK HttpClient 自实现 · 密钥走环境变量</div>
+    </div>
+    <div class="box acc" style="flex:.96">
+      <div class="bt">SSE 流式解析</div>
+      <div class="bl"><em>SseDataParser</em> 拆 data: 帧<br><em>ToolCallAccumulator</em> 按 index 归并<br>arguments 分片<b>追加</b>而非覆盖<br>事件：delta / done / error</div>
+    </div>
+    <div class="box acc" style="flex:1.15">
+      <div class="bt">ToolRegistry（工具三件事）</div>
+      <div class="bl">① 声明过滤 ② 执行前复核 ③ 异常兜底（错误文本回灌为观察结果）<br><b>双钥匙写权限</b>：服务端 sorts.ai.tool.allow-write 且 请求 allowWrite=true</div>
+      <div class="chips">
+        <span class="chip cool">querySchedules</span><span class="chip cool">queryStatistics</span><span class="chip cool">queryPoints</span><span class="chip cool">getProfile</span><span class="chip hot">createSchedule</span><span class="chip hot">createSchedules</span><span class="chip hot">updateSchedule</span>
+      </div>
+    </div>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <div class="box acc" style="flex:1.18">
+      <div class="bt">文件解析 → 临时记忆</div>
+      <div class="bl">/api/v1/ai/files/parse 支持 md / docx / doc / txt（POI 解析）<br>单文件 2MB · 文本上限 20000 字符 · <b>不落库</b>，仅本轮上下文<br>无可执行计划则不落记忆，禁止编造日程</div>
+    </div>
+    <div class="box acc" style="flex:.95">
+      <div class="bt">多轮编排 · ChatServiceImpl</div>
+      <div class="bl">轮数上限 → 工具循环 → 收尾调用<br>权威日期锚点注入（writeToolsAvailable）<br>写能力事实随每次请求刷新</div>
+    </div>
+    <div class="box acc" style="flex:.95">
+      <div class="bt">双通道映射 · 报告幂等</div>
+      <div class="bl">同一路径 JSON + SSE，用 <i>params</i> 条件拆两个方法（返回类型不可为 Object）<br>报告 period_key + uk_user_period，同周期重复生成不重复落库</div>
+    </div>
+  </div>
+</div>
+
+<!-- L5 数据层 -->
+<div class="layer l5">
+  <div class="layer-title"><span class="num">L5</span>数据与中间件 <span class="sub">MySQL 8 :3307 · Redis-stack :6379 · RabbitMQ（预留）</span></div>
+  <div class="row">
+    <div class="box db" style="flex:1.55">
+      <div class="bt">MySQL 8 · 一服务一库（禁止跨库直连）</div>
+      <div class="bl">
+        sorts_user　→ t_user · t_points_log<br>
+        sorts_schedule　→ t_schedule · t_time_record · <b>t_parent_plan</b><br>
+        sorts_ai　→ t_schedule_plan · t_ai_report · t_ai_conversation<br>
+        sorts_notification　→ t_notification · t_reminder_setting · t_reminder_log<br>
+        sorts_mall　→ t_mall_item · t_purchase_record · t_wardrobe_item
+      </div>
+      <div class="chips"><span class="chip">MyBatis-Plus 3.5.7</span><span class="chip">逻辑删除 deleted</span><span class="chip">PaginationInnerInterceptor</span></div>
+    </div>
+    <div class="box db" style="flex:1.05">
+      <div class="bt">Redis（redis-stack 同镜像）</div>
+      <div class="bl">
+        <em>sorts:auth:refresh:</em>　令牌轮换留存<br>
+        <em>sorts:timer:segment:</em>　活跃计时片段<br>
+        <em>sorts:timer:active:</em>　用户进行中计时（TTL 24h）<br>
+        <em>sorts:ai:chat</em>　会话（12h）<br>
+        <em>sorts:mall:lock:item:</em>　Redisson 分布式锁
+      </div>
+      <div class="chips"><span class="chip">Redisson 3.36</span><span class="chip cool">限流桶</span><span class="chip cool">兜底重算源</span></div>
+    </div>
+    <div class="box db" style="flex:.62">
+      <div class="bt">RabbitMQ 3.13</div>
+      <div class="bl">已部署未启用<br>当前提醒走 @Scheduled<br><span style="color:#8b949e">事务性消息 / outbox 技术债预留</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- L6 构建部署 -->
+<div class="layer l6">
+  <div class="layer-title"><span class="num">L6</span>构建 · 测试 · 部署 <span class="sub">一体化工程治理</span></div>
+  <div class="row">
+    <div class="box" style="flex:.88">
+      <div class="bt">构建</div>
+      <div class="bl">Maven Wrapper（backend/mvnw）<br>父 pom 版本矩阵统一收敛<br>AI 沙箱内用 scripts/mvn.sh<br>前端 Vite 6 构建 → dist</div>
+    </div>
+    <div class="box" style="flex:.92">
+      <div class="bt">测试</div>
+      <div class="bl"><b>42 个测试类</b>（41 单测 + 1 集成）<br>JUnit 5 + Mockito + MockMvc<br>Testcontainers 1.20.4（真实 MySQL/Redis）<br>Vitest（前端）</div>
+    </div>
+    <div class="box" style="flex:1.05">
+      <div class="bt">容器化（单文件 compose + profiles）</div>
+      <div class="bl"><em>docker/compose.yml</em>：默认=中间件 · app=6 服务 · web=前端<br>Dockerfile.backend（多阶段 + ARG MODULE 复用 + BuildKit cache）<br>Nginx 托管 dist，healthcheck 必须 grep <i>"status":"UP"</i></div>
+    </div>
+    <div class="box" style="flex:.88">
+      <div class="bt">CI/CD（GitHub Actions）</div>
+      <div class="bl">backend-test：构建 + 全量单测 + 集成测试<br>frontend-test：类型检查 + vitest + 构建<br>images：6 服务矩阵构建推镜像</div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <span><i class="dot" style="background:#f7fff8;border-color:#2e7d32"></i>接入</span>
+  <span><i class="dot" style="background:#f6fbff;border-color:#1565c0"></i>网关</span>
+  <span><i class="dot" style="background:#fbf9ff;border-color:#5e35b1"></i>业务服务</span>
+  <span><i class="dot" style="background:#fffdf7;border-color:#e65100"></i>AI 链路</span>
+  <span><i class="dot" style="background:#f5fffd;border-color:#00695c"></i>数据层</span>
+  <span><i class="dot" style="background:#fafbfc;border-color:#37474f"></i>工程治理</span>
+  <span style="color:#8b949e">— 内部接口走 /internal/**，网关不路由，外部网络不可达</span>
+</div>
+
+</body>
+</html>
