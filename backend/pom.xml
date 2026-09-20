@@ -156,11 +156,24 @@
     <build>
         <pluginManagement>
             <plugins>
-                <!-- Spring Boot 可执行 Jar 打包（只在实际服务模块启用） -->
+                <!--
+                  Spring Boot 可执行 Jar 打包（只在实际服务模块启用）。
+
+                  ⚠️ 必须带 classifier，否则会打断 reactor 构建：
+                  服务模块同时是「可运行应用」和「下游模块的依赖」——`sorts-metrics-tests`
+                  以 test scope 依赖 sorts-ai / sorts-gateway / sorts-mall / sorts-schedule。
+                  若不设 classifier，repackage 会**覆盖主产物**，把业务类搬进 BOOT-INF/classes/；
+                  一旦构建走到 package 之后（verify / install），reactor 就从已打包的 fat jar
+                  解析模块间依赖，下游编译期便找不到 com.sorts.ai.* / com.sorts.mall.* 等包
+                  （`mvn test` 只到 test 阶段、依赖取自 target/classes，所以不会暴露）。
+                  设了 classifier 后主产物保持为普通 jar，可执行 jar 单独输出为
+                  <finalName>-exec.jar —— Dockerfile 用的是后者。
+                -->
                 <plugin>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <configuration>
+                        <classifier>exec</classifier>
                         <excludes>
                             <exclude>
                                 <groupId>org.projectlombok</groupId>

@@ -14,7 +14,7 @@
 
     <artifactId>sorts-metrics-tests</artifactId>
     <name>sorts-metrics-tests</name>
-    <description>梭子指标测试工程：双钥匙 / 五态状态机 / AI 多日规划 / 兑换并发扣减 / 网关收口 的独立指标验证</description>
+    <description>梭子指标测试工程：双钥匙 / 六态状态机 / AI 多日规划 / 兑换并发扣减 / 网关收口 的独立指标验证</description>
 
     <dependencies>
         <!-- 被测模块（均以 test scope 引入，避免污染主构建产物） -->

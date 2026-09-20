@@ -451,6 +451,8 @@ event: error   data: {"code":503,"message":"..."}
 
 34. **文档与数据集的数字口径曾出现人工转录偏差**（2026-09-20 修正）：`results/SUMMARY.md` 与 `RESUME` 类文档曾写「状态机 13 合法 + 17 非法」，与 `state-machine-matrix.json` 实际矩阵（**11 合法 + 19 非法**）不符；`datasets/dual-key-matrix.json` 的 `writeTools` 曾漏 `UpdateSchedule`；根 README / 本文档曾写「7 个 Maven 模块」（实为 8 个，漏 `sorts-metrics-tests`）。**对策**：格数等派生数字已写入数据集（`matrixSize` / `toolCount` 字段）并由 `MetricsIndicatorTest.B2` 断言固化（`legal=11`、`illegal=19`、`total=30`），数据集被改坏会直接导致测试失败。
 
+35. **服务模块的 fat jar 曾让整条 reactor 构建失败**（2026-09-20 修复，重要）：`sorts-metrics-tests` 以 test scope 依赖 `sorts-ai` / `sorts-gateway` / `sorts-mall` / `sorts-schedule` / `sorts-common`。前四者是 Spring Boot 可执行模块，`repackage` 会**覆盖主产物**，把业务类搬进 `BOOT-INF/classes/`；构建一旦走到 `package` 之后（`verify` / `install`），reactor 就从 fat jar 解析模块间依赖 → 下游 `testCompile` 报「程序包 com.sorts.ai.config 不存在」，**CI 自 `40a9bb2` 新增该工程起一直红**。`sorts-common` 无该插件、是普通 jar，所以它能解析——这个「有的模块能找到、有的找不到」的差异正是定位线索。**对策**：父 pom 的 `spring-boot-maven-plugin` 加 `<classifier>exec</classifier>`，主产物回归普通 jar（供下游依赖），可执行 jar 另出为 `<finalName>-exec.jar`；`docker/Dockerfile.backend` 的 `COPY` 同步改为 `${MODULE}-exec.jar`。**教训**：`./mvnw test` 只到 test 阶段、依赖取自 `target/classes`，**不能用来验证打包正确性**——涉及模块间依赖时必须跑 `clean verify` / `clean install`。
+
 
 ---
 

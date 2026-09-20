@@ -535,7 +535,9 @@ bash scripts/docker.sh app-down  # 停服务
 数据集外置在 `datasets/*.json`（双钥匙矩阵 / 状态机矩阵 / 日期样例 / 并发参数），执行结果归档在 `results/`（`SUMMARY.md` + Surefire XML）。
 2026-09-18 实跑 **25/25 通过**（详见 `backend/sorts-metrics-tests/results/SUMMARY.md`）。
 
-> 复现：`cd backend && ./mvnw test -pl sorts-metrics-tests -am`（必须用 reactor，因服务模块 install 的是 fat jar）。
+> 复现：`cd backend && ./mvnw test -pl sorts-metrics-tests -am`（或直接跑全量 `./mvnw clean verify`）。
+> 该模块以 test scope 依赖 5 个被测模块，依赖 jar 形态由父 pom 的
+> `spring-boot-maven-plugin` → `<classifier>exec</classifier>` 保证（见下「可执行 jar 与普通 jar」）。
 
 **运行方式**
 
@@ -544,6 +546,22 @@ cd backend && ./mvnw clean install   # 构建即跑单测，全绿才可提交
 cd frontend/vite-app && npm test              # Vitest run
 cd frontend/vite-app && npm run build         # 生产构建冒烟
 ```
+
+**可执行 jar 与普通 jar（两个产物，别拿错）**
+
+服务模块同时是「可运行应用」与「下游模块的依赖」，因此 `spring-boot-maven-plugin` 配了
+`<classifier>exec</classifier>`，构建后每个服务模块产出两个 jar：
+
+| 产物 | 用途 |
+| --- | --- |
+| `target/<module>.jar` — 普通 jar，业务类在根部 | **给下游模块依赖用**（如 `sorts-metrics-tests`）。可被 Maven 正常解析 |
+| `target/<module>-exec.jar` — Spring Boot 可执行 jar，类在 `BOOT-INF/classes/` | **给容器运行用**；`docker/Dockerfile.backend` 取的就是它 |
+
+> ⚠️ 不要给 `spring-boot-maven-plugin` 去掉 classifier。repackage 一旦覆盖主产物，
+> 业务类会被搬进 `BOOT-INF/classes/`；构建走到 `package` 之后（`verify` / `install`），
+> reactor 就从 fat jar 解析模块间依赖，`sorts-metrics-tests` 会因编译期找不到
+> `com.sorts.ai.*` / `com.sorts.mall.*` 等包而**整条构建失败**。
+> （`./mvnw test` 只到 test 阶段、依赖取自 `target/classes`，不会暴露这个问题——排查时别只跑 test。）
 
 **集成测试（真实 MySQL 8 + Redis 7，Testcontainers）**
 

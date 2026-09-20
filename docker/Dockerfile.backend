@@ -32,7 +32,10 @@ FROM eclipse-temurin:17-jre
 ARG MODULE
 ENV TZ=Asia/Shanghai
 WORKDIR /app
-COPY --from=build /build/${MODULE}/target/*.jar /app/app.jar
+# 取可执行 jar：spring-boot-maven-plugin 配了 <classifier>exec</classifier>，
+# 主产物 target/<module>.jar 是普通 jar（供下游模块依赖用），
+# 可运行的是 target/<module>-exec.jar，容器要的是这一个。
+COPY --from=build /build/${MODULE}/target/${MODULE}-exec.jar /app/app.jar
 
 # 容器一律以非 root 运行（不用 -r：10001 超出系统账号区间，会打 warning）
 RUN useradd -m -u 10001 sorts && chown -R sorts:sorts /app \
