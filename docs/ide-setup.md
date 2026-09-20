@@ -117,7 +117,7 @@ IDEA 里已注册的 17 叫 **`ms-17`**（对应 `E:\Java\java17`）。
 
 ```bash
 # 在 WSL 内执行
-bash scripts/wsl-middleware.sh start     # Redis 6380 / MySQL 3307 / Nacos 8848 / RabbitMQ 5672
+bash scripts/wsl-middleware.sh start     # Redis 6379 / MySQL 3307 / Nacos 8848 / RabbitMQ 5672
 bash scripts/wsl-middleware.sh sql       # 首次或新增模块建表脚本后补执行
 ```
 
@@ -213,7 +213,7 @@ mvnw.cmd clean install        # CMD / PowerShell
 ```
 SCHEDULE_PORT=9082
 MYSQL_HOST=localhost;MYSQL_PORT=3307;MYSQL_USER=root;MYSQL_PASSWORD=sorts_dev
-REDIS_PORT=6380
+REDIS_PORT=6379
 NACOS_ENABLED=false        # 本地联调不想起 Nacos 时关掉服务注册
 REWARD_ENABLED=false       # 关掉落梭奖励，避免依赖 sorts-user
 ```

@@ -161,12 +161,12 @@
       <div class="bl" data-page-node-id="h0pLJsAD0t85oUNnDr0AWJ">
         ① <em data-page-node-id="H0POzzvyiUoZFe4qrzUuwF">actions/checkout@v4</em><br data-page-node-id="AkmMwIzyp5CuUjqSc9By9z">
         ② setup-java 17（temurin · cache: maven）<br data-page-node-id="GjNveHPrY2CpeXzusGbfPd">
-        ③ <em data-page-node-id="QrE8e8ZqD0J2FpWUTR2utq">./mvnw -B -ntp clean verify</em> <s data-page-node-id="4MiEQ6EMGPdDxcjDy5peKS">← 7 模块全量构建 + 单测</s><br data-page-node-id="vsyUwko6Yg6TFw9lAgcXbx">
+        ③ <em data-page-node-id="QrE8e8ZqD0J2FpWUTR2utq">./mvnw -B -ntp clean verify</em> <s data-page-node-id="4MiEQ6EMGPdDxcjDy5peKS">← 8 模块全量构建 + 单测</s><br data-page-node-id="vsyUwko6Yg6TFw9lAgcXbx">
         ④ <em data-page-node-id="HYqD0lBrfjVMtTvI8R2HQh">./mvnw -Pintegration test -Dtest='*IT'</em><br data-page-node-id="nFoMysBSmFKNksHBdUeDNR">
         <s data-page-node-id="naCUFjez5wFW8K3cmzD2oF">　Testcontainers 真实 MySQL + Redis（本地无 Docker 自动跳过）</s><br data-page-node-id="HWM2uZmYbvlJ188PN8pIGX">
         ⑤ upload-artifact: <s data-page-node-id="jJEXPVVsNPYPGyKfUapCDz">surefire-reports</s>（if: always · 7 天）
       </div>
-      <div class="chips" data-page-node-id="p8YDdoXTEsof1SuBlAaOFG"><span class="chip cool" data-page-node-id="8G3E7H3EMf0EhwK1Ahrjop">JDK 17</span><span class="chip ok" data-page-node-id="cMppAEwrNHtsx8LZPDwVFR">42 测试类</span><span class="chip warm" data-page-node-id="9osl6CvWIWNZyqd9hsJDmI">Maven 缓存</span></div>
+      <div class="chips" data-page-node-id="p8YDdoXTEsof1SuBlAaOFG"><span class="chip cool" data-page-node-id="8G3E7H3EMf0EhwK1Ahrjop">JDK 17</span><span class="chip ok" data-page-node-id="cMppAEwrNHtsx8LZPDwVFR">43 测试类</span><span class="chip warm" data-page-node-id="9osl6CvWIWNZyqd9hsJDmI">Maven 缓存</span></div>
     </div>
     <div class="box job" style="flex:.94" data-page-node-id="NT4FNNQICGWzoVVJP2zas5">
       <div class="bt" data-page-node-id="migMhMhNbnthfYQgCNWISf">frontend-test <span class="badge" style="background:#eef6ff;color:#0969da" data-page-node-id="ASfCIb4ryNacySf2jWbZjn">前端构建与单测</span></div>
@@ -216,7 +216,7 @@
         <div class="mod" data-page-node-id="GUETr7WF8mcBpglRHFhvs7">mall<span class="im" data-page-node-id="xuyLGRdAUZ8BsTqycrFaGG">:8085</span></div>
       </div>
       <div class="bl" style="margin-top:6px" data-page-node-id="WhoIbfLmwsjYO9bKc8MrhA">
-        <s data-page-node-id="AGCY3agYAJHTSYDFHO08Dd">sorts-common 是库，不产出镜像</s> → 7 模块 → <b data-page-node-id="RbV7F3HhDHJ0B7QEuMEJAd">6 镜像</b>
+        <s data-page-node-id="AGCY3agYAJHTSYDFHO08Dd">sorts-common 是库、metrics-tests 是纯测试工程，均不产镜像</s> → 8 模块 → <b data-page-node-id="RbV7F3HhDHJ0B7QEuMEJAd">6 镜像</b>
       </div>
     </div>
   </div>
