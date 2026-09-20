@@ -191,7 +191,7 @@ graph TD
 │   ├── Dockerfile.frontend   # 前端镜像（多阶段：Node 构建 dist → Nginx 托管）
 │   ├── nginx.conf            # SPA 兜底 + /api 反代（含 SSE 关闭缓冲）
 │   └── .env.example          # 端口/口令模板（复制为 .env 使用，不入库）
-├── backend/                  # Maven 多模块工程
+├── backend/                  # Maven 多模块工程（8 个模块）
 │   ├── mvnw / mvnw.cmd       # Maven Wrapper（IDE / CI 无需预装 Maven）
 │   ├── sorts-common/         # Result / 异常 / JWT / PageData / 内部凭证拦截器
 │   ├── sorts-gateway/        # 网关：路由、鉴权过滤器、限流
@@ -199,7 +199,8 @@ graph TD
 │   ├── sorts-schedule/       # 日程服务（含计时、日历、统计）
 │   ├── sorts-ai/             # AI 服务（llm / tool / service / controller）
 │   ├── sorts-notification/   # 通知服务
-│   └── sorts-mall/           # 锦市服务
+│   ├── sorts-mall/           # 锦市服务
+│   └── sorts-metrics-tests/  # 指标测试工程（仅测试代码：datasets/ + results/，不产业务构件）
 ├── frontend/                 # 前端工程（Vue 3 + Vite 构建，主版）
 │   └── vite-app/             # Vite 6 工程：index.html（页面模板）+ src/legacy/（主版逻辑与样式）+ 组件化源码存档
 │       ├── src/legacy/       # 主版数据层 app-logic.ts + style.css + github.min.css（由 js/app.js 迁入）
@@ -500,10 +501,10 @@ bash scripts/docker.sh app-down  # 停服务
 
 | 层    | 命令                                        | 规模                       |
 | ---- | ----------------------------------------- | ------------------------ |
-| 后端单测 | `cd backend && ./mvnw test`               | 41 个测试类 / 367 个用例；另有 1 个 IT 类 4 个用例（共 42 类 / 371 个 `@Test`，加指标测试后 43 类 / 396）        |
+| 后端单测 | `cd backend && ./mvnw test`               | **42 个测试类 / 392 个用例**（41 个业务单测类 367 例 + 1 个指标测试类 25 例；`*IT` 类默认跳过）        |
+| 集成测试 | `cd backend && ./mvnw -Pintegration test` | 追加 `UserServiceIT` **1 个类 / 4 个用例**（Testcontainers，需 Docker）→ 全量口径 **43 类 / 396 用例** |
 | **指标测试** | `cd backend && ./mvnw test -pl sorts-metrics-tests -am` | **1 个独立测试类 / 25 个用例**（5 组 `@Nested`：双钥匙 / 状态机 / 多日规划 / 兑换并发 / 网关收口；4 份 JSON 数据集 + Surefire 结果） |
 | 前端单测 | `cd frontend/vite-app && npm test` | 4 个测试文件 / 19 个用例（时长工具 / 状态机映射 / SSE 帧 / 错误语义；与主版共用同一仓库，覆盖盲区从「非线上代码」收窄为「legacy 大函数未拆解」） |
-| 集成测试 | `cd backend && ./mvnw -Pintegration test` | Testcontainers（需 Docker） |
 
 **覆盖范围**
 
@@ -513,7 +514,7 @@ bash scripts/docker.sh app-down  # 停服务
 | sorts-gateway      | 鉴权过滤器、限流配置与限流响应                           |
 | sorts-user         | 注册登录、令牌续期、积分扣减                            |
 | sorts-schedule     | 日程 CRUD、计时状态机流转、日历聚合、统计口径、日期区间工具          |
-| sorts-ai           | 对话编排、规划生成与采纳、报告装配、工具注册与七种工具、SSE 帧、JSON 载荷 |
+| sorts-ai           | 对话编排、规划生成与采纳、报告装配、工具注册与 6 种工具单测（`UpdateSchedule` 待补，见 `docs/PROGRESS.md` 已知限制 25）、SSE 帧、JSON 载荷 |
 | sorts-notification | 通知已读、提醒设置、提醒扫描幂等、免打扰时段                    |
 | sorts-mall         | 商品查询、购买加锁与一致性兜底、事务落库、装扮切换                   |
 | sorts-metrics-tests | **指标测试**：双钥匙声明过滤、状态机全矩阵、多日规划相对日期、兑换并发超卖=0、网关伪造头剥离（详见下方） |
@@ -526,8 +527,8 @@ bash scripts/docker.sh app-down  # 停服务
 | 组 | 断言要点 | 用例 |
 | --- | --- | --- |
 | 双钥匙 | 2×2 矩阵仅 `(服务端开关=on, 用户授权=true)` 放行写工具；未授权写调用**写副作用 = 0** | 6 |
-| 状态机 | 30 格矩阵逐格校验：非法跃迁 100% 拒绝；终态冻结；TIMEOUT 仅保留取消入口 | 4 |
-| 多日规划 | 9 例相对日期全命中（含跨年「下周」→ 2027-01-04）；未来一周 7 天连续无断档 | 5 |
+| 状态机 | 30 格矩阵（**11 合法 / 19 非法**）逐格校验：非法跃迁 100% 拒绝；终态冻结；TIMEOUT 仅保留取消入口 | 4 |
+| 多日规划 | 9 组相对日期解析全部正确（8 组命中 + 1 组未命中回退；含跨年「下周」→ 2027-01-04）；未来一周 7 天连续无断档 | 5 |
 | 兑换并发 | **50 并发抢 10 库存：成功 10、库存 0、超卖 = 0**（仿真锁恒可获取，压力全压给条件更新）；售罄扣砂/退砂成对 | 4 |
 | 网关收口 | 无/过期/错类型 token 100% 401；伪造 `X-Internal-Token` **剥离率 100%**；限流 key 登录按用户/未登录按 IP | 6 |
 
@@ -610,7 +611,7 @@ cd backend && ./mvnw -Pintegration test -pl sorts-common,sorts-user
 | `images`        | `needs: [backend-test, frontend-test]` | 矩阵构建 6 个服务镜像（`fail-fast: false`，GHA 缓存按模块隔离），验证 Dockerfile 可用性 |
 | `deploy`（可选）    | `needs: images` | `workflow_dispatch` 开关，**默认关闭**；开启后推镜像并做部署健康门禁（轮询 `gateway:8080/actuator/health`，必须命中 `"status":"UP"`） |
 
-前两个 job **并行**执行，全部通过后才进入 `images` 矩阵（7 个 Maven 模块 → 6 个服务镜像，`sorts-common` 是库不产镜像）。
+前两个 job **并行**执行，全部通过后才进入 `images` 矩阵（8 个 Maven 模块 → 6 个服务镜像，`sorts-common` 是库、`sorts-metrics-tests` 是纯测试工程，二者均不产镜像）。
 
 **所需 Secrets**（仅在打开 `push_images` / `deploy` 开关后需要）：`ACR_*`（镜像仓库地址 / 用户名 / 密码）、`ECS_*`（服务器地址 / 用户 / SSH 私钥）。
 

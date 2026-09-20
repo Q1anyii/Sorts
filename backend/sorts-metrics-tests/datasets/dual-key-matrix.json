@@ -2,7 +2,8 @@
   "title": "双钥匙权限模型（AI 写工具声明级过滤）测试数据集",
   "desc": "服务端开关 sorts.ai.tool.allow-write 与单次请求 allowWrite=true 必须同时到位，写工具才下发给模型。",
   "readTools": ["QuerySchedules", "QueryStatistics", "QueryPoints", "GetProfile"],
-  "writeTools": ["CreateSchedule", "CreateSchedules"],
+  "writeTools": ["CreateSchedule", "CreateSchedules", "UpdateSchedule"],
+  "toolCount": { "read": 4, "write": 3, "total": 7, "note": "与 ToolRegistry 实际注册的 7 个 AiTool 一致（4 读 3 写）" },
   "matrix": [
     { "serverAllowWrite": false, "requestAllowWrite": false, "expectWriteToolsDelivered": false, "note": "双关，读工具仍全量下发" },
     { "serverAllowWrite": false, "requestAllowWrite": true,  "expectWriteToolsDelivered": false, "note": "服务端开关一票否决" },

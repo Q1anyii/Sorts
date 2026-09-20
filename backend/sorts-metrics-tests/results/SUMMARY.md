@@ -1,17 +1,18 @@
 # 梭子安全机制指标测试结果
 
-- **执行时间**：2026-09-18 17:44（Asia/Shanghai）
-- **执行方式**：`mvn test -pl sorts-metrics-tests -am`（backend 父工程，JDK 22 编译目标 release 17，Maven 3.9.15）
+- **最后一次执行**：2026-09-20 12:17（Asia/Shanghai）
+- **执行方式**：`bash scripts/mvn.sh -pl sorts-metrics-tests -am test`（backend 父工程；Maven 3.9.16，编译目标 `release 17`）
 - **构建结果**：BUILD SUCCESS
 - **测试总数**：25，失败 0，错误 0，跳过 0
+- **历史执行**：2026-09-18 17:44 同为 25/25 通过（本次重跑用于校验数据集修正后的断言一致性）
 
 ## 分组成绩
 
 | 组 | 覆盖机制 | 用例数 | 结果 | 关键指标 |
 | --- | --- | --- | --- | --- |
 | ① DualKeyPermission | AI 写工具声明级过滤 | 6 | ✅ 全过 | 2×2 矩阵仅 (服务端开关 ∧ 用户授权) 1/4 放行；未授权写调用不执行（写副作用 0）|
-| ② StateMachine | 五态状态机 | 4 | ✅ 全过 | 全矩阵 30 格（13 合法 + 17 非法）逐格校验；非法跃迁 100% 拒绝；终态冻结 |
-| ③ PlanRange | AI 多日规划相对日期 | 5 | ✅ 全过 | 数据集 9 例全命中（含跨年「下周」→ 2027-01-04）；未来一周 7 天连续无断档 |
+| ② StateMachine | 六态状态机 | 4 | ✅ 全过 | 全矩阵 30 格（**11 合法 + 19 非法**）逐格校验；非法跃迁 100% 拒绝；终态冻结 |
+| ③ PlanRange | AI 多日规划相对日期 | 5 | ✅ 全过 | 数据集 9 组解析全部正确（含跨年「下周」→ 2027-01-04，及 1 组未命中回退）；未来一周 7 天连续无断档 |
 | ④ ConcurrentPurchase | 兑换并发扣减 | 4 | ✅ 全过 | 50 并发抢 10 库存：成功 10、库存 0、**超卖 = 0**；售罄补偿成对、锁繁忙 429、落库失败退积分 |
 | ⑤ GatewayGuard | 网关统一收口 | 6 | ✅ 全过 | 无/过期 token 100% 401；有效 token 注入 X-User-Id；伪造 X-Internal-Token 剥离率 100%；限流 key 登录按用户 / 未登录按 IP |
 
@@ -26,6 +27,11 @@
 - 合法起点：`startableFrom={PENDING, PAUSED}`、`pausableFrom={IN_PROGRESS}`、
   `endableFrom={PENDING, IN_PROGRESS, PAUSED}`、`cancellableFrom={PENDING, IN_PROGRESS, PAUSED, TIMEOUT}`
 - TIMEOUT 为第六态：`isFinal=true`，仅保留「取消」入口（不可开梭/落梭）——数据集与断言已按真实实现校准。
+- **30 格构成（6 态 × 5 动作）**：PENDING 3 格（start/end/cancel）+ IN_PROGRESS 3 格（pause/end/cancel）
+  + PAUSED 4 格（start/resume/end/cancel）+ COMPLETED 0 + CANCELLED 0 + TIMEOUT 1 格（cancel）
+  = **合法 11 / 非法 19**。
+  （`resume` 的合法前驱单独收窄为 `{PAUSED}`，不与 `startableFrom` 的 `{PENDING, PAUSED}` 同宽。）
+  该数值同步记录在 `datasets/state-machine-matrix.json` 的 `matrixSize` 字段，可直接核对。
 
 ### ⑤ 伪造内部凭证剥离
 - 白名单放行路径与鉴权路径均断言：下游请求头 **不含 X-Internal-Token**。

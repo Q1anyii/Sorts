@@ -2,8 +2,9 @@
 
 > **用法**：新会话开始前，把本文档 + `docs/theme-design.md` + `docs/dev-setup.md` + `docs/ide-setup.md` 丢给 AI，并粘贴文末的「接续 Prompt」，即可无缝继续开发。
 >   
-> 最后更新：2026-09-17 · 当前里程碑：**M0 / M1 / M2 / M3 / M4 / M5 / M6 完成**（构建通过，**367 个单测全绿**：
-> common 21 + gateway 21 + user 16 + schedule 79 + ai 135 + notification 51 + mall 44；另有 1 个 IT 类 5 个用例，合计 42 类 / 372 个 `@Test`）
+> 最后更新：2026-09-20 · 当前里程碑：**M0 / M1 / M2 / M3 / M4 / M5 / M6 完成**（构建通过，**43 个测试类 / 396 个 `@Test` 全绿**：
+> 业务单测 41 类 367 例（common 21 + gateway 21 + user 16 + schedule 79 + ai 135 + notification 51 + mall 44）
+> + `UserServiceIT` 1 类 4 例（`-Pintegration`）+ `MetricsIndicatorTest` 1 类 25 例）
 >
 > ⚠️ 本文档的「已完成明细」以 M0–M6 为界；**M6 之后新增的能力（主线·主计划、AI 会话持久化、`UpdateSchedule` 工具、前端 Vite 化收口）
 > 尚未在此建档**，请一并参考根 `README.md` 与 `docs/dev-setup.md`。
@@ -436,6 +437,8 @@ event: error   data: {"code":503,"message":"..."}
 22. **WSL 发行版空闲被回收，会连带停掉 dockerd 与容器**（M7 收尾，已确认机理并给出对策）：最后一个 `wsl.exe` 会话结束后，WSL 回收发行版 → dockerd 优雅关停（日志 `daemonShuttingDown=true`，容器退出码 143）→ 下次调用冷启动，容器靠 `restart: unless-stopped` 自动恢复，健康检查重跑。**实测排除的方案**：`.wslconfig` 的 `[wsl2] vmIdleTimeout`（`-1` 与 `604800000` 都试过）只控制 **VM** 空闲回收、保持热态，**管不住发行版**；发行版内留后台进程（`setsid sleep 300`）也留不住。**有效对策**：`bash scripts/docker.sh keepalive` 占住一个 WSL 会话，实测 10 容器连续运行 4 分钟并保持 healthy。
 23. **`.wslconfig` 是机器级配置且不支持注释**（M7 收尾）：换机器/重装需手工补 `vmIdleTimeout=-1`（README「快速开始 · 前置」与 `docs/dev-setup.md` 有可复制内容）。写 `#` 或 `;` 会被判为非法键，每次 WSL 调用都打印「中的键名称无效」告警。
 24. **`scripts/docker.sh shell` 在 wsl 通路下依赖 WSL 的 TTY 转发**：Git Bash 里 `docker exec -it` 经由 `wsl.exe` 转发时，个别终端会出现 `the input device is not a TTY`；此时在 WSL 终端内直接跑 `docker exec -it sorts-mysql mysql -uroot -p...` 即可。
+25. **`UpdateSchedule` 工具缺独立单测**（2026-09-20 数据核查发现）：`sorts-ai` 注册的 7 个 AI 工具中只有 6 个有对应 `*ToolTest`（`CreateSchedule` / `CreateSchedules` / `GetProfile` / `QueryPoints` / `QuerySchedules` / `QueryStatistics`），**`UpdateScheduleTool` 在 `src/test` 下零命中**。它的行为仅被 `ToolRegistryTest` 的注册与双钥匙机制间接覆盖，工具自身的参数组装 / `ToolJsonCodec` 序列化没有直测。**对外表述「7 工具（4 读 3 写）」时，不得暗示 7 个工具都已有单测。**
+26. **文档与数据集的数字口径曾出现人工转录偏差**（2026-09-20 修正）：`results/SUMMARY.md` 与 `RESUME` 类文档曾写「状态机 13 合法 + 17 非法」，与 `state-machine-matrix.json` 实际矩阵（**11 合法 + 19 非法**）不符；`datasets/dual-key-matrix.json` 的 `writeTools` 曾漏 `UpdateSchedule`；根 README / 本文档曾写「7 个 Maven 模块」（实为 8 个，漏 `sorts-metrics-tests`）。**对策**：格数等派生数字已写入数据集（`matrixSize` / `toolCount` 字段）并由 `MetricsIndicatorTest.B2` 断言固化（`legal=11`、`illegal=19`、`total=30`），数据集被改坏会直接导致测试失败。
 
 25. **AI 双通道映射曾在不带 `stream` 参数时返回 500**（M7 收尾，已修）：`/chat`、`/plan`、`/summary/daily` 的默认分支原先写 `params = "!stream=false"`（`/plan` 为 `!stream=true`），实测该表达式在 `stream` **完全缺省**时匹配不上 → `UnsatisfiedServletRequestParameterException`。即「按 README 说的默认值调用」反而必挂。已改为「默认分支不带 params 作兜底 + 显式分支保留 params」，两者同时匹配时 Spring 按「params 表达式更多者更优先」选中显式分支。新增 `AiControllerMappingTest`（8 例）用 MockMvc standaloneSetup 真实走一遍分派——直接调方法的单测会绕过映射判定，抓不到这类问题。
 26. **AI 命名前后端不一致**（M7 收尾，已修）：后端 `AiPrompts` 的人设一直是「你是『梭灵』」，Java 代码、日志、报错文案全用梭灵；只有 M6 前端把菜单 / 路由标题 / 对话页写成了「AI 织师 / 织师」。已统一回梭灵。
@@ -572,14 +575,15 @@ D:\SORTS(梭子)/
 │   ├── Dockerfile.frontend  # 前端镜像（Node 构建 → nginx）
 │   ├── nginx.conf           # SPA 兜底 + /api 反代（SSE 关缓冲）
 │   └── .env.example         # 端口/口令模板（.env 不入库）
-├── backend/                 # Maven 多模块（**7 个模块**：common + gateway + 5 个业务服务，含 Wrapper）
+├── backend/                 # Maven 多模块（**8 个模块**：common + gateway + 5 个业务服务 + 指标测试工程，含 Wrapper）
 │   ├── sorts-common/        # ✅ 公共模块（Result/异常/JWT/PageData/服务间凭证）
 │   ├── sorts-gateway/       # ✅ 网关（路由 + 鉴权 + 限流 + 剥离伪造内部凭证）
 │   ├── sorts-user/          # ✅ 用户服务
 │   ├── sorts-schedule/      # ✅ 日程服务（CRUD/计时/日历/统计 + 内部提醒取数接口）
 │   ├── sorts-ai/            # ✅ AI 服务（llm / tool / service / controller）
 │   ├── sorts-notification/  # ✅ 通知服务（通知列表·已读 / 提醒设置 / 定时提醒扫描）
-│   └── sorts-mall/          # ✅ 商城服务（商品 / 购买防超卖 / 装扮仓库）
+│   ├── sorts-mall/          # ✅ 商城服务（商品 / 购买防超卖 / 装扮仓库）
+│   └── sorts-metrics-tests/ # ✅ 指标测试工程（仅测试代码，5 组 @Nested / 25 例；不产业务构件）
 ├── frontend/                # 前端（主版在 vite-app/）
 │   ├── vite-app/            # ✅ Vue3 + Vite 工程：index.html（运行态模板）+ src/legacy/（运行态逻辑）
 │   │   ├── src/             #     组件化储备：{api,components,layouts,router,stores,styles,types,utils,views}（未接线）

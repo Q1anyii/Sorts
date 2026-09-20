@@ -74,7 +74,7 @@ import static org.mockito.Mockito.when;
  *
  * <p>覆盖 README 五段关键描述，每组给出量化指标：
  * ① 双钥匙权限模型（AI 写工具声明级过滤）
- * ② 五态状态机（非法跃迁 100% 拒绝）
+ * ② 六态状态机（非法跃迁 100% 拒绝）
  * ③ AI 多日规划（相对日期解析 + 连续覆盖）
  * ④ 兑换并发扣减（条件更新兜底，任意并发超卖 = 0）
  * ⑤ 网关统一收口（鉴权 / 伪造凭证剥离 / 限流 key 策略）
@@ -188,10 +188,10 @@ class MetricsIndicatorTest {
     }
 
     // ------------------------------------------------------------------
-    // ② 五态状态机
+    // ② 六态状态机（30 格 = 11 合法 + 19 非法）
     // ------------------------------------------------------------------
     @Nested
-    @DisplayName("② 五态状态机：合法跃迁 100% 通过，非法跃迁 100% 拒绝，终态冻结")
+    @DisplayName("② 六态状态机：11 格合法跃迁 100% 通过，19 格非法跃迁 100% 拒绝，终态冻结")
     class StateMachine {
 
         @Test
@@ -205,7 +205,7 @@ class MetricsIndicatorTest {
         }
 
         @Test
-        @DisplayName("B2 全矩阵校验：依据 datasets/state-machine-matrix.json，非法跃迁 100% 被拒")
+        @DisplayName("B2 全矩阵校验：依据 datasets/state-machine-matrix.json，30 格（11 合法 / 19 非法）逐格比对")
         void fullTransitionMatrix() throws Exception {
             JsonNode root = MAPPER.readTree(loadDataset("state-machine-matrix.json"));
             JsonNode matrix = root.get("transitionMatrix");
@@ -221,6 +221,9 @@ class MetricsIndicatorTest {
                 }
             }
 
+            assertThat(legal + illegal).as("矩阵规模：6 态 × 5 动作 = 30 格").isEqualTo(30);
+            assertThat(legal).as("合法格数应与数据集一致（11）").isEqualTo(11);
+            assertThat(illegal).as("非法格数应与数据集一致（19）").isEqualTo(19);
             assertThat(passed).as("合法跃迁全部通过").isEqualTo(legal);
             assertThat(rejected).as("非法跃迁全部拒绝").isEqualTo(illegal);
             assertThat(illegal).isGreaterThan(0);
