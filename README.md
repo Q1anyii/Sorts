@@ -514,7 +514,7 @@ bash scripts/docker.sh app-down  # 停服务
 | sorts-gateway      | 鉴权过滤器、限流配置与限流响应                           |
 | sorts-user         | 注册登录、令牌续期、积分扣减                            |
 | sorts-schedule     | 日程 CRUD、计时状态机流转、日历聚合、统计口径、日期区间工具          |
-| sorts-ai           | 对话编排、规划生成与采纳、报告装配、工具注册与 6 种工具单测（`UpdateSchedule` 待补，见 `docs/PROGRESS.md` 已知限制 25）、SSE 帧、JSON 载荷 |
+| sorts-ai           | 对话编排、规划生成与采纳、报告装配、工具注册与 6 种工具单测（`UpdateSchedule` 待补，见 `docs/PROGRESS.md` 已知限制 32）、SSE 帧、JSON 载荷 |
 | sorts-notification | 通知已读、提醒设置、提醒扫描幂等、免打扰时段                    |
 | sorts-mall         | 商品查询、购买加锁与一致性兜底、事务落库、装扮切换                   |
 | sorts-metrics-tests | **指标测试**：双钥匙声明过滤、状态机全矩阵、多日规划相对日期、兑换并发超卖=0、网关伪造头剥离（详见下方） |
