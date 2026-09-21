@@ -6,7 +6,7 @@
 
 ## 项目演示
 
-![](D:\SORTS(梭子)\docs\assets\多日规划.gif)
+![](docs/assets/多日规划.gif)
 
 技术栈：基于 **Spring Boot 3 + Spring Cloud + Nacos** 微服务架构，辅以 **Vue 3** 单页应用（Vite 构建产物由 Nginx 托管）与 **DeepSeek** 驱动的 AI 助手「**梭灵**」。全部能力统一由网关鉴权限流后分发，服务间通过 OpenFeign 与内部凭证调用，**禁止跨库直连**。
 
