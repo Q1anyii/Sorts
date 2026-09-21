@@ -4,6 +4,10 @@
 
 把时间当作织机：日程是经线，专注是纬线，一次「**开梭 → 穿梭 → 落梭**」就是一段被真实记录下来的专注。梭子（SORTS）围绕这条主线提供日程编排、穿梭计时、织历聚合、纹谱统计、AI 规划与锦市装扮。
 
+## 项目演示
+
+![](D:\SORTS(梭子)\docs\assets\多日规划.gif)
+
 技术栈：基于 **Spring Boot 3 + Spring Cloud + Nacos** 微服务架构，辅以 **Vue 3** 单页应用（Vite 构建产物由 Nginx 托管）与 **DeepSeek** 驱动的 AI 助手「**梭灵**」。全部能力统一由网关鉴权限流后分发，服务间通过 OpenFeign 与内部凭证调用，**禁止跨库直连**。
 
 ## 项目亮点
@@ -53,21 +57,21 @@
 
 ## 技术栈
 
-| 层次      | 技术                                                                          |
-| ------- | --------------------------------------------------------------------------- |
-| 语言/运行环境 | Java 17（编译目标 17）、Node 22                                                    |
-| 后端框架    | Spring Boot 3.3.4 / Spring Cloud 2023.0.3 / Spring Cloud Alibaba 2023.0.3.2 |
-| 服务注册与发现 | Nacos 2.4.3（单机模式，Docker 部署）                                                 |
-| 网关      | Spring Cloud Gateway（WebFlux）：路由转发 + JWT 鉴权 + Redis 令牌桶限流                   |
-| 服务间调用   | OpenFeign + 负载均衡，内部接口统一 `/internal/**` + `X-Internal-Token`                 |
-| 持久层     | MyBatis-Plus 3.5.7 + MySQL 8（每服务独立库，禁止跨库直连）                                 |
-| 缓存      | Redis（redis-stack 镜像 6379：Redis 本体 + RediSearch/RedisJSON 模块）               |
-| 消息中间件   | RabbitMQ 3.13（当前提醒走 `@Scheduled`，MQ 为事务性消息 / outbox 技术债预留）                  |
-| AI 模型   | DeepSeek（OpenAI 兼容协议），自实现薄客户端封装在 `ChatModelClient` 接口后                      |
-| 认证      | JWT（access 30 分钟 / refresh 7 天）+ BCrypt 密码哈希                                |
+| 层次      | 技术                                                                                                                                       |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 语言/运行环境 | Java 17（编译目标 17）、Node 22                                                                                                                 |
+| 后端框架    | Spring Boot 3.3.4 / Spring Cloud 2023.0.3 / Spring Cloud Alibaba 2023.0.3.2                                                              |
+| 服务注册与发现 | Nacos 2.4.3（单机模式，Docker 部署）                                                                                                              |
+| 网关      | Spring Cloud Gateway（WebFlux）：路由转发 + JWT 鉴权 + Redis 令牌桶限流                                                                                |
+| 服务间调用   | OpenFeign + 负载均衡，内部接口统一 `/internal/**` + `X-Internal-Token`                                                                              |
+| 持久层     | MyBatis-Plus 3.5.7 + MySQL 8（每服务独立库，禁止跨库直连）                                                                                              |
+| 缓存      | Redis（redis-stack 镜像 6379：Redis 本体 + RediSearch/RedisJSON 模块）                                                                            |
+| 消息中间件   | RabbitMQ 3.13（当前提醒走 `@Scheduled`，MQ 为事务性消息 / outbox 技术债预留）                                                                               |
+| AI 模型   | DeepSeek（OpenAI 兼容协议），自实现薄客户端封装在 `ChatModelClient` 接口后                                                                                   |
+| 认证      | JWT（access 30 分钟 / refresh 7 天）+ BCrypt 密码哈希                                                                                             |
 | 前端      | Vue 3.5 + Vite 6 构建主版（`frontend/vite-app/`：模板 index.html + 逻辑 src/legacy/），Nginx 托管 dist；TypeScript + Pinia 组件化源码保留于 src/（后续渐进替换 legacy） |
-| 测试      | JUnit 5 + Mockito（后端）、Vitest（前端）                                            |
-| 构建与运维   | Maven Wrapper、Docker Compose 多阶段镜像、GitHub Actions、Nginx（托管前端构建产物 + `/api` 反代） |
+| 测试      | JUnit 5 + Mockito（后端）、Vitest（前端）                                                                                                         |
+| 构建与运维   | Maven Wrapper、Docker Compose 多阶段镜像、GitHub Actions、Nginx（托管前端构建产物 + `/api` 反代）                                                            |
 
 ## 系统架构
 
@@ -141,37 +145,37 @@ graph TD
 
 ### 模块说明
 
-| 服务                     | 端口          | 独立库                  | 职责                                               |
-| ---------------------- | ----------- | -------------------- | ------------------------------------------------ |
-| **sorts-gateway**      | 8080        | —                    | 统一入口：路由转发、JWT 鉴权、令牌桶限流、剥离伪造内部凭证                  |
-| **sorts-user**         | 8081        | `sorts_user`         | 注册登录、双令牌签发与续期、资料维护、头像、光阴砂与流水                   |
-| **sorts-schedule**     | 8082        | `sorts_schedule`     | 日程 CRUD、计时状态机、**主线·主计划容器与进度聚合**、日历聚合、纹谱统计、落梭发放积分    |
-| **sorts-ai**           | 8083        | `sorts_ai`           | 对话（SSE 流式）、日程规划与采纳、日/月/年报告、工具调用编排                |
-| **sorts-notification** | 8084        | `sorts_notification` | 通知列表与已读、提醒设置、定时提醒扫描与幂等去重                         |
-| **sorts-mall**         | 8085        | `sorts_mall`         | 锦市商品、购买（加锁 + 条件更新一致性兜底）、云裳阁仓库与启用切换                  |
-| **frontend**           | 8088        | —                    | 主版前端（Vite 构建产物；Nginx 托管并反代 `/api`；多阶段镜像内构建） |
+| 服务                     | 端口   | 独立库                  | 职责                                               |
+| ---------------------- | ---- | -------------------- | ------------------------------------------------ |
+| **sorts-gateway**      | 8080 | —                    | 统一入口：路由转发、JWT 鉴权、令牌桶限流、剥离伪造内部凭证                  |
+| **sorts-user**         | 8081 | `sorts_user`         | 注册登录、双令牌签发与续期、资料维护、头像、光阴砂与流水                     |
+| **sorts-schedule**     | 8082 | `sorts_schedule`     | 日程 CRUD、计时状态机、**主线·主计划容器与进度聚合**、日历聚合、纹谱统计、落梭发放积分 |
+| **sorts-ai**           | 8083 | `sorts_ai`           | 对话（SSE 流式）、日程规划与采纳、日/月/年报告、工具调用编排                |
+| **sorts-notification** | 8084 | `sorts_notification` | 通知列表与已读、提醒设置、定时提醒扫描与幂等去重                         |
+| **sorts-mall**         | 8085 | `sorts_mall`         | 锦市商品、购买（加锁 + 条件更新一致性兜底）、云裳阁仓库与启用切换               |
+| **frontend**           | 8088 | —                    | 主版前端（Vite 构建产物；Nginx 托管并反代 `/api`；多阶段镜像内构建）      |
 
 ### 网关路由
 
-| 前缀                                                                   | 目标服务               | 说明                                   |
-| -------------------------------------------------------------------- | ------------------ | ------------------------------------ |
-| `/api/v1/mall/**`、`/api/v1/users/wardrobe/**`                        | sorts-mall         | **必须排在 user 之前**：装扮接口同时命中两条路由，顺序即优先级 |
-| `/api/v1/auth/**`、`/api/v1/users/**`                                 | sorts-user         | 认证与用户资料                              |
-| `/api/v1/schedules/**`、`/api/v1/calendar/**`、`/api/v1/statistics/**`、`/api/v1/parent-plans/**` | sorts-schedule | 日程、日历、统计与**主计划** |
-| `/api/v1/ai/**`                                                      | sorts-ai           | AI 对话、规划与报告                          |
-| `/api/v1/notifications/**`                                           | sorts-notification | 通知与提醒设置                              |
+| 前缀                                                                                             | 目标服务               | 说明                                   |
+| ---------------------------------------------------------------------------------------------- | ------------------ | ------------------------------------ |
+| `/api/v1/mall/**`、`/api/v1/users/wardrobe/**`                                                  | sorts-mall         | **必须排在 user 之前**：装扮接口同时命中两条路由，顺序即优先级 |
+| `/api/v1/auth/**`、`/api/v1/users/**`                                                           | sorts-user         | 认证与用户资料                              |
+| `/api/v1/schedules/**`、`/api/v1/calendar/**`、`/api/v1/statistics/**`、`/api/v1/parent-plans/**` | sorts-schedule     | 日程、日历、统计与**主计划**                     |
+| `/api/v1/ai/**`                                                                                | sorts-ai           | AI 对话、规划与报告                          |
+| `/api/v1/notifications/**`                                                                     | sorts-notification | 通知与提醒设置                              |
 
 > 已关闭 `discovery.locator` 自动路由，避免后端内部接口被意外暴露。
 
 ### 数据分布
 
-| 库                    | 主要表                                                    |
-| -------------------- | ------------------------------------------------------ |
-| `sorts_user`         | `t_user`、`t_points_log`                                |
-| `sorts_schedule`     | `t_schedule`、`t_time_record`、`t_parent_plan`（主计划）       |
+| 库                    | 主要表                                                           |
+| -------------------- | ------------------------------------------------------------- |
+| `sorts_user`         | `t_user`、`t_points_log`                                       |
+| `sorts_schedule`     | `t_schedule`、`t_time_record`、`t_parent_plan`（主计划）             |
 | `sorts_ai`           | `t_schedule_plan`（AI 生成的规划）、`t_ai_report`、`t_ai_conversation` |
-| `sorts_notification` | `t_notification`、`t_reminder_setting`、`t_reminder_log` |
-| `sorts_mall`         | `t_mall_item`、`t_purchase_record`、`t_wardrobe_item`    |
+| `sorts_notification` | `t_notification`、`t_reminder_setting`、`t_reminder_log`        |
+| `sorts_mall`         | `t_mall_item`、`t_purchase_record`、`t_wardrobe_item`           |
 
 建库建表脚本位于 `scripts/sql/`，首次创建 MySQL 数据卷时按文件名顺序自动执行（`00-init-databases.sql` 在最前）。
 
@@ -307,14 +311,14 @@ bash scripts/docker.sh app-down  # 停服务
 
 ### 端口与默认账号
 
-| 资源           | 地址                                      | 账号                                      |
-| ------------ | --------------------------------------- | --------------------------------------- |
-| MySQL        | localhost:**3307**                      | root / `sorts_dev`                      |
-| Redis        | localhost:**6379**                      | 密码 `sorts_dev`                          |
-| Nacos        | http://localhost:8848/nacos             | 单机免鉴权                                   |
-| RabbitMQ     | localhost:5672 / http://localhost:15672 | sorts / `sorts_dev`                     |
-| 网关           | http://localhost:8080                   | 需 `Authorization: Bearer <accessToken>` |
-| 前端（容器） | http://localhost:**8088** | — |
+| 资源       | 地址                                      | 账号                                      |
+| -------- | --------------------------------------- | --------------------------------------- |
+| MySQL    | localhost:**3307**                      | root / `sorts_dev`                      |
+| Redis    | localhost:**6379**                      | 密码 `sorts_dev`                          |
+| Nacos    | http://localhost:8848/nacos             | 单机免鉴权                                   |
+| RabbitMQ | localhost:5672 / http://localhost:15672 | sorts / `sorts_dev`                     |
+| 网关       | http://localhost:8080                   | 需 `Authorization: Bearer <accessToken>` |
+| 前端（容器）   | http://localhost:**8088**               | —                                       |
 
 ## API 接口一览
 
@@ -331,44 +335,44 @@ bash scripts/docker.sh app-down  # 停服务
 
 ### 用户与积分
 
-| 方法      | 路径                            | 说明                                                 |
-| ------- | ----------------------------- | -------------------------------------------------- |
-| GET/PUT | `/api/v1/users/me`            | 获取 / 更新当前用户信息                                      |
-| POST    | `/api/v1/users/avatar/upload` | 上传头像（鉴权 + multipart；2MB 上限，PNG/JPG/GIF/WebP；返回 UserVO，URL 前缀 `/api/v1/users/avatar/files/`） |
-| GET     | `/api/v1/users/avatar/files/{filename}` | 头像静态读取（网关白名单免鉴权；扩展名映射 Content-Type，Cache-Control 7 天） |
-| PUT     | `/api/v1/users/me/password`   | 修改密码                                               |
-| GET     | `/api/v1/users/points`        | 查询光阴砂余额及流水                                         |
-| POST    | `/api/v1/users/points/change` | 变更光阴砂（**内部调用**；正数增、负数减，与 api-spec 已对齐） |
+| 方法      | 路径                                      | 说明                                                                                          |
+| ------- | --------------------------------------- | ------------------------------------------------------------------------------------------- |
+| GET/PUT | `/api/v1/users/me`                      | 获取 / 更新当前用户信息                                                                               |
+| POST    | `/api/v1/users/avatar/upload`           | 上传头像（鉴权 + multipart；2MB 上限，PNG/JPG/GIF/WebP；返回 UserVO，URL 前缀 `/api/v1/users/avatar/files/`） |
+| GET     | `/api/v1/users/avatar/files/{filename}` | 头像静态读取（网关白名单免鉴权；扩展名映射 Content-Type，Cache-Control 7 天）                                       |
+| PUT     | `/api/v1/users/me/password`             | 修改密码                                                                                        |
+| GET     | `/api/v1/users/points`                  | 查询光阴砂余额及流水                                                                                  |
+| POST    | `/api/v1/users/points/change`           | 变更光阴砂（**内部调用**；正数增、负数减，与 api-spec 已对齐）                                                      |
 
 ### 日程与计时
 
-| 方法             | 路径                              | 说明           |
-| -------------- | ------------------------------- | ------------ |
-| POST/GET       | `/api/v1/schedules`             | 创建 / 查询日程    |
-| GET/PUT/DELETE | `/api/v1/schedules/{id}`        | 详情 / 更新 / 删除 |
-| POST           | `/api/v1/schedules/{id}/start`  | 开梭（开始计时；未到计划开始时间返回 41010） |
-| POST           | `/api/v1/schedules/{id}/pause`  | 暂停计时         |
-| POST           | `/api/v1/schedules/{id}/resume` | 续梭（恢复计时）     |
-| POST           | `/api/v1/schedules/{id}/end`    | 落梭（结束并结算）    |
-| POST           | `/api/v1/schedules/{id}/cancel` | 取消日程         |
-| GET            | `/api/v1/schedules/active`      | 获取当前进行中的日程   |
-| POST           | `/api/v1/schedules/batch`       | 批量创建日程       |
-| GET            | `/api/v1/schedules`             | 日程列表（`date=YYYY-MM-DD` 单日 / `startDate&endDate` 闭区间查询） |
-| DELETE         | `/api/v1/schedules/{id}`        | 单条删除（软删除）    |
-| POST           | `/api/v1/schedules/batch-delete` | 批量删除（事务，整体成功或整体回滚） |
+| 方法             | 路径                               | 说明                                                     |
+| -------------- | -------------------------------- | ------------------------------------------------------ |
+| POST/GET       | `/api/v1/schedules`              | 创建 / 查询日程                                              |
+| GET/PUT/DELETE | `/api/v1/schedules/{id}`         | 详情 / 更新 / 删除                                           |
+| POST           | `/api/v1/schedules/{id}/start`   | 开梭（开始计时；未到计划开始时间返回 41010）                              |
+| POST           | `/api/v1/schedules/{id}/pause`   | 暂停计时                                                   |
+| POST           | `/api/v1/schedules/{id}/resume`  | 续梭（恢复计时）                                               |
+| POST           | `/api/v1/schedules/{id}/end`     | 落梭（结束并结算）                                              |
+| POST           | `/api/v1/schedules/{id}/cancel`  | 取消日程                                                   |
+| GET            | `/api/v1/schedules/active`       | 获取当前进行中的日程                                             |
+| POST           | `/api/v1/schedules/batch`        | 批量创建日程                                                 |
+| GET            | `/api/v1/schedules`              | 日程列表（`date=YYYY-MM-DD` 单日 / `startDate&endDate` 闭区间查询） |
+| DELETE         | `/api/v1/schedules/{id}`         | 单条删除（软删除）                                              |
+| POST           | `/api/v1/schedules/batch-delete` | 批量删除（事务，整体成功或整体回滚）                                     |
 
 ### 主线 · 主计划（长时间计划容器）
 
-| 方法     | 路径                                    | 说明                                              |
-| ------ | ------------------------------------- | ----------------------------------------------- |
-| POST   | `/api/v1/parent-plans`                | 创建主计划（初始 `PENDING`）                              |
-| GET    | `/api/v1/parent-plans`                | 分页列表（带 `childCount` / `completedCount` / `progress`） |
-| GET    | `/api/v1/parent-plans/{id}`           | 详情（含子日程明细）                                       |
-| PUT    | `/api/v1/parent-plans/{id}`           | 更新                                              |
-| DELETE | `/api/v1/parent-plans/{id}`           | 软删 + 解绑子日程（**不级联删除**，子日程保留为独立日程）                 |
-| POST   | `/api/v1/parent-plans/{id}/{action}`  | 状态流转：`start` / `pause` / `resume` / `complete`   |
-| POST   | `/api/v1/parent-plans/{id}/children`  | 批量挂载子日程（写 `t_schedule.parent_id`）                |
-| DELETE | `/api/v1/parent-plans/{id}/children/{scheduleId}` | 移出子日程（置 `NULL`）                     |
+| 方法     | 路径                                                | 说明                                                   |
+| ------ | ------------------------------------------------- | ---------------------------------------------------- |
+| POST   | `/api/v1/parent-plans`                            | 创建主计划（初始 `PENDING`）                                  |
+| GET    | `/api/v1/parent-plans`                            | 分页列表（带 `childCount` / `completedCount` / `progress`） |
+| GET    | `/api/v1/parent-plans/{id}`                       | 详情（含子日程明细）                                           |
+| PUT    | `/api/v1/parent-plans/{id}`                       | 更新                                                   |
+| DELETE | `/api/v1/parent-plans/{id}`                       | 软删 + 解绑子日程（**不级联删除**，子日程保留为独立日程）                     |
+| POST   | `/api/v1/parent-plans/{id}/{action}`              | 状态流转：`start` / `pause` / `resume` / `complete`       |
+| POST   | `/api/v1/parent-plans/{id}/children`              | 批量挂载子日程（写 `t_schedule.parent_id`）                    |
+| DELETE | `/api/v1/parent-plans/{id}/children/{scheduleId}` | 移出子日程（置 `NULL`）                                      |
 
 > 主计划状态机：`PENDING → IN_PROGRESS ⇄ PAUSED → COMPLETED`，由 `ParentPlanServiceImpl.STATUS_TRANSITIONS` 声明式定义。
 > 主计划**不参与穿梭计时**，进度 = 已完成子日程数 ÷ 子日程总数。
@@ -386,21 +390,21 @@ bash scripts/docker.sh app-down  # 停服务
 
 ### 梭灵（AI 接口）
 
-| 方法   | 路径                               | 说明                                      |
-| ---- | -------------------------------- | --------------------------------------- |
-| POST | `/api/v1/ai/chat`                | AI 对话（默认 SSE 流式，`?stream=false` 走 JSON） |
-| POST | `/api/v1/ai/plan`                | 生成日程规划（默认 JSON，`?stream=true` 走 SSE）；**服务端注入当前时间，支持未来一周 / 下周 / 本周 / 本月等相对范围多日规划**，响应含 `range` 与逐条 `date` |
-| POST | `/api/v1/ai/plan/{planId}/adopt` | 采纳 AI 规划，批量落库（**同规划幂等**；支持 `overrides` 逐条编辑覆盖） |
-| POST | `/api/v1/ai/summary/daily`       | 生成每日总结                                  |
-| POST | `/api/v1/ai/summary/monthly`     | 生成月度总结                                  |
-| POST | `/api/v1/ai/summary/yearly`      | 生成年度总结                                  |
-| GET  | `/api/v1/ai/reports`             | 历史报告列表                                  |
-| GET  | `/api/v1/ai/reports/{id}`        | 报告详情                                    |
-| DELETE | `/api/v1/ai/reports/{id}`      | 删除织史（软删除）                              |
-| POST | `/api/v1/ai/reports/batch-delete` | 批量删除织史（事务）                            |
-| GET/POST | `/api/v1/ai/conversations`   | 会话列表 / 新建会话                             |
-| GET/PUT/DELETE | `/api/v1/ai/conversations/{id}` | 会话详情 / 全量快照保存 / 删除（软删除）        |
-| POST | `/api/v1/ai/conversations/batch-delete` | 批量删除会话（事务）                      |
+| 方法             | 路径                                      | 说明                                                                                                       |
+| -------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| POST           | `/api/v1/ai/chat`                       | AI 对话（默认 SSE 流式，`?stream=false` 走 JSON）                                                                  |
+| POST           | `/api/v1/ai/plan`                       | 生成日程规划（默认 JSON，`?stream=true` 走 SSE）；**服务端注入当前时间，支持未来一周 / 下周 / 本周 / 本月等相对范围多日规划**，响应含 `range` 与逐条 `date` |
+| POST           | `/api/v1/ai/plan/{planId}/adopt`        | 采纳 AI 规划，批量落库（**同规划幂等**；支持 `overrides` 逐条编辑覆盖）                                                           |
+| POST           | `/api/v1/ai/summary/daily`              | 生成每日总结                                                                                                   |
+| POST           | `/api/v1/ai/summary/monthly`            | 生成月度总结                                                                                                   |
+| POST           | `/api/v1/ai/summary/yearly`             | 生成年度总结                                                                                                   |
+| GET            | `/api/v1/ai/reports`                    | 历史报告列表                                                                                                   |
+| GET            | `/api/v1/ai/reports/{id}`               | 报告详情                                                                                                     |
+| DELETE         | `/api/v1/ai/reports/{id}`               | 删除织史（软删除）                                                                                                |
+| POST           | `/api/v1/ai/reports/batch-delete`       | 批量删除织史（事务）                                                                                               |
+| GET/POST       | `/api/v1/ai/conversations`              | 会话列表 / 新建会话                                                                                              |
+| GET/PUT/DELETE | `/api/v1/ai/conversations/{id}`         | 会话详情 / 全量快照保存 / 删除（软删除）                                                                                  |
+| POST           | `/api/v1/ai/conversations/batch-delete` | 批量删除会话（事务）                                                                                               |
 
 ### 通知
 
@@ -413,13 +417,13 @@ bash scripts/docker.sh app-down  # 停服务
 
 ### 锦市与云裳阁
 
-| 方法   | 路径                              | 说明             |
-| ---- | ------------------------------- | -------------- |
-| GET  | `/api/v1/mall/items`            | 商品列表           |
-| GET  | `/api/v1/mall/items/{id}`       | 商品详情           |
-| POST | `/api/v1/mall/purchase`         | 购买商品           |
+| 方法   | 路径                              | 说明                |
+| ---- | ------------------------------- | ----------------- |
+| GET  | `/api/v1/mall/items`            | 商品列表              |
+| GET  | `/api/v1/mall/items/{id}`       | 商品详情              |
+| POST | `/api/v1/mall/purchase`         | 购买商品              |
 | GET  | `/api/v1/users/wardrobe`        | 云裳阁装扮仓库（路由指向锦市服务） |
-| PUT  | `/api/v1/users/wardrobe/active` | 切换当前启用装扮       |
+| PUT  | `/api/v1/users/wardrobe/active` | 切换当前启用装扮          |
 
 ### 接口与数据约定（前后端都要守）
 
@@ -499,38 +503,38 @@ bash scripts/docker.sh app-down  # 停服务
 
 ## 测试
 
-| 层    | 命令                                        | 规模                       |
-| ---- | ----------------------------------------- | ------------------------ |
-| 后端单测 | `cd backend && ./mvnw test`               | **42 个测试类 / 392 个用例**（41 个业务单测类 367 例 + 1 个指标测试类 25 例；`*IT` 类默认跳过）        |
-| 集成测试 | `cd backend && ./mvnw -Pintegration test` | 追加 `UserServiceIT` **1 个类 / 4 个用例**（Testcontainers，需 Docker）→ 全量口径 **43 类 / 396 用例** |
+| 层        | 命令                                                      | 规模                                                                                             |
+| -------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| 后端单测     | `cd backend && ./mvnw test`                             | **42 个测试类 / 392 个用例**（41 个业务单测类 367 例 + 1 个指标测试类 25 例；`*IT` 类默认跳过）                             |
+| 集成测试     | `cd backend && ./mvnw -Pintegration test`               | 追加 `UserServiceIT` **1 个类 / 4 个用例**（Testcontainers，需 Docker）→ 全量口径 **43 类 / 396 用例**           |
 | **指标测试** | `cd backend && ./mvnw test -pl sorts-metrics-tests -am` | **1 个独立测试类 / 25 个用例**（5 组 `@Nested`：双钥匙 / 状态机 / 多日规划 / 兑换并发 / 网关收口；4 份 JSON 数据集 + Surefire 结果） |
-| 前端单测 | `cd frontend/vite-app && npm test` | 4 个测试文件 / 19 个用例（时长工具 / 状态机映射 / SSE 帧 / 错误语义；与主版共用同一仓库，覆盖盲区从「非线上代码」收窄为「legacy 大函数未拆解」） |
+| 前端单测     | `cd frontend/vite-app && npm test`                      | 4 个测试文件 / 19 个用例（时长工具 / 状态机映射 / SSE 帧 / 错误语义；与主版共用同一仓库，覆盖盲区从「非线上代码」收窄为「legacy 大函数未拆解」）         |
 
 **覆盖范围**
 
-| 模块                 | 重点覆盖                                      |
-| ------------------ | ----------------------------------------- |
-| sorts-common       | JWT 签发校验、内部凭证拦截器（入站 / 出站）                 |
-| sorts-gateway      | 鉴权过滤器、限流配置与限流响应                           |
-| sorts-user         | 注册登录、令牌续期、积分扣减                            |
-| sorts-schedule     | 日程 CRUD、计时状态机流转、日历聚合、统计口径、日期区间工具          |
-| sorts-ai           | 对话编排、规划生成与采纳、报告装配、工具注册与 6 种工具单测（`UpdateSchedule` 待补，见 `docs/PROGRESS.md` 已知限制 32）、SSE 帧、JSON 载荷 |
-| sorts-notification | 通知已读、提醒设置、提醒扫描幂等、免打扰时段                    |
-| sorts-mall         | 商品查询、购买加锁与一致性兜底、事务落库、装扮切换                   |
-| sorts-metrics-tests | **指标测试**：双钥匙声明过滤、状态机全矩阵、多日规划相对日期、兑换并发超卖=0、网关伪造头剥离（详见下方） |
-| frontend | 时长与时辰节气工具、状态机映射、SSE 帧切分、错误语义 |
+| 模块                  | 重点覆盖                                                                                            |
+| ------------------- | ----------------------------------------------------------------------------------------------- |
+| sorts-common        | JWT 签发校验、内部凭证拦截器（入站 / 出站）                                                                       |
+| sorts-gateway       | 鉴权过滤器、限流配置与限流响应                                                                                 |
+| sorts-user          | 注册登录、令牌续期、积分扣减                                                                                  |
+| sorts-schedule      | 日程 CRUD、计时状态机流转、日历聚合、统计口径、日期区间工具                                                                |
+| sorts-ai            | 对话编排、规划生成与采纳、报告装配、工具注册与 6 种工具单测（`UpdateSchedule` 待补，见 `docs/PROGRESS.md` 已知限制 32）、SSE 帧、JSON 载荷 |
+| sorts-notification  | 通知已读、提醒设置、提醒扫描幂等、免打扰时段                                                                          |
+| sorts-mall          | 商品查询、购买加锁与一致性兜底、事务落库、装扮切换                                                                       |
+| sorts-metrics-tests | **指标测试**：双钥匙声明过滤、状态机全矩阵、多日规划相对日期、兑换并发超卖=0、网关伪造头剥离（详见下方）                                         |
+| frontend            | 时长与时辰节气工具、状态机映射、SSE 帧切分、错误语义                                                                    |
 
 **指标测试工程（`backend/sorts-metrics-tests/`）**
 
 把 README 五段安全机制的"承诺"落成 25 个可执行断言（5 组 `@Nested`，直接引用真实实现类，不复制业务逻辑）：
 
-| 组 | 断言要点 | 用例 |
-| --- | --- | --- |
-| 双钥匙 | 2×2 矩阵仅 `(服务端开关=on, 用户授权=true)` 放行写工具；未授权写调用**写副作用 = 0** | 6 |
-| 状态机 | 30 格矩阵（**11 合法 / 19 非法**）逐格校验：非法跃迁 100% 拒绝；终态冻结；TIMEOUT 仅保留取消入口 | 4 |
-| 多日规划 | 9 组相对日期解析全部正确（8 组命中 + 1 组未命中回退；含跨年「下周」→ 2027-01-04）；未来一周 7 天连续无断档 | 5 |
-| 兑换并发 | **50 并发抢 10 库存：成功 10、库存 0、超卖 = 0**（仿真锁恒可获取，压力全压给条件更新）；售罄扣砂/退砂成对 | 4 |
-| 网关收口 | 无/过期/错类型 token 100% 401；伪造 `X-Internal-Token` **剥离率 100%**；限流 key 登录按用户/未登录按 IP | 6 |
+| 组    | 断言要点                                                                            | 用例  |
+| ---- | ------------------------------------------------------------------------------- | --- |
+| 双钥匙  | 2×2 矩阵仅 `(服务端开关=on, 用户授权=true)` 放行写工具；未授权写调用**写副作用 = 0**                        | 6   |
+| 状态机  | 30 格矩阵（**11 合法 / 19 非法**）逐格校验：非法跃迁 100% 拒绝；终态冻结；TIMEOUT 仅保留取消入口                 | 4   |
+| 多日规划 | 9 组相对日期解析全部正确（8 组命中 + 1 组未命中回退；含跨年「下周」→ 2027-01-04）；未来一周 7 天连续无断档               | 5   |
+| 兑换并发 | **50 并发抢 10 库存：成功 10、库存 0、超卖 = 0**（仿真锁恒可获取，压力全压给条件更新）；售罄扣砂/退砂成对                 | 4   |
+| 网关收口 | 无/过期/错类型 token 100% 401；伪造 `X-Internal-Token` **剥离率 100%**；限流 key 登录按用户/未登录按 IP | 6   |
 
 数据集外置在 `datasets/*.json`（双钥匙矩阵 / 状态机矩阵 / 日期样例 / 并发参数），执行结果归档在 `results/`（`SUMMARY.md` + Surefire XML）。
 2026-09-18 实跑 **25/25 通过**（详见 `backend/sorts-metrics-tests/results/SUMMARY.md`）。
@@ -552,10 +556,10 @@ cd frontend/vite-app && npm run build         # 生产构建冒烟
 服务模块同时是「可运行应用」与「下游模块的依赖」，因此 `spring-boot-maven-plugin` 配了
 `<classifier>exec</classifier>`，构建后每个服务模块产出两个 jar：
 
-| 产物 | 用途 |
-| --- | --- |
-| `target/<module>.jar` — 普通 jar，业务类在根部 | **给下游模块依赖用**（如 `sorts-metrics-tests`）。可被 Maven 正常解析 |
-| `target/<module>-exec.jar` — Spring Boot 可执行 jar，类在 `BOOT-INF/classes/` | **给容器运行用**；`docker/Dockerfile.backend` 取的就是它 |
+| 产物                                                                      | 用途                                                  |
+| ----------------------------------------------------------------------- | --------------------------------------------------- |
+| `target/<module>.jar` — 普通 jar，业务类在根部                                   | **给下游模块依赖用**（如 `sorts-metrics-tests`）。可被 Maven 正常解析 |
+| `target/<module>-exec.jar` — Spring Boot 可执行 jar，类在 `BOOT-INF/classes/` | **给容器运行用**；`docker/Dockerfile.backend` 取的就是它        |
 
 > ⚠️ 不要给 `spring-boot-maven-plugin` 去掉 classifier。repackage 一旦覆盖主产物，
 > 业务类会被搬进 `BOOT-INF/classes/`；构建走到 `package` 之后（`verify` / `install`），
@@ -598,7 +602,7 @@ cd backend && ./mvnw -Pintegration test -pl sorts-common,sorts-user
 | Nacos    | 8848 / 9848 / 9849 | 后两个为 gRPC，客户端必须可达             |
 | RabbitMQ | 5672 / 15672       | 通信端口 / 管理台                    |
 | 网关       | 8080               | 统一 API 入口                     |
-| 前端       | 8088               | Nginx 托管构建产物 + `/api` 反代        |
+| 前端       | 8088               | Nginx 托管构建产物 + `/api` 反代      |
 
 ### 镜像说明
 
@@ -622,12 +626,12 @@ cd backend && ./mvnw -Pintegration test -pl sorts-common,sorts-user
 
 工作流位于 `.github/workflows/ci.yml`，`push`（`main` / `feat/**` / `fix/**`）与 PR（`main`）触发：
 
-| job             | 依赖 | 内容                                                            |
-| --------------- | -- | ------------------------------------------------------------- |
-| `backend-test`  | —  | `./mvnw clean verify` 全量构建 + 单测 → `-Pintegration test -Dtest='*IT'`（Testcontainers 真实 MySQL + Redis）→ 归档 surefire 报告 |
-| `frontend-test` | —  | `npm ci` → `npm test`（Vitest）→ `npm run build`（于 `frontend/vite-app`）→ 归档 dist |
-| `images`        | `needs: [backend-test, frontend-test]` | 矩阵构建 6 个服务镜像（`fail-fast: false`，GHA 缓存按模块隔离），验证 Dockerfile 可用性 |
-| `deploy`（可选）    | `needs: images` | `workflow_dispatch` 开关，**默认关闭**；开启后推镜像并做部署健康门禁（轮询 `gateway:8080/actuator/health`，必须命中 `"status":"UP"`） |
+| job             | 依赖                                     | 内容                                                                                                                   |
+| --------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `backend-test`  | —                                      | `./mvnw clean verify` 全量构建 + 单测 → `-Pintegration test -Dtest='*IT'`（Testcontainers 真实 MySQL + Redis）→ 归档 surefire 报告 |
+| `frontend-test` | —                                      | `npm ci` → `npm test`（Vitest）→ `npm run build`（于 `frontend/vite-app`）→ 归档 dist                                       |
+| `images`        | `needs: [backend-test, frontend-test]` | 矩阵构建 6 个服务镜像（`fail-fast: false`，GHA 缓存按模块隔离），验证 Dockerfile 可用性                                                       |
+| `deploy`（可选）    | `needs: images`                        | `workflow_dispatch` 开关，**默认关闭**；开启后推镜像并做部署健康门禁（轮询 `gateway:8080/actuator/health`，必须命中 `"status":"UP"`）               |
 
 前两个 job **并行**执行，全部通过后才进入 `images` 矩阵（8 个 Maven 模块 → 6 个服务镜像，`sorts-common` 是库、`sorts-metrics-tests` 是纯测试工程，二者均不产镜像）。
 
@@ -682,7 +686,7 @@ A：`npm run dev` 走 Vite 代理，需要网关在 8080；容器方式访问 80
 | [docs/ide-setup.md](docs/ide-setup.md)       | IDEA 导入、JDK 17、共享运行配置、常见报错速查        |
 | [docs/theme-design.md](docs/theme-design.md) | 主题规范：纸·墨·印三层材质、色彩体系、印章体系、动效与降级      |
 | [api-spec.json](api-spec.json)               | OpenAPI 契约（与实现的已知偏差见 PROGRESS 决策记录） |
-| [CONTRIBUTING.md](CONTRIBUTING.md)           | 开源贡献指南：分支与提交、代码规范、测试自检与文档约定      |
+| [CONTRIBUTING.md](CONTRIBUTING.md)           | 开源贡献指南：分支与提交、代码规范、测试自检与文档约定         |
 
 ## 许可证
 
