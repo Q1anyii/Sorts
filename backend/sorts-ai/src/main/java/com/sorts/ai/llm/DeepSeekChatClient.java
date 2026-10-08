@@ -145,7 +145,7 @@ public class DeepSeekChatClient implements ChatModelClient {
         }
 
         LlmResult result = LlmResult.builder()
-                .content(content.length() == 0 ? null : content.toString())
+                .content(content.isEmpty() ? null : content.toString())
                 .toolCalls(accumulator.toolCalls())
                 .finishReason(finishReason[0])
                 .usage(usage.isEmpty() ? null : usage)
