@@ -116,7 +116,7 @@
 
 <div class="header">
   <h1>梭子 SORTS · CI/CD 流程图</h1>
-  <span class="meta">GitHub Actions · 43 类 396 例 · 6 服务镜像矩阵 · 2026-09</span>
+  <span class="meta">GitHub Actions · 44 类 401 例 · 6 服务镜像矩阵 · 2026-10</span>
 </div>
 <div class="tagline">
   默认链路：<b>测试 → 镜像构建</b>（不推镜像、不部署）。镜像推送与部署<b>默认关闭</b>，需手动触发 <code>workflow_dispatch</code> 并勾选开关；仓库当前无稳定的镜像仓库凭据与目标环境，打开开关即用 Secrets 走完整链路。
@@ -226,7 +226,7 @@
         <s>　Testcontainers 真实 MySQL + Redis（本地无 Docker 自动跳过）</s><br>
         ⑤ upload-artifact: <s>surefire-reports</s>（if: always · 7 天）
       </div>
-      <div class="chips"><span class="chip cool">JDK 17</span><span class="chip ok">43 类 / 396 例</span><span class="chip warm">Maven 缓存</span></div>
+      <div class="chips"><span class="chip cool">JDK 17</span><span class="chip ok">44 类 / 401 例</span><span class="chip warm">Maven 缓存</span></div>
     </div>
     <div class="box job" style="flex:.94">
       <div class="bt">frontend-test <span class="badge" style="background:#eef6ff;color:#0969da">前端构建与单测</span></div>

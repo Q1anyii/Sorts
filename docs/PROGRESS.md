@@ -2,8 +2,8 @@
 
 > **用法**：新会话开始前，把本文档 + `docs/theme-design.md` + `docs/dev-setup.md` + `docs/ide-setup.md` 丢给 AI，并粘贴文末的「接续 Prompt」，即可无缝继续开发。
 >   
-> 最后更新：2026-09-20 · 当前里程碑：**M0 / M1 / M2 / M3 / M4 / M5 / M6 完成**（构建通过，**43 个测试类 / 396 个 `@Test` 全绿**：
-> 业务单测 41 类 367 例（common 21 + gateway 21 + user 16 + schedule 79 + ai 135 + notification 51 + mall 44）
+> 最后更新：2026-10-09 · 当前里程碑：**M0 / M1 / M2 / M3 / M4 / M5 / M6 完成 + 自动落梭上线**（构建通过，**44 个测试类 / 401 个 `@Test` 全绿**：
+> 业务单测 42 类 372 例（common 21 + gateway 21 + user 16 + schedule 84 + ai 135 + notification 51 + mall 44）
 > + `UserServiceIT` 1 类 4 例（`-Pintegration`）+ `MetricsIndicatorTest` 1 类 25 例）
 >
 > ⚠️ 本文档的「已完成明细」以 M0–M6 为界；**M6 之后新增的能力（主线·主计划、AI 会话持久化、`UpdateSchedule` 工具、前端 Vite 化收口）

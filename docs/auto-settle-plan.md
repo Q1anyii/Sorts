@@ -1,7 +1,9 @@
 # 自动落梭方案（Auto-Settle）
 
-> 状态：方案定稿（2026-10-09），待实现
+> 状态：**已上线（2026-10-09，commit 89eaefe + fabfc2d）**
 > 目标：到计划结束时间自动结算计时，防止"不点停止无限续时"
+> 实现：`task/AutoSettleTask` 每分钟扫描 → `service/impl/AutoSettleServiceImpl.scanExpired()` 两段处理
+> 单测：`AutoSettleServiceImplTest` 5 例全绿（A1 正常结算 / A2 冲突跳过 / A3 异常继续 / A4 空列表 / A5 PENDING 标 TIMEOUT 不触发落梭）
 
 ---
 
@@ -42,9 +44,10 @@
 
 ## 四、并发与幂等
 
-- **自动 vs 手动 end 撞车**：都走 `endableFrom` 校验（`IN_PROGRESS`/`PAUSED` 才能 end），先到成功、后到跳过/409
-- **⚠️ 待确认**：`TimerServiceImpl.end` 内部若是"先查状态再更新"（查-判-改），自动与手动并发存在双发积分窗口——**建议顺手改为 `UPDATE ... WHERE status IN (...)` 条件更新**（与 mall 库存条件更新同一哲学，一行改动）
-- **重复扫描**：@Scheduled 单线程调度器天然不重叠；已结算日程状态变更后下次扫描自然跳过
+- **自动 vs 手动 end 撞车**：都走 `endableFrom` 校验（`IN_PROGRESS`/`PAUSED` 才能 end），先到成功、后到抛 `BizException(CONFLICT)` 被扫描层捕获跳过
+- **已知窗口（未改）**：`TimerServiceImpl.end` 内部是「查-判-改」，自动与手动并发存在毫秒级双发积分窗口。个人项目规模下可接受；上多实例时建议把 end 的状态更新改成 `UPDATE ... WHERE status IN (...)` 条件更新（与 mall 库存条件更新同一哲学）
+- **PENDING → TIMEOUT 与开梭并发**：`markPendingExpiredAsTimeout()` 是一条 `UPDATE ... WHERE status='PENDING' AND planned_start_time + INTERVAL planned_duration MINUTE < NOW() LIMIT 100` 条件更新，与开梭请求并发时先到者抢占——条件不匹配已开梭记录，开梭侧状态机校验兜住另一方
+- **重复扫描**：`@Scheduled` 单线程调度器天然不重叠；已结算日程状态变更后下次扫描自然跳过
 
 ## 五、失败与重试
 
@@ -54,20 +57,21 @@
 
 ## 六、测试与验收
 
-| 用例 | 断言 |
-|---|---|
-| 开梭不停止，到点自动结算 | 状态 COMPLETED，时长 ≈ plannedDuration |
-| 暂停后到点自动结算 | 状态 COMPLETED，时长 = 实际已专注片段（分段重算） |
-| 自动 vs 手动 end 并发 | 只结算一次、积分只发一次 |
-| 扫描任务异常 | 不中断后续条目的结算 |
+| 用例 | 断言 | 状态 |
+|---|---|---|
+| A1 开梭不停止，到点自动结算 | `timerService.end` 被调用、状态 COMPLETED | ✅ 已覆盖 |
+| A2 状态冲突跳过 | end 抛 BizException → 捕获跳过、不计失败 | ✅ 已覆盖 |
+| A3 单条异常继续 | end 抛 RuntimeException → 日志记录、不中断下一条 | ✅ 已覆盖 |
+| A4 空列表 | 无到期日程 → 返回 0、end 从未被调用 | ✅ 已覆盖 |
+| A5 PENDING 过期标 TIMEOUT | `markPendingExpiredAsTimeout` 返回 3、**end 从未被调用**（PENDING 不触发落梭/奖励） | ✅ 已覆盖（fabfc2d 补） |
 
-单测仿 `MetricsIndicatorTest` 风格（构造过期日程 → 驱动 `scanOnce` → 断言），无需启动调度器。
+单测位于 `backend/sorts-schedule/src/test/java/com/sorts/schedule/service/impl/AutoSettleServiceImplTest.java`，纯 Mockito（mock ScheduleMapper + TimerService），无需启动调度器或 DB。
 
 ## 七、暂不做（边界）
 
 - MQ 延时消息精准触发（M5/M7 规划，将来可加；扫描保留作兜底）
-- `PENDING` 过期标注、`TIMEOUT` 产生路径（未开始日程保持 PENDING，展示层另议）
 - 前端区分"手动完成 / 自动完成"来源标记（可选后续）
+- 多实例部署的 ShedLock（当前单实例；上多实例时扫描会放大，靠幂等兜住重复但需加分布式锁）
 
 ## 八、实现备注
 
