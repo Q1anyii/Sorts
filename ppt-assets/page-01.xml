@@ -1,0 +1,20 @@
+﻿<slide xmlns="https://www.larkoffice.com/sml/2.0">
+  <style><fill><fillColor color="rgb(250,250,247)"/></fill></style>
+  <data>
+    <shape type="rect" topLeftX="0" topLeftY="0" width="12" height="540"><fill><fillColor color="rgb(44,95,124)"/></fill></shape>
+    <shape type="text" topLeftX="90" topLeftY="140" width="780" height="70">
+      <content textType="title" fontSize="48" bold="true" color="rgb(44,95,124)" fontFamily="微软雅黑"><p>SORTS · 梭子</p></content>
+    </shape>
+    <shape type="text" topLeftX="90" topLeftY="220" width="780" height="40">
+      <content textType="body" fontSize="22" color="rgb(61,66,70)" fontFamily="微软雅黑"><p>专注计时与日程规划平台 · Spring Cloud 微服务 + AI Agent</p></content>
+    </shape>
+    <line startX="90" startY="290" endX="260" endY="290"><border color="rgb(208,140,74)" width="3"/></line>
+    <shape type="text" topLeftX="90" topLeftY="310" width="780" height="60">
+      <content textType="body" fontSize="15" color="rgb(124,107,176)" fontFamily="微软雅黑" italic="true"><p>光明似箭，日月如梭 —— 一次专注是开梭 / 续梭 / 落梭，一日日程是一根线。</p></content>
+    </shape>
+    <shape type="text" topLeftX="90" topLeftY="440" width="780" height="30">
+      <content textType="caption" fontSize="12" color="rgb(120,128,134)" fontFamily="微软雅黑"><p>Spring Boot 3.3 · Spring Cloud 2023 · Vue 3.5 + Vite · MySQL 8（5 库）· Redis · Nacos · DeepSeek Tool Calling</p></content>
+    </shape>
+  </data>
+  <note><content textType="body"><p>这是 SORTS 梭子项目展示封面。一句话定位：一个把专注计时做成显式状态机、并用 AI Agent 把规划直接落库的微服务全栈项目。技术栈走 Spring Cloud + Vue 3 双线，后续页面按架构、状态机、AI、一致性、演示、CI 的顺序展开。</p></content></note>
+</slide>

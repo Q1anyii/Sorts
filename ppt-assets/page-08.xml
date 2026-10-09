@@ -1,0 +1,32 @@
+<slide xmlns="https://www.larkoffice.com/sml/2.0">
+  <style><fill><fillColor color="rgb(250,250,247)"/></fill></style>
+  <data>
+    <shape type="text" topLeftX="70" topLeftY="40" width="820" height="36">
+      <content textType="title" fontSize="24" bold="true" color="rgb(44,95,124)" fontFamily="微软雅黑"><p>兑换链路固定顺序：Redisson 锁 + 条件更新，锁租期失效仍安全</p></content>
+    </shape>
+    <line startX="70" startY="90" endX="890" endY="90"><border color="rgb(220,224,226)" width="1"/></line>
+
+    <shape type="rect" topLeftX="70" topLeftY="160" width="140" height="70" presetHandlers="8"><fill><fillColor color="rgb(245,243,250)"/></fill><border color="rgb(124,107,176)" width="1"/><content textType="body" fontSize="12" bold="true" color="rgb(80,70,120)" fontFamily="微软雅黑" textAlign="center"><p>1. Redisson</p><p>分布式加锁</p></content></shape>
+    <shape type="rect" topLeftX="250" topLeftY="160" width="140" height="70" presetHandlers="8"><fill><fillColor color="rgb(245,243,250)"/></fill><border color="rgb(124,107,176)" width="1"/><content textType="body" fontSize="12" bold="true" color="rgb(80,70,120)" fontFamily="微软雅黑" textAlign="center"><p>2. 锁内重加载</p><p>防止排队期间状态漂移</p></content></shape>
+    <shape type="rect" topLeftX="430" topLeftY="160" width="140" height="70" presetHandlers="8"><fill><fillColor color="rgb(245,243,250)"/></fill><border color="rgb(124,107,176)" width="1"/><content textType="body" fontSize="12" bold="true" color="rgb(80,70,120)" fontFamily="微软雅黑" textAlign="center"><p>3. 扣积分</p><p>校验余额</p></content></shape>
+    <shape type="rect" topLeftX="610" topLeftY="160" width="140" height="70" presetHandlers="8"><fill><fillColor color="rgb(245,243,250)"/></fill><border color="rgb(124,107,176)" width="1"/><content textType="body" fontSize="12" bold="true" color="rgb(80,70,120)" fontFamily="微软雅黑" textAlign="center"><p>4. 事务落库</p><p>订单 + 库存扣减</p></content></shape>
+    <shape type="rect" topLeftX="790" topLeftY="160" width="110" height="70" presetHandlers="8"><fill><fillColor color="rgb(252,240,228)"/></fill><border color="rgb(208,140,74)" width="1"/><content textType="body" fontSize="12" bold="true" color="rgb(160,100,40)" fontFamily="微软雅黑" textAlign="center"><p>5. 失败</p><p>退积分</p></content></shape>
+
+    <line startX="210" startY="195" endX="248" endY="195"><border color="rgb(124,107,176)" width="2"/><endArrow type="arrow"/></line>
+    <line startX="390" startY="195" endX="428" endY="195"><border color="rgb(124,107,176)" width="2"/><endArrow type="arrow"/></line>
+    <line startX="570" startY="195" endX="608" endY="195"><border color="rgb(124,107,176)" width="2"/><endArrow type="arrow"/></line>
+    <line startX="750" startY="195" endX="788" endY="195"><border color="rgb(208,140,74)" width="2"/><endArrow type="arrow"/></line>
+
+    <shape type="rect" topLeftX="70" topLeftY="290" width="830" height="80" presetHandlers="8"><fill><fillColor color="rgb(248,250,250)"/></fill><border color="rgb(44,95,124)" width="1"/><content textType="body" fontSize="12" color="rgb(44,95,124)" fontFamily="微软雅黑" textAlign="left"><p>　库存兜底：UPDATE mall_item SET stock = stock - 1 WHERE id = ? AND stock &gt; 0</p><p>　即使锁租期失效、并发穿透，条件更新也保证不会扣成负数；受影响行数 = 0 即视为售罄回滚。</p></content></shape>
+
+    <shape type="text" topLeftX="70" topLeftY="400" width="830" height="100">
+      <content textType="body" fontSize="13" color="rgb(61,66,70)" fontFamily="微软雅黑" lineSpacing="multiple:1.7">
+        <ul>
+          <li><p><strong>为什么是这个顺序</strong>：先锁再读，避免「查库存够 → 排队 → 落库时已被抢光」的 TOCTOU；锁内重加载是对排队期间状态漂移的二次防御</p></li>
+          <li><p><strong>已知技术债</strong>：扣积分成功 ↔ 本地事务提交间进程被杀，仅 ERROR 日志留痕，待 RabbitMQ outbox 消息补偿自愈</p></li>
+        </ul>
+      </content>
+    </shape>
+  </data>
+  <note><content textType="body"><p>锦市一致性页。5 步链路 + 条件更新 SQL 兜底。强调锁内重加载和 WHERE stock&gt;0 是双保险，诚实说明 outbox 技术债。</p></content></note>
+</slide>

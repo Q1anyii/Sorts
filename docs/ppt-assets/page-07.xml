@@ -1,0 +1,31 @@
+<slide xmlns="https://www.larkoffice.com/sml/2.0">
+  <style><fill><fillColor color="rgb(250,250,247)"/></fill></style>
+  <data>
+    <shape type="text" topLeftX="70" topLeftY="40" width="820" height="36">
+      <content textType="title" fontSize="24" bold="true" color="rgb(44,95,124)" fontFamily="微软雅黑"><p>从登录到梭灵三栏：一套「织锦流光」主题贯穿 11 个页面</p></content>
+    </shape>
+    <line startX="70" startY="90" endX="890" endY="90"><border color="rgb(220,224,226)" width="1"/></line>
+
+    <img src="MCcrbxMDMoNWUsxsRdkcGU3OnTg" topLeftX="70" topLeftY="115" width="240" height="308">
+      <crop type="rect" presetHandlers="8"/>
+    </img>
+    <shape type="text" topLeftX="70" topLeftY="428" width="240" height="24">
+      <content textType="caption" fontSize="12" bold="true" color="rgb(61,66,70)" fontFamily="微软雅黑" textAlign="center"><p>登录 · 双令牌鉴权</p></content>
+    </shape>
+
+    <img src="XSxUbQAGboDGOFxYePmc9MD3nic" topLeftX="360" topLeftY="115" width="240" height="308">
+      <crop type="rect" presetHandlers="8"/>
+    </img>
+    <shape type="text" topLeftX="360" topLeftY="428" width="240" height="24">
+      <content textType="caption" fontSize="12" bold="true" color="rgb(61,66,70)" fontFamily="微软雅黑" textAlign="center"><p>织程 · 按日期分组 + 柔和色标签</p></content>
+    </shape>
+
+    <img src="UCx0bxbEHodRiix0OgWczu3xnFc" topLeftX="650" topLeftY="115" width="240" height="308">
+      <crop type="rect" presetHandlers="8"/>
+    </img>
+    <shape type="text" topLeftX="650" topLeftY="428" width="240" height="24">
+      <content textType="caption" fontSize="12" bold="true" color="rgb(61,66,70)" fontFamily="微软雅黑" textAlign="center"><p>梭灵 · 会话 / 对话 / 规划建议三栏</p></content>
+    </shape>
+  </data>
+  <note><content textType="body"><p>产品截图页。三张窄竖图横排：登录页、织程列表、AI 三栏。视觉统一在织锦流光主题下，色板为柔和自然色。</p></content></note>
+</slide>

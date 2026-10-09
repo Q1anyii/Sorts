@@ -1,0 +1,30 @@
+<slide xmlns="https://www.larkoffice.com/sml/2.0">
+  <style><fill><fillColor color="rgb(250,250,247)"/></fill></style>
+  <data>
+    <shape type="text" topLeftX="70" topLeftY="40" width="820" height="36">
+      <content textType="title" fontSize="24" bold="true" color="rgb(44,95,124)" fontFamily="微软雅黑"><p>说一句话，梭灵按天生成 7 天规划，勾选后一键落库</p></content>
+    </shape>
+    <line startX="70" startY="90" endX="890" endY="90"><border color="rgb(220,224,226)" width="1"/></line>
+
+    <img src="ZZ4dbbrRyo9zcFxanMtccAgDnfg" topLeftX="70" topLeftY="115" width="500" height="310">
+      <crop type="rect" presetHandlers="8"/>
+    </img>
+
+    <shape type="text" topLeftX="610" topLeftY="120" width="290" height="28">
+      <content textType="body" fontSize="15" bold="true" color="rgb(124,107,176)" fontFamily="微软雅黑"><p>交互链路</p></content>
+    </shape>
+    <shape type="text" topLeftX="610" topLeftY="155" width="290" height="280">
+      <content textType="body" fontSize="13" color="rgb(61,66,70)" fontFamily="微软雅黑" lineSpacing="multiple:1.7">
+        <ul>
+          <li><p>用户输入「帮我生成未来一周规划」</p></li>
+          <li><p>服务端注入当前日期，解析相对时间范围</p></li>
+          <li><p>返回结构化 JSON：range + days[]</p></li>
+          <li><p>前端按天分组渲染，支持逐项勾选 / 行内编辑</p></li>
+          <li><p>确认后批量写入织程，自动刷新织历</p></li>
+          <li><p>同规划幂等：重复采纳不会重复落库</p></li>
+        </ul>
+      </content>
+    </shape>
+  </data>
+  <note><content textType="body"><p>演示动图页。GIF 展示从自然语言到按天分组规划再到批量落库的完整链路。强调服务端注入时间、结构化返回、前端勾选。</p></content></note>
+</slide>

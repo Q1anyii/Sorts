@@ -1,0 +1,49 @@
+﻿<slide xmlns="https://www.larkoffice.com/sml/2.0">
+  <style><fill><fillColor color="rgb(250,250,247)"/></fill></style>
+  <data>
+    <shape type="text" topLeftX="70" topLeftY="40" width="820" height="36">
+      <content textType="title" fontSize="24" bold="true" color="rgb(44,95,124)" fontFamily="微软雅黑"><p>写操作不下发就不会被执行：双钥匙把校验前移到声明阶段</p></content>
+    </shape>
+    <line startX="70" startY="90" endX="890" endY="90"><border color="rgb(220,224,226)" width="1"/></line>
+
+    <shape type="text" topLeftX="70" topLeftY="110" width="380" height="28">
+      <content textType="body" fontSize="15" bold="true" color="rgb(44,95,124)" fontFamily="微软雅黑"><p>7 个工具（4 读 / 3 写）</p></content>
+    </shape>
+    <shape type="text" topLeftX="70" topLeftY="145" width="380" height="200">
+      <content textType="body" fontSize="12" color="rgb(61,66,70)" fontFamily="微软雅黑" lineSpacing="multiple:1.6">
+        <p><span color="rgb(76,122,90)" bold="true">读</span>　QuerySchedules · QueryStatistics</p>
+        <p><span color="rgb(76,122,90)" bold="true">读</span>　QueryPoints · GetProfile</p>
+        <p><span color="rgb(208,140,74)" bold="true">写</span>　CreateSchedule · CreateSchedules</p>
+        <p><span color="rgb(208,140,74)" bold="true">写</span>　UpdateSchedule</p>
+        <p>　</p>
+        <p>SSE 流式打字机；上下文存 Redis 12h；</p>
+        <p>服务端注入当前时间，解析「下周 / 未来一周」</p>
+        <p>等相对日期并按天生成多日规划；同周期报告幂等。</p>
+      </content>
+    </shape>
+
+    <shape type="text" topLeftX="500" topLeftY="110" width="390" height="28">
+      <content textType="body" fontSize="15" bold="true" color="rgb(124,107,176)" fontFamily="微软雅黑"><p>双钥匙模型</p></content>
+    </shape>
+
+    <shape type="rect" topLeftX="490" topLeftY="155" width="170" height="60" presetHandlers="8"><fill><fillColor color="rgb(245,243,250)"/></fill><border color="rgb(124,107,176)" width="1"/><content textType="body" fontSize="11" bold="true" color="rgb(80,70,120)" fontFamily="微软雅黑" textAlign="center"><p>钥匙 1 · 服务端开关</p><p>sorts.ai.tool.allow-write</p></content></shape>
+
+    <shape type="rect" topLeftX="740" topLeftY="155" width="170" height="60" presetHandlers="8"><fill><fillColor color="rgb(245,243,250)"/></fill><border color="rgb(124,107,176)" width="1"/><content textType="body" fontSize="11" bold="true" color="rgb(80,70,120)" fontFamily="微软雅黑" textAlign="center"><p>钥匙 2 · 单次请求</p><p>allowWrite=true（用户勾选）</p></content></shape>
+
+    <shape type="ellipse" topLeftX="672" topLeftY="172" width="36" height="36"><fill><fillColor color="rgb(44,95,124)"/></fill><content textType="body" fontSize="14" bold="true" color="rgb(255,255,255)" fontFamily="微软雅黑" textAlign="center"><p>且</p></content></shape>
+
+    <line startX="690" startY="215" endX="690" endY="250"><border color="rgb(124,107,176)" width="2"/><endArrow type="arrow"/></line>
+
+    <shape type="rect" topLeftX="540" topLeftY="255" width="300" height="50" presetHandlers="8"><fill><fillColor color="rgb(44,95,124)"/></fill><content textType="body" fontSize="12" bold="true" color="rgb(255,255,255)" fontFamily="微软雅黑" textAlign="center"><p>两个都到位，写工具才下发给模型</p><p>任一缺失 → 模型根本看不到写工具</p></content></shape>
+
+    <shape type="text" topLeftX="70" topLeftY="380" width="820" height="120">
+      <content textType="body" fontSize="13" color="rgb(61,66,70)" fontFamily="微软雅黑" lineSpacing="multiple:1.7">
+        <ul>
+          <li><p><strong>为什么是声明式过滤</strong>：运行时拦截是"模型已经调了再拦"，声明式是"工具列表里压根没有写工具"，从根上避免越权落库</p></li>
+          <li><p><strong>多日规划</strong>：用户说"帮我生成未来一周规划"，服务端注入当前日期，按天分组返回结构化 JSON，前端勾选后批量落库，同规划幂等拒绝重复采纳</p></li>
+        </ul>
+      </content>
+    </shape>
+  </data>
+  <note><content textType="body"><p>AI 双钥匙页。7 工具 4 读 3 写；服务端开关 AND 请求级 allowWrite，两钥匙都到位才下发写工具。</p></content></note>
+</slide>

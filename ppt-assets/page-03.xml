@@ -1,0 +1,27 @@
+﻿<slide xmlns="https://www.larkoffice.com/sml/2.0">
+  <style><fill><fillColor color="rgb(250,250,247)"/></fill></style>
+  <data>
+    <shape type="text" topLeftX="70" topLeftY="40" width="820" height="36">
+      <content textType="title" fontSize="24" bold="true" color="rgb(44,95,124)" fontFamily="微软雅黑"><p>网关统一收口：JWT 鉴权 + 20/s 令牌桶限流，服务间只走 Feign</p></content>
+    </shape>
+    <line startX="70" startY="90" endX="890" endY="90"><border color="rgb(220,224,226)" width="1"/></line>
+
+    <img src="PxNYbk5BuoOiAgx6wcpcpssXnmf" topLeftX="90" topLeftY="110" width="220" height="407"/>
+
+    <shape type="text" topLeftX="360" topLeftY="120" width="540" height="30">
+      <content textType="body" fontSize="15" bold="true" color="rgb(44,95,124)" fontFamily="微软雅黑"><p>关键约束</p></content>
+    </shape>
+    <shape type="text" topLeftX="360" topLeftY="155" width="540" height="330">
+      <content textType="body" fontSize="13" color="rgb(61,66,70)" fontFamily="微软雅黑" lineSpacing="multiple:1.7">
+        <ul>
+          <li><p><strong>一服务一库</strong>：MySQL 5 个独立库（user / schedule / ai / notification / mall），服务间禁止跨库直连</p></li>
+          <li><p><strong>网关剥离内部凭证</strong>：入站请求统一剥除外造的 X-Internal-Token，关闭 discovery.locator 自动路由</p></li>
+          <li><p><strong>限流按登录态分 key</strong>：登录用户按 userId、未登录按 IP，默认 20/s、突发 40</p></li>
+          <li><p><strong>服务注册 Nacos</strong>：8848 注册发现，Feign 走内部网络，统一 /internal/** 不对外暴露</p></li>
+          <li><p><strong>中间件 Docker Compose</strong>：MySQL / Redis / Nacos / RabbitMQ 全部容器化，宿主不装 JDK / Node 也能跑</p></li>
+        </ul>
+      </content>
+    </shape>
+  </data>
+  <note><content textType="body"><p>架构页。左图右文。核心：网关收口鉴权限流、一服务一库、Feign 内部调用、中间件全部容器化。强调为什么这样拆——为了边界清晰，不是为了微服务而微服务。</p></content></note>
+</slide>

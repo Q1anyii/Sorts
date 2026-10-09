@@ -1,0 +1,31 @@
+<slide xmlns="https://www.larkoffice.com/sml/2.0">
+  <style><fill><fillColor color="rgb(250,250,247)"/></fill></style>
+  <data>
+    <shape type="text" topLeftX="70" topLeftY="40" width="820" height="36">
+      <content textType="title" fontSize="24" bold="true" color="rgb(44,95,124)" fontFamily="微软雅黑"><p>43 个测试类 / 396 用例全绿：GitHub Actions 三并行 Job 矩阵</p></content>
+    </shape>
+    <line startX="70" startY="90" endX="890" endY="90"><border color="rgb(220,224,226)" width="1"/></line>
+
+    <img src="B7sjbEq8KohMEzxT9QucivO3nsg" topLeftX="70" topLeftY="110" width="220" height="320"/>
+
+    <shape type="text" topLeftX="340" topLeftY="120" width="550" height="28">
+      <content textType="body" fontSize="15" bold="true" color="rgb(44,95,124)" fontFamily="微软雅黑"><p>测试规模与流水线</p></content>
+    </shape>
+
+    <shape type="rect" topLeftX="340" topLeftY="160" width="170" height="80" presetHandlers="8"><fill><fillColor color="rgb(245,248,250)"/></fill><content textType="body" fontSize="13" color="rgb(61,66,70)" fontFamily="微软雅黑" textAlign="center"><p><span fontSize="32" bold="true" color="rgb(44,95,124)">396</span></p><p>后端用例全绿</p></content></shape>
+    <shape type="rect" topLeftX="530" topLeftY="160" width="170" height="80" presetHandlers="8"><fill><fillColor color="rgb(245,248,250)"/></fill><content textType="body" fontSize="13" color="rgb(61,66,70)" fontFamily="微软雅黑" textAlign="center"><p><span fontSize="32" bold="true" color="rgb(76,122,90)">4</span></p><p>Testcontainers 集成测试</p></content></shape>
+    <shape type="rect" topLeftX="720" topLeftY="160" width="170" height="80" presetHandlers="8"><fill><fillColor color="rgb(245,248,250)"/></fill><content textType="body" fontSize="13" color="rgb(61,66,70)" fontFamily="微软雅黑" textAlign="center"><p><span fontSize="32" bold="true" color="rgb(208,140,74)">19</span></p><p>前端 Vitest 用例</p></content></shape>
+
+    <shape type="text" topLeftX="340" topLeftY="270" width="550" height="180">
+      <content textType="body" fontSize="13" color="rgb(61,66,70)" fontFamily="微软雅黑" lineSpacing="multiple:1.7">
+        <ul>
+          <li><p>41 个业务单测 + 4 个 Testcontainers IT（MySQL / Redis 真实容器）+ 25 个指标测试</p></li>
+          <li><p>三并行 Job：后端单测 · 集成测试 · 前端 Vitest，互不阻塞</p></li>
+          <li><p>6 个服务镜像独立构建，docker/compose.yml 一键编排，宿主不装 JDK / Node 也能跑</p></li>
+          <li><p>指标测试单独维护：双钥匙模型、五态状态机、兑换条件更新等关键安全路径</p></li>
+        </ul>
+      </content>
+    </shape>
+  </data>
+  <note><content textType="body"><p>CI/CD 页。左图右 KPI。396 后端用例 + 4 IT + 19 前端。强调指标测试单独维护、关键安全路径有覆盖。</p></content></note>
+</slide>

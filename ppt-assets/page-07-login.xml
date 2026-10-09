@@ -1,0 +1,18 @@
+<slide xmlns="https://www.larkoffice.com/sml/2.0">
+  <style><fill><fillColor color="rgb(250,250,247)"/></fill></style>
+  <data>
+    <shape type="text" topLeftX="70" topLeftY="28" width="820" height="30">
+      <content textType="title" fontSize="20" bold="true" color="rgb(44,95,124)" fontFamily="微软雅黑"><p>双令牌鉴权 · 紫蓝渐变登录页</p></content>
+    </shape>
+    <line startX="70" startY="68" endX="890" endY="68"><border color="rgb(220,224,226)" width="1"/></line>
+
+    <img src="PoScbjmwFoXYl8xrVsKc8thEnue" topLeftX="129" topLeftY="85" width="702" height="395">
+      <crop type="rect" presetHandlers="10"/>
+    </img>
+
+    <shape type="text" topLeftX="129" topLeftY="490" width="702" height="24">
+      <content textType="caption" fontSize="11" color="rgb(140,148,154)" fontFamily="微软雅黑" textAlign="center"><p>access 30 分钟 + refresh 7 天 · 网关统一校验 JWT 并注入 X-User-Id · 401 单飞续期后自动重放原请求</p></content>
+    </shape>
+  </data>
+  <note><content textType="body"><p>产品截图第 1 张：登录页。紫蓝渐变背景 + 白卡片，双令牌鉴权，网关注入用户 ID。</p></content></note>
+</slide>

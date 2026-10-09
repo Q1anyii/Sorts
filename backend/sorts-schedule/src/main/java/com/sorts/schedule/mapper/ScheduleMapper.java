@@ -35,4 +35,17 @@ public interface ScheduleMapper extends BaseMapper<Schedule> {
             + "<foreach collection='ids' item='id' open='(' separator=',' close=')'>#{id}</foreach>"
             + "</script>")
     int softDeleteBatchOwned(@Param("userId") Long userId, @Param("ids") List<Long> ids);
+
+    /**
+     * PENDING 过期未开始 → 批量标 TIMEOUT（终态，仅可取消）。
+     *
+     * <p>条件更新原子执行：当前时间晚于「计划开始 + 计划时长」即命中。
+     * 与开梭请求并发时，先到者抢占——本语句条件不匹配已开梭记录，开梭侧
+     * 状态机校验兜住另一方。影响行数即本次标记数。</p>
+     */
+    @Update("UPDATE t_schedule SET status = 'TIMEOUT', updated_at = NOW() "
+            + "WHERE status = 'PENDING' AND deleted = 0 "
+            + "AND planned_start_time + INTERVAL planned_duration MINUTE < NOW() "
+            + "LIMIT 100")
+    int markPendingExpiredAsTimeout();
 }

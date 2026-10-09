@@ -39,6 +39,14 @@ public class AutoSettleServiceImpl implements AutoSettleService {
 
     @Override
     public int scanExpired() {
+        // ① PENDING 过期未开始 → 直接标 TIMEOUT（终态，仅可取消）。
+        //    无计时片段/无奖励，一条条件更新原子完成，与开梭请求并发互不误伤。
+        int timeoutCount = scheduleMapper.markPendingExpiredAsTimeout();
+        if (timeoutCount > 0) {
+            log.info("自动标记 {} 条过期未开始日程为 TIMEOUT", timeoutCount);
+        }
+
+        // ② 进行中/暂停 → 自动落梭（复用 end 链路）。
         // 到期判定：计划开始时间 + 计划时长（分钟）早于当前时间。
         // planned_duration 为 NULL 时表达式结果为 NULL 不命中，天然跳过脏数据；
         // 逻辑删除由 MyBatis-Plus 全局配置自动追加 deleted = 0。
@@ -61,6 +69,6 @@ public class AutoSettleServiceImpl implements AutoSettleService {
                 log.error("日程 {} 自动落梭失败", s.getId(), e);
             }
         }
-        return settled;
+        return timeoutCount + settled;
     }
 }

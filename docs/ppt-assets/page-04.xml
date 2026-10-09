@@ -1,0 +1,36 @@
+﻿<slide xmlns="https://www.larkoffice.com/sml/2.0">
+  <style><fill><fillColor color="rgb(250,250,247)"/></fill></style>
+  <data>
+    <shape type="text" topLeftX="70" topLeftY="40" width="820" height="36">
+      <content textType="title" fontSize="24" bold="true" color="rgb(44,95,124)" fontFamily="微软雅黑"><p>专注秒数由服务端裁定：五态显式状态机，非法跃迁直接 409</p></content>
+    </shape>
+    <line startX="70" startY="90" endX="890" endY="90"><border color="rgb(220,224,226)" width="1"/></line>
+
+    <shape type="rect" topLeftX="80" topLeftY="200" width="130" height="56" presetHandlers="10"><fill><fillColor color="rgb(232,234,236)"/></fill><content textType="body" fontSize="13" bold="true" color="rgb(90,96,102)" fontFamily="微软雅黑" textAlign="center"><p>PENDING</p><p>待开始</p></content></shape>
+
+    <shape type="rect" topLeftX="290" topLeftY="200" width="140" height="56" presetHandlers="10"><fill><fillColor color="rgb(44,95,124)"/></fill><content textType="body" fontSize="13" bold="true" color="rgb(255,255,255)" fontFamily="微软雅黑" textAlign="center"><p>IN_PROGRESS</p><p>开梭中</p></content></shape>
+
+    <shape type="rect" topLeftX="510" topLeftY="200" width="120" height="56" presetHandlers="10"><fill><fillColor color="rgb(208,140,74)"/></fill><content textType="body" fontSize="13" bold="true" color="rgb(255,255,255)" fontFamily="微软雅黑" textAlign="center"><p>PAUSED</p><p>已暂停</p></content></shape>
+
+    <shape type="rect" topLeftX="740" topLeftY="140" width="140" height="56" presetHandlers="10"><fill><fillColor color="rgb(76,122,90)"/></fill><content textType="body" fontSize="13" bold="true" color="rgb(255,255,255)" fontFamily="微软雅黑" textAlign="center"><p>COMPLETED</p><p>落梭</p></content></shape>
+
+    <shape type="rect" topLeftX="740" topLeftY="260" width="140" height="56" presetHandlers="10"><fill><fillColor color="rgb(200,205,210)"/></fill><content textType="body" fontSize="13" bold="true" color="rgb(80,86,92)" fontFamily="微软雅黑" textAlign="center"><p>CANCELLED</p><p>已取消</p></content></shape>
+
+    <line startX="210" startY="228" endX="288" endY="228"><border color="rgb(90,96,102)" width="2"/><endArrow type="arrow"/></line>
+    <line startX="430" startY="228" endX="508" endY="228"><border color="rgb(90,96,102)" width="2"/><endArrow type="arrow"/></line>
+    <line startX="508" startY="240" endX="432" endY="240"><border color="rgb(60,90,70)" width="2"/><endArrow type="arrow"/></line>
+    <line startX="430" startY="205" endX="735" endY="168"><border color="rgb(60,90,70)" width="2"/><endArrow type="arrow"/></line>
+    <line startX="430" startY="250" endX="735" endY="285"><border color="rgb(110,116,122)" width="2"/><endArrow type="arrow"/></line>
+
+    <shape type="text" topLeftX="70" topLeftY="350" width="820" height="160">
+      <content textType="body" fontSize="13" color="rgb(61,66,70)" fontFamily="微软雅黑" lineSpacing="multiple:1.7">
+        <ul>
+          <li><p><strong>跃迁路径</strong>：PENDING → IN_PROGRESS → PAUSED → 续梭回 IN_PROGRESS → COMPLETED / CANCELLED；暂停态可取消，不可直接落梭</p></li>
+          <li><p><strong>为什么不信任客户端计时</strong>：专注秒数是光阴砂积分唯一数据源，秒数累计全部在 schedule 服务端完成</p></li>
+          <li><p><strong>落梭事务</strong>：单事务内结算秒数并原子发放光阴砂；发放失败仅告警、不回滚计时，宁少发不多发</p></li>
+        </ul>
+      </content>
+    </shape>
+  </data>
+  <note><content textType="body"><p>状态机页。五态流转，非法跃迁 409。关键取舍：秒数服务端裁定、落梭事务、激励失败不回滚计时。</p></content></note>
+</slide>

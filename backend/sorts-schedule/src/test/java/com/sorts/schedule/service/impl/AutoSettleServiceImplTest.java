@@ -114,4 +114,16 @@ class AutoSettleServiceImplTest {
         assertEquals(0, settled);
         verify(timerService, never()).end(anyLong(), anyLong());
     }
+
+    @Test
+    @DisplayName("A5 PENDING 过期未开始：批量标 TIMEOUT，不触发落梭/奖励")
+    void pendingExpiredMarkedTimeout() {
+        when(scheduleMapper.markPendingExpiredAsTimeout()).thenReturn(3);
+        when(scheduleMapper.selectList(any())).thenReturn(List.of());
+
+        int settled = autoSettleService.scanExpired();
+
+        assertEquals(3, settled);
+        verify(timerService, never()).end(anyLong(), anyLong());
+    }
 }

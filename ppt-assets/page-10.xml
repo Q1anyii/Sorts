@@ -1,0 +1,34 @@
+<slide xmlns="https://www.larkoffice.com/sml/2.0">
+  <style><fill><fillColor color="linear-gradient(135deg,rgba(44,95,124,1) 0%,rgba(60,110,140,1) 100%)"/></fill></style>
+  <data>
+    <shape type="text" topLeftX="80" topLeftY="90" width="800" height="50">
+      <content textType="title" fontSize="32" bold="true" color="rgb(255,255,255)" fontFamily="微软雅黑"><p>SORTS 梭子 · 专注计时平台</p></content>
+    </shape>
+    <shape type="text" topLeftX="80" topLeftY="150" width="800" height="30">
+      <content textType="body" fontSize="15" color="rgba(255,255,255,0.85)" fontFamily="微软雅黑"><p>光明似箭，日月如梭 —— 让专注秒数成为唯一真相源</p></content>
+    </shape>
+
+    <line startX="80" startY="200" endX="200" endY="200"><border color="rgba(255,255,255,0.5)" width="2"/></line>
+
+    <shape type="text" topLeftX="80" topLeftY="230" width="380" height="200">
+      <content textType="body" fontSize="13" color="rgba(255,255,255,0.92)" fontFamily="微软雅黑" lineSpacing="multiple:1.8">
+        <p><span bold="true">后端</span>　Spring Boot 3.3 · Spring Cloud 2023</p>
+        <p>　　　Nacos · Gateway WebFlux · Feign</p>
+        <p>　　　MySQL 8（一服务一库）· Redis · RabbitMQ</p>
+        <p>　　　Redisson · DeepSeek API · SSE</p>
+      </content>
+    </shape>
+
+    <shape type="text" topLeftX="500" topLeftY="230" width="380" height="200">
+      <content textType="body" fontSize="13" color="rgba(255,255,255,0.92)" fontFamily="微软雅黑" lineSpacing="multiple:1.8">
+        <p><span bold="true">前端</span>　Vue 3.5 · TypeScript · Pinia · Vite 6</p>
+        <p>　　　Vue Router 4 · 织锦流光主题</p>
+        <p><span bold="true">工程</span>　Docker Compose · GitHub Actions</p>
+        <p>　　　43 测试类 / 396 用例全绿</p>
+      </content>
+    </shape>
+
+    <shape type="rect" topLeftX="80" topLeftY="440" width="500" height="44" presetHandlers="22"><fill><fillColor color="rgba(255,255,255,0.15)"/></fill><content textType="body" fontSize="14" bold="true" color="rgb(255,255,255)" fontFamily="微软雅黑" textAlign="center"><p>github.com/Q1anyii/Sorts</p></content></shape>
+  </data>
+  <note><content textType="body"><p>结尾页。深蓝渐变背景，左后端右前端技术栈，底部仓库地址。不放谢谢或问答页，直接给可访问链接。</p></content></note>
+</slide>

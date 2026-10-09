@@ -1,0 +1,720 @@
+<presentation id="CV2rsU0omlEnvudfHXRcTJoAnid" xmlns="https://www.larkoffice.com/sml/2.0" width="960" height="540">
+  <title>SORTS 梭子 · 专注计时与日程规划平台</title>
+  <theme>
+    <textStyles>
+      <headline fontColor="rgba(31, 35, 41, 1)"/>
+      <sub-headline fontColor="rgba(31, 35, 41, 1)"/>
+      <body fontColor="rgba(31, 35, 41, 1)"/>
+      <caption fontColor="rgba(155, 158, 162, 1)" fontSize="14"/>
+    </textStyles>
+  </theme>
+  <slide id="pkk">
+    <style>
+      <fill id="fkk">
+        <fillColor color="rgba(250, 250, 247, 1)"/>
+      </fill>
+    </style>
+    <data>
+      <shape width="12" height="540" topLeftX="0" topLeftY="0" presetHandlers="0" type="rect" id="bPl">
+        <fill>
+          <fillColor color="rgba(44, 95, 124, 1)"/>
+        </fill>
+        <content fontSize="16" fontFamily="思源黑体" color="rgba(31, 35, 41, 1)"/>
+      </shape>
+      <shape width="780" height="70" topLeftX="90" topLeftY="140" type="text" id="bPG">
+        <content textType="title" fontSize="48" fontFamily="微软雅黑" color="rgba(44, 95, 124, 1)" bold="true">
+          <p>SORTS · 梭子</p>
+        </content>
+      </shape>
+      <shape width="780" height="40" topLeftX="90" topLeftY="220" type="text" id="bPS">
+        <content fontSize="22" fontFamily="微软雅黑" color="rgba(61, 66, 70, 1)">
+          <p>专注计时与日程规划平台 · Spring Cloud 微服务 + AI Agent</p>
+        </content>
+      </shape>
+      <line id="bPy" startX="90" startY="290" endX="260.0029411510283" endY="290">
+        <border color="rgba(208, 140, 74, 1)" width="3"/>
+      </line>
+      <shape width="780" height="60" topLeftX="90" topLeftY="310" type="text" id="bPE">
+        <content fontSize="15" fontFamily="微软雅黑" color="rgba(124, 107, 176, 1)" italic="true">
+          <p>光明似箭，日月如梭 —— 一次专注是开梭 / 续梭 / 落梭，一日日程是一根线。</p>
+        </content>
+      </shape>
+      <shape width="780" height="30" topLeftX="90" topLeftY="440" type="text" id="bPn">
+        <content textType="caption" fontSize="12" fontFamily="微软雅黑" color="rgba(120, 128, 134, 1)">
+          <p>Spring Boot 3.3 · Spring Cloud 2023 · Vue 3.5 + Vite · MySQL 8（5 库）· Redis · Nacos · DeepSeek Tool Calling</p>
+        </content>
+      </shape>
+    </data>
+    <note id="bPj">
+      <content>
+        <p>这是 SORTS 梭子项目展示封面。一句话定位：一个把专注计时做成显式状态机、并用 AI Agent 把规划直接落库的微服务全栈项目。技术栈走 Spring Cloud + Vue 3 双线，后续页面按架构、状态机、AI、一致性、演示、CI 的顺序展开。</p>
+      </content>
+    </note>
+  </slide>
+  <slide id="pkc">
+    <style>
+      <fill id="fkc">
+        <fillColor color="rgba(250, 250, 247, 1)"/>
+      </fill>
+    </style>
+    <data>
+      <shape width="820" height="40" topLeftX="70" topLeftY="50" type="text" id="bPp">
+        <content textType="title" fontSize="26" fontFamily="微软雅黑" color="rgba(44, 95, 124, 1)" bold="true">
+          <p>把专注数据收敛到服务端，再让 AI 直接落库</p>
+        </content>
+      </shape>
+      <line id="bPf" startX="70" startY="105" endX="890.0006097558709" endY="105">
+        <border color="rgba(220, 224, 226, 1)" width="1"/>
+      </line>
+      <shape width="820" height="60" topLeftX="70" topLeftY="125" type="text" id="bPC">
+        <content fontSize="14" fontFamily="微软雅黑" color="rgba(61, 66, 70, 1)">
+          <p>SORTS 梭子 = 日程编排 + 穿梭计时 + 积分激励 + AI 助手。核心取舍：专注秒数是积分唯一数据源，不信任客户端计时；AI 写库走「双钥匙」声明式过滤，不是运行时兜底。</p>
+        </content>
+      </shape>
+      <shape width="190" height="70" topLeftX="70" topLeftY="225" type="text" id="bPe">
+        <content textType="title" fontSize="46" fontFamily="微软雅黑" color="rgba(44, 95, 124, 1)" bold="true" textAlign="center">
+          <p>6</p>
+        </content>
+      </shape>
+      <shape width="190" height="75" topLeftX="70" topLeftY="305" type="text" id="bPO">
+        <content fontSize="13" fontFamily="微软雅黑" color="rgba(61, 66, 70, 1)" textAlign="center">
+          <p>可运行微服务</p>
+          <p>网关 + user / schedule</p>
+          <p>/ ai / mall / notif.</p>
+        </content>
+      </shape>
+      <shape width="190" height="70" topLeftX="280" topLeftY="225" type="text" id="bPo">
+        <content textType="title" fontSize="46" fontFamily="微软雅黑" color="rgba(76, 122, 90, 1)" bold="true" textAlign="center">
+          <p>396</p>
+        </content>
+      </shape>
+      <shape width="190" height="75" topLeftX="280" topLeftY="305" type="text" id="bPd">
+        <content fontSize="13" fontFamily="微软雅黑" color="rgba(61, 66, 70, 1)" textAlign="center">
+          <p>自动化测试用例</p>
+          <p>43 测试类</p>
+          <p>含 Testcontainers 集成</p>
+        </content>
+      </shape>
+      <shape width="190" height="70" topLeftX="490" topLeftY="225" type="text" id="bPU">
+        <content textType="title" fontSize="46" fontFamily="微软雅黑" color="rgba(124, 107, 176, 1)" bold="true" textAlign="center">
+          <p>7</p>
+        </content>
+      </shape>
+      <shape width="190" height="75" topLeftX="490" topLeftY="305" type="text" id="bPL">
+        <content fontSize="13" fontFamily="微软雅黑" color="rgba(61, 66, 70, 1)" textAlign="center">
+          <p>AI 工具（4 读 3 写）</p>
+          <p>双钥匙控制写操作</p>
+          <p>声明式过滤下发</p>
+        </content>
+      </shape>
+      <shape width="190" height="70" topLeftX="700" topLeftY="225" type="text" id="bPs">
+        <content textType="title" fontSize="46" fontFamily="微软雅黑" color="rgba(208, 140, 74, 1)" bold="true" textAlign="center">
+          <p>5</p>
+        </content>
+      </shape>
+      <shape width="190" height="75" topLeftX="700" topLeftY="305" type="text" id="bPZ">
+        <content fontSize="13" fontFamily="微软雅黑" color="rgba(61, 66, 70, 1)" textAlign="center">
+          <p>显式状态机</p>
+          <p>开梭 → 暂停 / 续梭</p>
+          <p>→ 落梭 / 取消</p>
+        </content>
+      </shape>
+      <shape width="820" height="30" topLeftX="70" topLeftY="440" type="text" id="bPa">
+        <content textType="caption" fontSize="11" fontFamily="微软雅黑" color="rgba(140, 148, 154, 1)">
+          <p>口径：Spring Boot 3.3.4 · Spring Cloud 2023.0.3 · JDK 17 · 数据截至 2026-09</p>
+        </content>
+      </shape>
+    </data>
+    <note id="bPb">
+      <content>
+        <p>TL;DR 页：6 微服务、396 用例、7 AI 工具、5 态状态机。核心取舍——专注秒数服务端裁定、AI 写库双钥匙。</p>
+      </content>
+    </note>
+  </slide>
+  <slide id="pkF">
+    <style>
+      <fill id="fkF">
+        <fillColor color="rgba(250, 250, 247, 1)"/>
+      </fill>
+    </style>
+    <data>
+      <shape width="820" height="36" topLeftX="70" topLeftY="40" type="text" id="bPP">
+        <content textType="title" fontSize="24" fontFamily="微软雅黑" color="rgba(44, 95, 124, 1)" bold="true">
+          <p>网关统一收口：JWT 鉴权 + 20/s 令牌桶限流，服务间只走 Feign</p>
+        </content>
+      </shape>
+      <line id="bPX" startX="70" startY="90" endX="890.0006097558709" endY="90">
+        <border color="rgba(220, 224, 226, 1)" width="1"/>
+      </line>
+      <img id="bPu" src="PxNYbk5BuoOiAgx6wcpcpssXnmf" width="220" height="407.00000000000006" topLeftX="90" topLeftY="110">
+        <crop type="rect" leftOffset="0" rightOffset="0" topOffset="0.12132352941176805" bottomOffset="0.1213235294117112"/>
+      </img>
+      <shape width="540" height="30" topLeftX="360" topLeftY="120" type="text" id="bPg">
+        <content fontSize="15" fontFamily="微软雅黑" color="rgba(44, 95, 124, 1)" bold="true">
+          <p>关键约束</p>
+        </content>
+      </shape>
+      <shape width="540" height="330" topLeftX="360" topLeftY="155" type="text" id="bPT">
+        <content fontSize="13" fontFamily="微软雅黑" color="rgba(61, 66, 70, 1)" lineSpacing="multiple:1.7" list="bullet" listStyle="circle-hollow-square">
+          <ul>
+            <li>
+              <p><strong>一服务一库</strong>：MySQL 5 个独立库（user / schedule / ai / notification / mall），服务间禁止跨库直连</p>
+            </li>
+            <li>
+              <p><strong>网关剥离内部凭证</strong>：入站请求统一剥除外造的 X-Internal-Token，关闭 discovery.locator 自动路由</p>
+            </li>
+            <li>
+              <p><strong>限流按登录态分 key</strong>：登录用户按 userId、未登录按 IP，默认 20/s、突发 40</p>
+            </li>
+            <li>
+              <p><strong>服务注册 Nacos</strong>：8848 注册发现，Feign 走内部网络，统一 /internal/** 不对外暴露</p>
+            </li>
+            <li>
+              <p><strong>中间件 Docker Compose</strong>：MySQL / Redis / Nacos / RabbitMQ 全部容器化，宿主不装 JDK / Node 也能跑</p>
+            </li>
+          </ul>
+        </content>
+      </shape>
+    </data>
+    <note id="bPi">
+      <content>
+        <p>架构页。左图右文。核心：网关收口鉴权限流、一服务一库、Feign 内部调用、中间件全部容器化。强调为什么这样拆——为了边界清晰，不是为了微服务而微服务。</p>
+      </content>
+    </note>
+  </slide>
+  <slide id="pkT">
+    <style>
+      <fill id="fkT">
+        <fillColor color="rgba(250, 250, 247, 1)"/>
+      </fill>
+    </style>
+    <data>
+      <shape width="820" height="36" topLeftX="70" topLeftY="40" type="text" id="bPF">
+        <content textType="title" fontSize="24" fontFamily="微软雅黑" color="rgba(44, 95, 124, 1)" bold="true">
+          <p>专注秒数由服务端裁定：五态显式状态机，非法跃迁直接 409</p>
+        </content>
+      </shape>
+      <line id="bPK" startX="70" startY="90" endX="890.0006097558709" endY="90">
+        <border color="rgba(220, 224, 226, 1)" width="1"/>
+      </line>
+      <shape width="130" height="56" topLeftX="80" topLeftY="200" presetHandlers="10" type="rect" id="bPv">
+        <fill>
+          <fillColor color="rgba(232, 234, 236, 1)"/>
+        </fill>
+        <content fontSize="13" fontFamily="微软雅黑" color="rgba(90, 96, 102, 1)" bold="true">
+          <p>PENDING</p>
+          <p>待开始</p>
+        </content>
+      </shape>
+      <shape width="140" height="56" topLeftX="290" topLeftY="200" presetHandlers="10" type="rect" id="bPQ">
+        <fill>
+          <fillColor color="rgba(44, 95, 124, 1)"/>
+        </fill>
+        <content fontSize="13" fontFamily="微软雅黑" color="rgba(255, 255, 255, 1)" bold="true">
+          <p>IN_PROGRESS</p>
+          <p>开梭中</p>
+        </content>
+      </shape>
+      <shape width="120" height="56" topLeftX="510" topLeftY="200" presetHandlers="10" type="rect" id="bPA">
+        <fill>
+          <fillColor color="rgba(208, 140, 74, 1)"/>
+        </fill>
+        <content fontSize="13" fontFamily="微软雅黑" color="rgba(255, 255, 255, 1)" bold="true">
+          <p>PAUSED</p>
+          <p>已暂停</p>
+        </content>
+      </shape>
+      <shape width="140" height="56" topLeftX="740" topLeftY="140" presetHandlers="10" type="rect" id="bPN">
+        <fill>
+          <fillColor color="rgba(76, 122, 90, 1)"/>
+        </fill>
+        <content fontSize="13" fontFamily="微软雅黑" color="rgba(255, 255, 255, 1)" bold="true">
+          <p>COMPLETED</p>
+          <p>落梭</p>
+        </content>
+      </shape>
+      <shape width="140" height="56" topLeftX="740" topLeftY="260" presetHandlers="10" type="rect" id="bPD">
+        <fill>
+          <fillColor color="rgba(200, 205, 210, 1)"/>
+        </fill>
+        <content fontSize="13" fontFamily="微软雅黑" color="rgba(80, 86, 92, 1)" bold="true">
+          <p>CANCELLED</p>
+          <p>已取消</p>
+        </content>
+      </shape>
+      <line id="bPq" startX="210" startY="228" endX="288.00640999302556" endY="228">
+        <border color="rgba(90, 96, 102, 1)"/>
+        <endArrow type="arrow"/>
+      </line>
+      <line id="bPY" startX="430" startY="228" endX="508.00640999302556" endY="228">
+        <border color="rgba(90, 96, 102, 1)"/>
+        <endArrow type="arrow"/>
+      </line>
+      <line id="bPx" startX="507.99999999999994" startY="239.99999999999997" endX="431.9934213373605" endY="239.99999999999997">
+        <border color="rgba(60, 90, 70, 1)"/>
+        <endArrow type="arrow"/>
+      </line>
+      <line id="bPM" startX="430" startY="205" endX="735.0016155645073" endY="167.99980401348574">
+        <border color="rgba(60, 90, 70, 1)"/>
+        <endArrow type="arrow"/>
+      </line>
+      <line id="bPr" startX="430" startY="250" endX="735.0016180328435" endY="285.00018567590007">
+        <border color="rgba(110, 116, 122, 1)"/>
+        <endArrow type="arrow"/>
+      </line>
+      <shape width="820" height="160" topLeftX="70" topLeftY="350" type="text" id="bPw">
+        <content fontSize="13" fontFamily="微软雅黑" color="rgba(61, 66, 70, 1)" lineSpacing="multiple:1.7" list="bullet" listStyle="circle-hollow-square">
+          <ul>
+            <li>
+              <p><strong>跃迁路径</strong>：PENDING → IN_PROGRESS → PAUSED → 续梭回 IN_PROGRESS → COMPLETED / CANCELLED；暂停态可取消，不可直接落梭</p>
+            </li>
+            <li>
+              <p><strong>为什么不信任客户端计时</strong>：专注秒数是光阴砂积分唯一数据源，秒数累计全部在 schedule 服务端完成</p>
+            </li>
+            <li>
+              <p><strong>落梭事务</strong>：单事务内结算秒数并原子发放光阴砂；发放失败仅告警、不回滚计时，宁少发不多发</p>
+            </li>
+          </ul>
+        </content>
+      </shape>
+    </data>
+    <note id="bPk">
+      <content>
+        <p>状态机页。五态流转，非法跃迁 409。关键取舍：秒数服务端裁定、落梭事务、激励失败不回滚计时。</p>
+      </content>
+    </note>
+  </slide>
+  <slide id="pkg">
+    <style>
+      <fill id="fkg">
+        <fillColor color="rgba(250, 250, 247, 1)"/>
+      </fill>
+    </style>
+    <data>
+      <shape width="820" height="36" topLeftX="70" topLeftY="40" type="text" id="bPV">
+        <content textType="title" fontSize="24" fontFamily="微软雅黑" color="rgba(44, 95, 124, 1)" bold="true">
+          <p>写操作不下发就不会被执行：双钥匙把校验前移到声明阶段</p>
+        </content>
+      </shape>
+      <line id="bPh" startX="70" startY="90" endX="890.0006097558709" endY="90">
+        <border color="rgba(220, 224, 226, 1)" width="1"/>
+      </line>
+      <shape width="380" height="28" topLeftX="70" topLeftY="110" type="text" id="bXP">
+        <content fontSize="15" fontFamily="微软雅黑" color="rgba(44, 95, 124, 1)" bold="true">
+          <p>7 个工具（4 读 / 3 写）</p>
+        </content>
+      </shape>
+      <shape width="380" height="200" topLeftX="70" topLeftY="145" type="text" id="bXu">
+        <content fontSize="12" fontFamily="微软雅黑" color="rgba(61, 66, 70, 1)" lineSpacing="multiple:1.6">
+          <p><strong><span color="rgba(76, 122, 90, 1)">读</span></strong>　QuerySchedules · QueryStatistics</p>
+          <p><strong><span color="rgba(76, 122, 90, 1)">读</span></strong>　QueryPoints · GetProfile</p>
+          <p><strong><span color="rgba(208, 140, 74, 1)">写</span></strong>　CreateSchedule · CreateSchedules</p>
+          <p><strong><span color="rgba(208, 140, 74, 1)">写</span></strong>　UpdateSchedule</p>
+          <p>　</p>
+          <p>SSE 流式打字机；上下文存 Redis 12h；</p>
+          <p>服务端注入当前时间，解析「下周 / 未来一周」</p>
+          <p>等相对日期并按天生成多日规划；同周期报告幂等。</p>
+        </content>
+      </shape>
+      <shape width="390" height="28" topLeftX="500" topLeftY="110" type="text" id="bXT">
+        <content fontSize="15" fontFamily="微软雅黑" color="rgba(124, 107, 176, 1)" bold="true">
+          <p>双钥匙模型</p>
+        </content>
+      </shape>
+      <shape width="170" height="60" topLeftX="490" topLeftY="155" presetHandlers="8" type="rect" id="bPt">
+        <fill>
+          <fillColor color="rgba(245, 243, 250, 1)"/>
+        </fill>
+        <border color="rgba(124, 107, 176, 1)" width="1"/>
+        <content fontSize="11" fontFamily="微软雅黑" color="rgba(80, 70, 120, 1)" bold="true">
+          <p>钥匙 1 · 服务端开关</p>
+          <p>sorts.ai.tool.allow-write</p>
+        </content>
+      </shape>
+      <shape width="170" height="60" topLeftX="740" topLeftY="155" presetHandlers="8" type="rect" id="bPz">
+        <fill>
+          <fillColor color="rgba(245, 243, 250, 1)"/>
+        </fill>
+        <border color="rgba(124, 107, 176, 1)" width="1"/>
+        <content fontSize="11" fontFamily="微软雅黑" color="rgba(80, 70, 120, 1)" bold="true">
+          <p>钥匙 2 · 单次请求</p>
+          <p>allowWrite=true（用户勾选）</p>
+        </content>
+      </shape>
+      <shape width="36" height="36" topLeftX="672" topLeftY="172" type="ellipse" id="bPB">
+        <fill>
+          <fillColor color="rgba(44, 95, 124, 1)"/>
+        </fill>
+        <content fontSize="14" fontFamily="微软雅黑" color="rgba(255, 255, 255, 1)" bold="true">
+          <p>且</p>
+        </content>
+      </shape>
+      <line id="bXX" startX="690" startY="215" endX="690" endY="250.01428280002318">
+        <border color="rgba(124, 107, 176, 1)"/>
+        <endArrow type="arrow"/>
+      </line>
+      <shape width="300" height="50" topLeftX="540" topLeftY="255" presetHandlers="8" type="rect" id="bXg">
+        <fill>
+          <fillColor color="rgba(44, 95, 124, 1)"/>
+        </fill>
+        <content fontSize="12" fontFamily="微软雅黑" color="rgba(255, 255, 255, 1)" bold="true">
+          <p>两个都到位，写工具才下发给模型</p>
+          <p>任一缺失 → 模型根本看不到写工具</p>
+        </content>
+      </shape>
+      <shape width="820" height="120" topLeftX="70" topLeftY="380" type="text" id="bXi">
+        <content fontSize="13" fontFamily="微软雅黑" color="rgba(61, 66, 70, 1)" lineSpacing="multiple:1.7" list="bullet" listStyle="circle-hollow-square">
+          <ul>
+            <li>
+              <p><strong>为什么是声明式过滤</strong>：运行时拦截是&quot;模型已经调了再拦&quot;，声明式是&quot;工具列表里压根没有写工具&quot;，从根上避免越权落库</p>
+            </li>
+            <li>
+              <p><strong>多日规划</strong>：用户说&quot;帮我生成未来一周规划&quot;，服务端注入当前日期，按天分组返回结构化 JSON，前端勾选后批量落库，同规划幂等拒绝重复采纳</p>
+            </li>
+          </ul>
+        </content>
+      </shape>
+    </data>
+    <note id="bPJ">
+      <content>
+        <p>AI 双钥匙页。7 工具 4 读 3 写；服务端开关 AND 请求级 allowWrite，两钥匙都到位才下发写工具。</p>
+      </content>
+    </note>
+  </slide>
+  <slide id="pkR">
+    <style>
+      <fill id="fkR">
+        <fillColor color="rgba(250, 250, 247, 1)"/>
+      </fill>
+    </style>
+    <data>
+      <shape width="820" height="36" topLeftX="70" topLeftY="40" type="text" id="bPI">
+        <content textType="title" fontSize="24" fontFamily="微软雅黑" color="rgba(44, 95, 124, 1)" bold="true">
+          <p>说一句话，梭灵按天生成 7 天规划，勾选后一键落库</p>
+        </content>
+      </shape>
+      <line id="bPH" startX="70" startY="90" endX="890.0006097558709" endY="90">
+        <border color="rgba(220, 224, 226, 1)" width="1"/>
+      </line>
+      <img id="bPW" src="ZZ4dbbrRyo9zcFxanMtccAgDnfg" width="500" height="310" topLeftX="70" topLeftY="115">
+        <crop type="rect" leftOffset="33.943965517241395" rightOffset="33.94396551724128" topOffset="0" bottomOffset="-5.684341886080802e-14" presetHandlers="8"/>
+      </img>
+      <shape width="290" height="28" topLeftX="610" topLeftY="120" type="text" id="bPm">
+        <content fontSize="15" fontFamily="微软雅黑" color="rgba(124, 107, 176, 1)" bold="true">
+          <p>交互链路</p>
+        </content>
+      </shape>
+      <shape width="290" height="280" topLeftX="610" topLeftY="155" type="text" id="bPR">
+        <content fontSize="13" fontFamily="微软雅黑" color="rgba(61, 66, 70, 1)" lineSpacing="multiple:1.7" list="bullet" listStyle="circle-hollow-square">
+          <ul>
+            <li>
+              <p>用户输入「帮我生成未来一周规划」</p>
+            </li>
+            <li>
+              <p>服务端注入当前日期，解析相对时间范围</p>
+            </li>
+            <li>
+              <p>返回结构化 JSON：range + days[]</p>
+            </li>
+            <li>
+              <p>前端按天分组渲染，支持逐项勾选 / 行内编辑</p>
+            </li>
+            <li>
+              <p>确认后批量写入织程，自动刷新织历</p>
+            </li>
+            <li>
+              <p>同规划幂等：重复采纳不会重复落库</p>
+            </li>
+          </ul>
+        </content>
+      </shape>
+    </data>
+    <note id="bPc">
+      <content>
+        <p>演示动图页。GIF 展示从自然语言到按天分组规划再到批量落库的完整链路。强调服务端注入时间、结构化返回、前端勾选。</p>
+      </content>
+    </note>
+  </slide>
+  <slide id="pkh">
+    <style>
+      <fill id="fkh">
+        <fillColor color="rgba(250, 250, 247, 1)"/>
+      </fill>
+    </style>
+    <data>
+      <shape width="820" height="36" topLeftX="70" topLeftY="40" type="text" id="bXj">
+        <content textType="title" fontSize="24" fontFamily="微软雅黑" color="rgba(44, 95, 124, 1)" bold="true">
+          <p>从登录到梭灵三栏：一套「织锦流光」主题贯穿 11 个页面</p>
+        </content>
+      </shape>
+      <line id="bXl" startX="70" startY="90" endX="890.0006097558709" endY="90">
+        <border color="rgba(220, 224, 226, 1)" width="1"/>
+      </line>
+      <img id="bXo" src="MCcrbxMDMoNWUsxsRdkcGU3OnTg" width="239.99999999999997" height="308" topLeftX="70" topLeftY="115">
+        <crop type="rect" leftOffset="0.013793103448264787" rightOffset="0.013793103448335842" topOffset="0" bottomOffset="0" presetHandlers="8"/>
+      </img>
+      <shape width="240" height="24" topLeftX="70" topLeftY="428" type="text" id="bXn">
+        <content textType="caption" fontSize="12" fontFamily="微软雅黑" color="rgba(61, 66, 70, 1)" bold="true" textAlign="center">
+          <p>登录 · 双令牌鉴权</p>
+        </content>
+      </shape>
+      <img id="bXy" src="XSxUbQAGboDGOFxYePmc9MD3nic" width="239.99999999999994" height="308" topLeftX="360" topLeftY="115">
+        <crop type="rect" leftOffset="131.35632183908046" rightOffset="131.35632183908052" topOffset="0" bottomOffset="0" presetHandlers="8"/>
+      </img>
+      <shape width="240" height="24" topLeftX="360" topLeftY="428" type="text" id="bXE">
+        <content textType="caption" fontSize="12" fontFamily="微软雅黑" color="rgba(61, 66, 70, 1)" bold="true" textAlign="center">
+          <p>织程 · 按日期分组 + 柔和色标签</p>
+        </content>
+      </shape>
+      <img id="bXG" src="UCx0bxbEHodRiix0OgWczu3xnFc" width="240" height="308.00000000000006" topLeftX="650" topLeftY="115">
+        <crop type="rect" leftOffset="0" rightOffset="0" topOffset="152.15835777126105" bottomOffset="152.15835777126097" presetHandlers="8"/>
+      </img>
+      <shape width="240" height="24" topLeftX="650" topLeftY="428" type="text" id="bXb">
+        <content textType="caption" fontSize="12" fontFamily="微软雅黑" color="rgba(61, 66, 70, 1)" bold="true" textAlign="center">
+          <p>梭灵 · 会话 / 对话 / 规划建议三栏</p>
+        </content>
+      </shape>
+    </data>
+    <note id="bXS">
+      <content>
+        <p>产品截图页。三张窄竖图横排：登录页、织程列表、AI 三栏。视觉统一在织锦流光主题下，色板为柔和自然色。</p>
+      </content>
+    </note>
+  </slide>
+  <slide id="pkM">
+    <style>
+      <fill id="fkM">
+        <fillColor color="rgba(250, 250, 247, 1)"/>
+      </fill>
+    </style>
+    <data>
+      <shape width="820" height="36" topLeftX="70" topLeftY="40" type="text" id="bXC">
+        <content textType="title" fontSize="24" fontFamily="微软雅黑" color="rgba(44, 95, 124, 1)" bold="true">
+          <p>兑换链路固定顺序：Redisson 锁 + 条件更新，锁租期失效仍安全</p>
+        </content>
+      </shape>
+      <line id="bXO" startX="70" startY="90" endX="890.0006097558709" endY="90">
+        <border color="rgba(220, 224, 226, 1)" width="1"/>
+      </line>
+      <shape width="140" height="70" topLeftX="70" topLeftY="160" presetHandlers="8" type="rect" id="bXL">
+        <fill>
+          <fillColor color="rgba(245, 243, 250, 1)"/>
+        </fill>
+        <border color="rgba(124, 107, 176, 1)" width="1"/>
+        <content fontSize="12" fontFamily="微软雅黑" color="rgba(80, 70, 120, 1)" bold="true">
+          <p>1. Redisson</p>
+          <p>分布式加锁</p>
+        </content>
+      </shape>
+      <shape width="140" height="70" topLeftX="250" topLeftY="160" presetHandlers="8" type="rect" id="bXZ">
+        <fill>
+          <fillColor color="rgba(245, 243, 250, 1)"/>
+        </fill>
+        <border color="rgba(124, 107, 176, 1)" width="1"/>
+        <content fontSize="12" fontFamily="微软雅黑" color="rgba(80, 70, 120, 1)" bold="true">
+          <p>2. 锁内重加载</p>
+          <p>防止排队期间状态漂移</p>
+        </content>
+      </shape>
+      <shape width="140" height="70" topLeftX="430" topLeftY="160" presetHandlers="8" type="rect" id="bXr">
+        <fill>
+          <fillColor color="rgba(245, 243, 250, 1)"/>
+        </fill>
+        <border color="rgba(124, 107, 176, 1)" width="1"/>
+        <content fontSize="12" fontFamily="微软雅黑" color="rgba(80, 70, 120, 1)" bold="true">
+          <p>3. 扣积分</p>
+          <p>校验余额</p>
+        </content>
+      </shape>
+      <shape width="140" height="70" topLeftX="610" topLeftY="160" presetHandlers="8" type="rect" id="bXd">
+        <fill>
+          <fillColor color="rgba(245, 243, 250, 1)"/>
+        </fill>
+        <border color="rgba(124, 107, 176, 1)" width="1"/>
+        <content fontSize="12" fontFamily="微软雅黑" color="rgba(80, 70, 120, 1)" bold="true">
+          <p>4. 事务落库</p>
+          <p>订单 + 库存扣减</p>
+        </content>
+      </shape>
+      <shape width="110" height="70" topLeftX="790" topLeftY="160" presetHandlers="8" type="rect" id="bXf">
+        <fill>
+          <fillColor color="rgba(252, 240, 228, 1)"/>
+        </fill>
+        <border color="rgba(208, 140, 74, 1)" width="1"/>
+        <content fontSize="12" fontFamily="微软雅黑" color="rgba(160, 100, 40, 1)" bold="true">
+          <p>5. 失败</p>
+          <p>退积分</p>
+        </content>
+      </shape>
+      <line id="bXe" startX="210" startY="195" endX="248.0131556174964" endY="195">
+        <border color="rgba(124, 107, 176, 1)"/>
+        <endArrow type="arrow"/>
+      </line>
+      <line id="bXq" startX="390" startY="195" endX="428.0131556174964" endY="195">
+        <border color="rgba(124, 107, 176, 1)"/>
+        <endArrow type="arrow"/>
+      </line>
+      <line id="bXU" startX="570" startY="195" endX="608.0131556174964" endY="195">
+        <border color="rgba(124, 107, 176, 1)"/>
+        <endArrow type="arrow"/>
+      </line>
+      <line id="bXs" startX="750" startY="195" endX="788.0131556174964" endY="195">
+        <border color="rgba(208, 140, 74, 1)"/>
+        <endArrow type="arrow"/>
+      </line>
+      <shape width="830" height="80" topLeftX="70" topLeftY="290" presetHandlers="8" type="rect" id="bXa">
+        <fill>
+          <fillColor color="rgba(248, 250, 250, 1)"/>
+        </fill>
+        <border color="rgba(44, 95, 124, 1)" width="1"/>
+        <content fontSize="12" fontFamily="微软雅黑" color="rgba(44, 95, 124, 1)" textAlign="left">
+          <p>　库存兜底：UPDATE mall_item SET stock = stock - 1 WHERE id = ? AND stock &gt; 0</p>
+          <p>　即使锁租期失效、并发穿透，条件更新也保证不会扣成负数；受影响行数 = 0 即视为售罄回滚。</p>
+        </content>
+      </shape>
+      <shape width="830" height="100" topLeftX="70" topLeftY="400" type="text" id="bXQ">
+        <content fontSize="13" fontFamily="微软雅黑" color="rgba(61, 66, 70, 1)" lineSpacing="multiple:1.7" list="bullet" listStyle="circle-hollow-square">
+          <ul>
+            <li>
+              <p><strong>为什么是这个顺序</strong>：先锁再读，避免「查库存够 → 排队 → 落库时已被抢光」的 TOCTOU；锁内重加载是对排队期间状态漂移的二次防御</p>
+            </li>
+            <li>
+              <p><strong>已知技术债</strong>：扣积分成功 ↔ 本地事务提交间进程被杀，仅 ERROR 日志留痕，待 RabbitMQ outbox 消息补偿自愈</p>
+            </li>
+          </ul>
+        </content>
+      </shape>
+    </data>
+    <note id="bXp">
+      <content>
+        <p>锦市一致性页。5 步链路 + 条件更新 SQL 兜底。强调锁内重加载和 WHERE stock&gt;0 是双保险，诚实说明 outbox 技术债。</p>
+      </content>
+    </note>
+  </slide>
+  <slide id="pkQ">
+    <style>
+      <fill id="fkQ">
+        <fillColor color="rgba(250, 250, 247, 1)"/>
+      </fill>
+    </style>
+    <data>
+      <shape width="820" height="36" topLeftX="70" topLeftY="40" type="text" id="bXk">
+        <content textType="title" fontSize="24" fontFamily="微软雅黑" color="rgba(44, 95, 124, 1)" bold="true">
+          <p>43 个测试类 / 396 用例全绿：GitHub Actions 三并行 Job 矩阵</p>
+        </content>
+      </shape>
+      <line id="bXR" startX="70" startY="90" endX="890.0006097558709" endY="90">
+        <border color="rgba(220, 224, 226, 1)" width="1"/>
+      </line>
+      <img id="bXI" src="B7sjbEq8KohMEzxT9QucivO3nsg" width="220" height="320" topLeftX="70" topLeftY="110">
+        <crop type="rect" leftOffset="0" rightOffset="0" topOffset="0.04595588235295622" bottomOffset="0.045955882352984645"/>
+      </img>
+      <shape width="550" height="28" topLeftX="340" topLeftY="120" type="text" id="bXv">
+        <content fontSize="15" fontFamily="微软雅黑" color="rgba(44, 95, 124, 1)" bold="true">
+          <p>测试规模与流水线</p>
+        </content>
+      </shape>
+      <shape width="170" height="80" topLeftX="340" topLeftY="160" presetHandlers="8" type="rect" id="bXM">
+        <fill>
+          <fillColor color="rgba(245, 248, 250, 1)"/>
+        </fill>
+        <content fontSize="13" fontFamily="微软雅黑" color="rgba(61, 66, 70, 1)">
+          <p><strong><span color="rgba(44, 95, 124, 1)" fontSize="32">396</span></strong></p>
+          <p>后端用例全绿</p>
+        </content>
+      </shape>
+      <shape width="170" height="80" topLeftX="530" topLeftY="160" presetHandlers="8" type="rect" id="bXc">
+        <fill>
+          <fillColor color="rgba(245, 248, 250, 1)"/>
+        </fill>
+        <content fontSize="13" fontFamily="微软雅黑" color="rgba(61, 66, 70, 1)">
+          <p><strong><span color="rgba(76, 122, 90, 1)" fontSize="32">4</span></strong></p>
+          <p>Testcontainers 集成测试</p>
+        </content>
+      </shape>
+      <shape width="170" height="80" topLeftX="720" topLeftY="160" presetHandlers="8" type="rect" id="bXH">
+        <fill>
+          <fillColor color="rgba(245, 248, 250, 1)"/>
+        </fill>
+        <content fontSize="13" fontFamily="微软雅黑" color="rgba(61, 66, 70, 1)">
+          <p><strong><span color="rgba(208, 140, 74, 1)" fontSize="32">19</span></strong></p>
+          <p>前端 Vitest 用例</p>
+        </content>
+      </shape>
+      <shape width="550" height="180" topLeftX="340" topLeftY="270" type="text" id="bXW">
+        <content fontSize="13" fontFamily="微软雅黑" color="rgba(61, 66, 70, 1)" lineSpacing="multiple:1.7" list="bullet" listStyle="circle-hollow-square">
+          <ul>
+            <li>
+              <p>41 个业务单测 + 4 个 Testcontainers IT（MySQL / Redis 真实容器）+ 25 个指标测试</p>
+            </li>
+            <li>
+              <p>三并行 Job：后端单测 · 集成测试 · 前端 Vitest，互不阻塞</p>
+            </li>
+            <li>
+              <p>6 个服务镜像独立构建，docker/compose.yml 一键编排，宿主不装 JDK / Node 也能跑</p>
+            </li>
+            <li>
+              <p>指标测试单独维护：双钥匙模型、五态状态机、兑换条件更新等关键安全路径</p>
+            </li>
+          </ul>
+        </content>
+      </shape>
+    </data>
+    <note id="bXD">
+      <content>
+        <p>CI/CD 页。左图右 KPI。396 后端用例 + 4 IT + 19 前端。强调指标测试单独维护、关键安全路径有覆盖。</p>
+      </content>
+    </note>
+  </slide>
+  <slide id="pkB">
+    <style>
+      <fill id="fkB">
+        <fillColor color="linear-gradient(135deg,rgba(44, 95, 124, 1) 0%,rgba(60, 110, 140, 1) 100%)"/>
+      </fill>
+    </style>
+    <data>
+      <shape width="800" height="50" topLeftX="80" topLeftY="90" type="text" id="bXN">
+        <content textType="title" fontSize="32" fontFamily="微软雅黑" color="rgba(255, 255, 255, 1)" bold="true">
+          <p>SORTS 梭子 · 专注计时平台</p>
+        </content>
+      </shape>
+      <shape width="800" height="30" topLeftX="80" topLeftY="150" type="text" id="bXK">
+        <content fontSize="15" fontFamily="微软雅黑" color="rgba(255, 255, 255, 0.851)">
+          <p>光明似箭，日月如梭 —— 让专注秒数成为唯一真相源</p>
+        </content>
+      </shape>
+      <line id="bXx" startX="80" startY="200" endX="200.00416659433122" endY="200">
+        <border color="rgba(255, 255, 255, 0.5)"/>
+      </line>
+      <shape width="380" height="200" topLeftX="80" topLeftY="230" type="text" id="bXF">
+        <content fontSize="13" fontFamily="微软雅黑" color="rgba(255, 255, 255, 0.922)" lineSpacing="multiple:1.8">
+          <p><strong>后端</strong>　Spring Boot 3.3 · Spring Cloud 2023</p>
+          <p>　　　Nacos · Gateway WebFlux · Feign</p>
+          <p>　　　MySQL 8（一服务一库）· Redis · RabbitMQ</p>
+          <p>　　　Redisson · DeepSeek API · SSE</p>
+        </content>
+      </shape>
+      <shape width="380" height="200" topLeftX="500" topLeftY="230" type="text" id="bXY">
+        <content fontSize="13" fontFamily="微软雅黑" color="rgba(255, 255, 255, 0.922)" lineSpacing="multiple:1.8">
+          <p><strong>前端</strong>　Vue 3.5 · TypeScript · Pinia · Vite 6</p>
+          <p>　　　Vue Router 4 · 织锦流光主题</p>
+          <p><strong>工程</strong>　Docker Compose · GitHub Actions</p>
+          <p>　　　43 测试类 / 396 用例全绿</p>
+        </content>
+      </shape>
+      <shape width="500" height="44" topLeftX="80" topLeftY="440" presetHandlers="22" type="rect" id="bXA">
+        <fill>
+          <fillColor color="rgba(255, 255, 255, 0.15)"/>
+        </fill>
+        <content fontSize="14" fontFamily="微软雅黑" color="rgba(255, 255, 255, 1)" bold="true">
+          <p>github.com/Q1anyii/Sorts</p>
+        </content>
+      </shape>
+    </data>
+    <note id="bXw">
+      <content>
+        <p>结尾页。深蓝渐变背景，左后端右前端技术栈，底部仓库地址。不放谢谢或问答页，直接给可访问链接。</p>
+      </content>
+    </note>
+  </slide>
+</presentation>
