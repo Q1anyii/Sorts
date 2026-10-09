@@ -48,6 +48,10 @@ sorts:
     # 落梭（完成日程）发放光阴砂；调为 false 可快速关闭奖励联调
     enabled: ${REWARD_ENABLED:true}
     complete-points: ${REWARD_COMPLETE_POINTS:5}
+  schedule:
+    auto-settle:
+      # 自动落梭扫描周期：每分钟一次（到点后最多延迟 1 分钟结算），可改 0/15 * * * * ? 加快
+      cron: ${AUTO_SETTLE_CRON:0 * * * * ?}
 
 logging:
   level:
